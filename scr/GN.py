@@ -88,7 +88,7 @@ if __name__ == "__main__":
     optimiser = GaussNewtonOptimiser(residual, tol=1e-6, max_iter=100, verbose=True)
     
     # Initial guess
-    x0 = np.array([20, -20], dtype='float32')
+    x0 = np.array([20, -20.0], dtype='float32')
     
     # Perform optimisation
     optimal_x = optimiser.optimise(x0)

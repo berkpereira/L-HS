@@ -49,6 +49,7 @@ class GaussNewtonOptimiser:
         x = x0
         for k in range(self.max_iter):
             res = self.res(x) # residual vector
+            f_x = self.func(x)
             J = self.jacobian_func(x)
             grad_f_x = J.T @ res
             hess_tilde_f_x = J.T @ J
@@ -63,13 +64,15 @@ class GaussNewtonOptimiser:
                 print(f"Iteration {k:4}: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {norm_grad_f_x:10.6e}")
                 break
 
-            if self.verbose:
-                f_x = self.func(x)
-                x_str = ", ".join([f"{xi:8.4f}" for xi in x])
-                print(f"Iteration {k:4}: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {norm_grad_f_x:10.6e}")
-
             direction = np.linalg.solve(hess_tilde_f_x, -grad_f_x)
+            
+            # System becoming near-singular leads to stalling of the algorithm:
+            # print(f'GN System condition number: {np.linalg.cond(hess_tilde_f_x)}')
             step_size = self.backtrack_armijo(x, direction, f_x, grad_f_x)
+            
+            if self.verbose:
+                x_str = ", ".join([f"{xi:8.4f}" for xi in x])
+                print(f"Iteration {k:4}: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {norm_grad_f_x:10.6e}, step size = {step_size:8.6f}")
 
             x = x + step_size * direction
 
@@ -78,17 +81,28 @@ class GaussNewtonOptimiser:
 # Example usage:
 if __name__ == "__main__":
     # Define the residual function for a simple nonlinear least squares problem
+    """
     def residual(x):
         return np.array([
             10 * (x[1] - x[0]**2),
             1 - x[0]
         ])
     
-    # Initialize optimiser
-    optimiser = GaussNewtonOptimiser(residual, tol=1e-6, max_iter=100, verbose=True)
-    
     # Initial guess
     x0 = np.array([20, -20.0], dtype='float32')
+    
+    """
+
+    def residual(x):
+        return np.array([
+            x[0] + 1,
+            0.1*x[0]**2 + x[0] - 1
+        ])
+    x0 = np.array([1], dtype='float32')
+    
+
+    # Initialize optimiser
+    optimiser = GaussNewtonOptimiser(residual, tol=1e-6, max_iter=100, verbose=True)
     
     # Perform optimisation
     optimal_x = optimiser.optimise(x0)

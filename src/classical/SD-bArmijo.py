@@ -4,7 +4,7 @@ from autograd import grad
 class SteepestDescentBacktrackingArmijo:
     def __init__(self, func, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, verbose=False):
         """
-        Initialize the optimiser with the objective function and parameters.
+        Initialise the optimiser with the objective function and parameters.
         
         :param func: The objective function to minimize.
         :param alpha: The Armijo condition parameter.

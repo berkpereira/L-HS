@@ -1,9 +1,6 @@
 import autograd.numpy as np
 from autograd import grad, hessian
-import matplotlib.pyplot as plt
 from scipy.optimize import rosen
-
-from ..utils import test_problems
 
 class LinesearchBacktrackingArmijo:
     def __init__(self, method, obj, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, verbose=False):
@@ -25,7 +22,7 @@ class LinesearchBacktrackingArmijo:
         self.tau = tau
         self.tol = tol
         self.max_iter = max_iter
-        self.grad_func = grad(func)
+        self.grad_func = grad(self.func)
         self.hess_func = hessian(self.func)
         self.verbose = verbose
 
@@ -74,6 +71,8 @@ class LinesearchBacktrackingArmijo:
             elif self.method == 'Newton':
                 H = self.hess_func(x)
                 direction = - np.linalg.inv(H) @ grad_f_x # Newton direction
+            else:
+                raise Exception('Unkown method!')
             step_size = self.backtrack_armijo(x, direction, f_x, grad_f_x)
             
             if self.verbose and k % 1 == 0:
@@ -84,21 +83,6 @@ class LinesearchBacktrackingArmijo:
             x = x + step_size * direction
         
         return x, f_vals
-
-def plot_loss_vs_iteration(f_vals):
-    """
-    Plot the loss (function values) vs iteration count.
-
-    :param f_vals: Array of function values over iterations.
-    """
-    plt.figure(figsize=(10, 6))
-    plt.plot(f_vals, linestyle='-', color='b')
-    plt.yscale('log')  # Set the vertical axis to log scale
-    plt.xlabel('Iteration')
-    plt.ylabel('Function value (log scale)')
-    plt.title('Loss vs Iteration')
-    plt.grid(True, which="both", ls="--")
-    plt.show()
 
 if __name__ == "__main__":
     # For reference:

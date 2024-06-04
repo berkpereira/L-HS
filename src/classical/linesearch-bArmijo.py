@@ -3,17 +3,14 @@ from autograd import grad, hessian
 import matplotlib.pyplot as plt
 from scipy.optimize import rosen
 
-class Objective:
-    def __init__(self, input_dim, func):
-        self.input_dim = input_dim # Input dimension
-        self.func = func # callable, returns objective value
+from utils import test_problems
 
 class LinesearchBacktrackingArmijo:
     def __init__(self, method, obj, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, verbose=False):
         """
         Initialise the optimiser with the objective function and parameters.
         
-        :param method: String choosing method for linesearch direction.
+        :param method: String choosing method for linesearch direction, one of {'SD', 'Newton'}
         :param func: The objective function to minimize.
         :param alpha: The Armijo condition parameter.
         :param tau: The backtracking step size reduction factor.
@@ -103,53 +100,23 @@ def plot_loss_vs_iteration(f_vals):
     plt.grid(True, which="both", ls="--")
     plt.show()
 
-# Example usage:
 if __name__ == "__main__":
-    # METHOD EITHER 'SD' or 'Newton'
+    # For reference:
+    test_problems_list = ['rosenbrock',
+                     'powell_singular',
+                     'well_conditioned_convex_quadratic',
+                     'ill_conditioned_convex_quadratic']
+    
+    method_list = ['SD',
+                   'Newton']    
+    
+    
     METHOD = 'Newton'
-
-    """
-    # ROSENBROCK, imported from scipy.optimize
-    # Unique minimiser (f = 0) at x == np.ones(input_dim)
-    input_dim = 20
-    x0 = np.zeros(input_dim, dtype='float32')
-    func = rosen # use high-dimensional rosenbrock function from scipy.optimize
-    """
-
-    
-    """
-    # POWELL SINGULAR TEST FUNCTION
-    input_dim = 4
-    subspace_dim = 2
-    x0 = np.array([3.0, -1.0, 0.0, 1.0])
-    def func(x):
-        return (x[0] + 10*x[1])**2 + 5 * (x[2] - x[3])**2 + (x[1] - 2*x[2])**4 + 10 * (x[0] - x[3])**4
-    """
-    
-    """
-    # WELL-CONDITIONED CONVEX QUADRATIC
-    input_dim = 20
-    subspace_dim = 20
-    x0 = np.ones(input_dim, dtype='float32')
-    def func(x):
-        out = 0
-        for i in range(input_dim):
-            out += (i + 1) * x[i] ** 2
-        return 0.5 * out
-    """
-    
-    
-    # ILL-CONDITIONED CONVEX QUADRATIC
-    input_dim = 10
-    x0 = np.ones(input_dim, dtype='float32')
-    def func(x):
-        out = 0
-        for i in range(input_dim):
-            out += ((i + 1)**5) * x[i] ** 2
-        return 0.5 * out
+    INPUT_DIM = 20 # NOTE: depending on the problem, this may have no effect
+    PROBLEM_NAME = 'rosenbrock'
     
     # Instantiate objective class
-    obj = Objective(input_dim, func)
+    obj = select_problem(problem_name=PROBLEM_NAME, input_dim=INPUT_DIM)
     
     # Initialize optimiser
     optimiser = LinesearchBacktrackingArmijo(method=METHOD, obj=obj, alpha=0.01, t_init=1, tol = 1e-3, max_iter=1000, verbose=True)

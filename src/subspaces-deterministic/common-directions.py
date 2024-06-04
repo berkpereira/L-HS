@@ -157,7 +157,6 @@ def plot_loss_vs_iteration(f_vals):
     plt.grid(True, which="both", ls="--")
     plt.show()
     
-# Example usage:
 if __name__ == "__main__":
     # Define the objective function
 

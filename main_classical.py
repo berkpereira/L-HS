@@ -1,6 +1,6 @@
 import problems.test_problems
-import solvers.classical.linesearch_bArmijo
-import plotting.plotting
+import solvers
+import plotting
 
 # For reference:
 test_problems_list = ['rosenbrock',

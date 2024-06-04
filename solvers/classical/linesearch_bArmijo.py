@@ -1,9 +1,10 @@
 import autograd.numpy as np
 from autograd import grad, hessian
 from scipy.optimize import rosen
+from ..utils import SolverOutput
 
 class LinesearchBacktrackingArmijo:
-    def __init__(self, method, obj, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, verbose=False):
+    def __init__(self, method, obj, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, iter_print_gap=20, verbose=False):
         """
         Initialise the optimiser with the objective function and parameters.
         
@@ -13,6 +14,7 @@ class LinesearchBacktrackingArmijo:
         :param tau: The backtracking step size reduction factor.
         :param tol: The tolerance for the stopping condition.
         :param max_iter: The maximum number of iterations.
+        :param iter_print_gap: Period for printing an iteration's info.
         """
         self.method = method
         self.obj = obj
@@ -24,6 +26,7 @@ class LinesearchBacktrackingArmijo:
         self.max_iter = max_iter
         self.grad_func = grad(self.func)
         self.hess_func = hessian(self.func)
+        self.iter_print_gap = iter_print_gap
         self.verbose = verbose
 
     def backtrack_armijo(self, x, direction, f_x, grad_f_x):
@@ -75,37 +78,11 @@ class LinesearchBacktrackingArmijo:
                 raise Exception('Unkown method!')
             step_size = self.backtrack_armijo(x, direction, f_x, grad_f_x)
             
-            if self.verbose and k % 1 == 0:
+            if self.verbose and k % self.iter_print_gap == 0:
                 x_str = ", ".join([f"{xi:8.4f}" for xi in x])
                 print(f"Iteration {k:4}: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {norm_grad_f_x:10.6e}, step size = {step_size:8.6f}")
 
             
             x = x + step_size * direction
         
-        return x, f_vals
-
-if __name__ == "__main__":
-    # For reference:
-    test_problems_list = ['rosenbrock',
-                     'powell_singular',
-                     'well_conditioned_convex_quadratic',
-                     'ill_conditioned_convex_quadratic']
-    
-    method_list = ['SD',
-                   'Newton']    
-    
-    
-    METHOD = 'Newton'
-    INPUT_DIM = 20 # NOTE: depending on the problem, this may have no effect
-    PROBLEM_NAME = 'rosenbrock'
-    
-    # Instantiate objective class
-    obj = select_problem(problem_name=PROBLEM_NAME, input_dim=INPUT_DIM)
-    
-    # Initialize optimiser
-    optimiser = LinesearchBacktrackingArmijo(method=METHOD, obj=obj, alpha=0.01, t_init=1, tol = 1e-3, max_iter=1000, verbose=True)
-    
-    # Perform optimisation
-    optimal_x, f_vals = optimiser.optimise(x0)
-
-    plot_loss_vs_iteration(f_vals=f_vals)
+        return SolverOutput(x, k, f_vals)

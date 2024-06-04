@@ -9,8 +9,7 @@ However, the idea here is to use higher subspace dimensions to speed up converge
 
 import autograd.numpy as np
 from autograd import grad, hessian
-from scipy.optimize import rosen
-import matplotlib.pyplot as plt
+from ..utils import SolverOutput
 
 np.random.seed(42)
 
@@ -20,7 +19,7 @@ class Objective:
         self.func = func # callable, returns objective value
 
 class CommonDirections:
-    def __init__(self, obj, subspace_dim, reg_lambda, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, verbose=False):
+    def __init__(self, obj, subspace_dim, reg_lambda, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, iter_print_gap=20, verbose=False):
         """
         Initialise the optimiser with the objective function and relevant parameters.
         
@@ -31,6 +30,7 @@ class CommonDirections:
         :param tau: The backtracking step size reduction factor.
         :param tol: The tolerance for the stopping condition.
         :param max_iter: The maximum number of iterations.
+        :param iter_print_gap: Period for printing an iteration's info.
         """
         self.obj = obj
         self.subspace_dim = subspace_dim
@@ -43,6 +43,7 @@ class CommonDirections:
         self.max_iter = max_iter
         self.grad_func = grad(self.func)
         self.hess_func = hessian(self.func) # for now have it as a full Hessian; later may use autograd.hessian_vector_product
+        self.iter_print_gap = iter_print_gap
         self.verbose = verbose
 
     # Return regularised Hessian (or any matrix for that matter)
@@ -113,7 +114,7 @@ class CommonDirections:
             direction = - P @ np.linalg.inv(H) @ np.transpose(P) @ grad_f_x
             step_size = self.backtrack_armijo(x, direction, f_x, grad_f_x)
             
-            if self.verbose and k % 20 == 0:
+            if self.verbose and k % self.iter_print_gap == 0:
                 x_str = ", ".join([f"{xi:7.4f}" for xi in x])
                 print(f"k = {k:4}, x = [{x_str}], f(x) = {f_x:6.6e}, g_norm = {norm_grad_f_x:6.6e}, step = {step_size:8.6f}")
 
@@ -140,77 +141,4 @@ class CommonDirections:
             H = self.regularise_hessian(H)
 
         
-        return x, f_vals
-    
-def plot_loss_vs_iteration(f_vals):
-    """
-    Plot the loss (function values) vs iteration count.
-
-    :param f_vals: Array of function values over iterations.
-    """
-    plt.figure(figsize=(10, 6))
-    plt.plot(f_vals, linestyle='-', color='b')
-    plt.yscale('log')  # Set the vertical axis to log scale
-    plt.xlabel('Iteration')
-    plt.ylabel('Function value (log scale)')
-    plt.title('Loss vs Iteration')
-    plt.grid(True, which="both", ls="--")
-    plt.show()
-    
-if __name__ == "__main__":
-    # Define the objective function
-
-    """
-    # ROSENBROCK, imported from scipy.optimize
-    # Unique minimiser (f = 0) at x == np.ones(input_dim)
-    input_dim = 20
-    subspace_dim = 20
-    x0 = np.zeros(input_dim, dtype='float32')
-    func = rosen # use high-dimensional rosenbrock function from scipy.optimize
-    """
-
-    
-    """
-    # POWELL SINGULAR TEST FUNCTION
-    input_dim = 4
-    subspace_dim = 2
-    x0 = np.array([3.0, -1.0, 0.0, 1.0])
-    def func(x):
-        return (x[0] + 10*x[1])**2 + 5 * (x[2] - x[3])**2 + (x[1] - 2*x[2])**4 + 10 * (x[0] - x[3])**4
-    """
-    
-    """
-    # WELL-CONDITIONED CONVEX QUADRATIC
-    input_dim = 20
-    subspace_dim = 20
-    x0 = np.ones(input_dim, dtype='float32')
-    def func(x):
-        out = 0
-        for i in range(input_dim):
-            out += (i + 1) * x[i] ** 2
-        return 0.5 * out
-    """
-
-
-    # ILL-CONDITIONED CONVEX QUADRATIC
-    input_dim = 10
-    subspace_dim = 10
-    x0 = np.ones(input_dim, dtype='float32')
-    def func(x):
-        out = 0
-        for i in range(input_dim):
-            out += ((i + 1)**5) * x[i] ** 2
-        return 0.5 * out
-
-
-    # Instantiate objective class
-    obj = Objective(input_dim, func)
-    
-    # Initialize optimiser
-    optimiser = CommonDirections(obj=obj, subspace_dim=subspace_dim, alpha=0.01, reg_lambda=0.01, t_init=1, tol = 1e-3, max_iter=1000, verbose=True)
-
-    
-    # Run algorithm
-    optimal_x, f_vals = optimiser.optimise(x0)
-
-    plot_loss_vs_iteration(f_vals=f_vals)
+        return SolverOutput(x, k, f_vals)

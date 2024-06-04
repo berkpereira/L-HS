@@ -3,7 +3,7 @@ from autograd import grad, hessian
 import matplotlib.pyplot as plt
 from scipy.optimize import rosen
 
-from utils import test_problems
+from ..utils import test_problems
 
 class LinesearchBacktrackingArmijo:
     def __init__(self, method, obj, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, verbose=False):

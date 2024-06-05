@@ -19,12 +19,13 @@ class Objective:
         self.func = func # callable, returns objective value
 
 class CommonDirections:
-    def __init__(self, obj, subspace_dim, reg_lambda, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, iter_print_gap=20, verbose=False):
+    def __init__(self, obj, subspace_update_method: str, subspace_dim, reg_lambda, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, iter_print_gap=20, verbose=False):
         """
         Initialise the optimiser with the objective function and relevant parameters.
         
         :param obj: Objective class instance.
         :param subspace_dim: Dimension of subspace.
+        :param subspace_dim: Method for building subspace basis.
         :param reg_lambda: Minimum allowable (POSITIVE) eigenvalue of projected Hessian. If Hessian at some point has eigenvalue below this, REGularisation will be applied to obtain a matrix with minimum eigenvalue equal to reg_lambda.
         :param alpha: The Armijo condition parameter.
         :param tau: The backtracking step size reduction factor.
@@ -33,7 +34,16 @@ class CommonDirections:
         :param iter_print_gap: Period for printing an iteration's info.
         """
         self.obj = obj
+        self.subspace_update_method = subspace_update_method
         self.subspace_dim = subspace_dim
+        
+        if self.subspace_update_method == 'iterates_grads':
+            if self.subspace_dim % 2 != 0:
+                raise Exception('With iterates_grads method, subspace dimension must be multiple of 2.')
+        if self.subspace_update_method == 'iterates_grads_diagnewtons':
+            if self.subspace_dim % 3 != 0:
+                raise Exception('With iterates_grads_diagnewtons method, subspace dimension must be multiple of 3.')
+        
         self.reg_lambda = reg_lambda
         self.func = self.obj.func # callable objective func
         self.alpha = alpha
@@ -74,6 +84,49 @@ class CommonDirections:
         
         return t
     
+    # Which basis of subspace to use in the method
+    def update_subspace(self, method: str, **kwargs):
+        # method: str. Options:
+        # method == 'grads', retain m past gradient vectors 
+        # method == 'iterates_grads', (34) from Lee et al., 2022
+        # method == 'iterates_grads_diagnewtons', (35) from Lee et al., 2022
+
+        # G should store some past gradient vectors
+        # X should store some past iterate vectors
+        # D should store some past crude Newton direction approximations (obtained by multiplying the inverse of the diagonal of Hessian diagonal by the gradient)
+        if self.subspace_update_method == 'grads':
+            G = kwargs['grads_matrix']
+            if G.shape[1] == self.subspace_dim:
+                P = G
+            else:
+                P = np.zeros(shape=(self.obj.input_dim, self.subspace_dim))
+                P[:,:(self.subspace_dim - G.shape[1])] = np.random.normal(size=(self.obj.input_dim, self.subspace_dim - G.shape[1]))
+                P[:,-G.shape[1]:] = G
+        elif self.subspace_update_method == 'iterates_grads':
+            G = kwargs['grads_matrix']
+            X = kwargs['iterates_matrix']
+            if 2 * G.shape[1] == self.subspace_dim:
+                P = np.hstack((G, X))
+            else:
+                P = np.zeros(shape=(self.obj.input_dim, self.subspace_dim))
+                P[:,:(self.subspace_dim - 2 * G.shape[1])] = np.random.normal(size=(self.obj.input_dim, self.subspace_dim - 2 * G.shape[1]))
+                P[:,-2 * G.shape[1]:] = np.hstack((G, X))
+        elif self.subspace_update_method == 'iterates_grads_diagnewtons':
+            G = kwargs['grads_matrix']
+            X = kwargs['iterates_matrix']
+            D = kwargs['hess_diag_dirs_matrix']
+            if 3 * G.shape[1] == self.subspace_dim:
+                P = np.hstack((G, X, D))
+            else:
+                P = np.zeros(shape=(self.obj.input_dim, self.subspace_dim))
+                P[:,:(self.subspace_dim - 3 * G.shape[1])] = np.random.normal(size=(self.obj.input_dim, self.subspace_dim - 3 * G.shape[1]))
+                P[:,-3 * G.shape[1]:] = np.hstack((G, X, D))
+        
+        # Orthogonalise the basis matrix
+        P, _ = np.linalg.qr(P)
+        return P
+
+
     def optimise(self, x0):
         """
         Perform solver step
@@ -84,23 +137,31 @@ class CommonDirections:
         # Initialise algorithm
         x = x0
         f_x = self.func(x)
-        f_vals = np.array([f_x])
         grad_f_x = self.grad_func(x)
-
         norm_grad_f_x = np.linalg.norm(grad_f_x)
-        
-        # Scaled Gaussian matrix (scaling unnecessary here, since we orthogonalise anyway)
-        P = np.random.normal(scale=np.sqrt(1 / self.subspace_dim), size=(self.obj.input_dim, self.subspace_dim))
-        P[:, -1] = np.array(grad_f_x / norm_grad_f_x) # introduce current gradient to begin with
-        P, _ = np.linalg.qr(P) # orthogonalise P
-
         hess_f_x = self.hess_func(x)
+
+        # For further plotting
+        f_vals = np.array([f_x], dtype='float32')
+
+        # Need to keep in parallel information from few previous iterates
+        G = np.array(grad_f_x, ndmin=2) # store gradient vectors
+        G = G.reshape(-1, 1)
+        if self.subspace_update_method != 'grads':
+            X = np.array(x, ndmin=2) # store iterates
+            X = X.reshape(-1, 1)
+        else:
+            X = None
+        if self.subspace_update_method == 'iterates_grads_diagnewtons':
+            D = np.linalg.solve(np.diag(np.diag(hess_f_x)), grad_f_x)
+            D = D.reshape(-1, 1)
+        else:
+            D = None
+        
+        P = self.update_subspace(self.subspace_update_method, grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+
         H = np.transpose(P) @ (hess_f_x @ P) # IN FUTURE will want to implement the latter product using Hessian actions (H-vector products), see autograd.hessian_vector_products
         H = self.regularise_hessian(H)
-
-        # Need also to keep in parallel the raw past few gradients, in matrix G
-        G = np.array(grad_f_x, ndmin=2)
-        G = G.reshape(-1, 1) # column vector
 
         for k in range(self.max_iter):
             if norm_grad_f_x < self.tol:
@@ -122,21 +183,34 @@ class CommonDirections:
             x = x + step_size * direction
 
             f_x = self.func(x)
-            f_vals = np.append(f_vals, f_x)
             grad_f_x = self.grad_func(x)
-            norm_grad_f_x = np.linalg.norm(grad_f_x)
-
-            if G.shape[1] == self.subspace_dim:
-                G = np.delete(G, 0, 1) # delete first (oldest) column
-            G = np.hstack((G, grad_f_x.reshape(-1,1))) # append newest gradient
-            
-            if G.shape[1] == self.subspace_dim:
-                P, _ = np.linalg.qr(G) # Form orthogonal basis for span of past few gradients
-            else:
-                P = np.hstack((G, np.random.normal(scale=np.sqrt(1 / self.subspace_dim), size=(self.obj.input_dim, self.subspace_dim - G.shape[1])))) # stack whatever gradients we already have with randomised columns
-                P, _ = np.linalg.qr(P) # orthogonalise as usual
-
             hess_f_x = self.hess_func(x)
+            norm_grad_f_x = np.linalg.norm(grad_f_x)
+            
+            # Update records of previous iterations, for further plotting
+            f_vals = np.append(f_vals, f_x)
+
+            if self.subspace_update_method == 'grads':
+                if G.shape[1] == self.subspace_dim:
+                    G = np.delete(G, 0, 1) # delete first (oldest) column
+                G = np.hstack((G, grad_f_x.reshape(-1,1))) # append newest gradient
+            elif self.subspace_update_method == 'iterates_grads':
+                if 2 * G.shape[1] == self.subspace_dim:
+                    G = np.delete(G, 0, 1) # delete first (oldest) column
+                    X = np.delete(X, 0, 1)
+                G = np.hstack((G, grad_f_x.reshape(-1,1))) # append newest gradient
+                X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
+            elif self.subspace_update_method == 'iterates_grads_diagnewtons':
+                if 3 * G.shape[1] == self.subspace_dim:
+                    G = np.delete(G, 0, 1) # delete first (oldest) column
+                    X = np.delete(X, 0, 1)
+                    D = np.delete(D, 0, 1)
+                G = np.hstack((G, grad_f_x.reshape(-1,1))) # append newest gradient
+                X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
+                D = np.hstack((D, np.linalg.solve(np.diag(np.diag(hess_f_x)), grad_f_x).reshape(-1, 1))) # append newest crude diagonal Newton direction approximation
+            
+            P = self.update_subspace(self.subspace_update_method, grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+
             H = np.transpose(P) @ (hess_f_x @ P) # IN FUTURE will want to implement the latter product using Hessian actions (H-vector products), see autograd.hessian_vector_products
             H = self.regularise_hessian(H)
 

@@ -3,7 +3,7 @@ Code based on Algorithm 3 from Cartis, Fowkes, and Shao, "Randomised subspace me
 
 In my own bibliography, this paper's shorthand designation is "cartis2022", hence the nomenclature in this file.
 
-The biggest change of "notation" in this script relative to the reference paper is that we use a matrix's COLUMNS as a basis for the subspace used at each iterate --- this is in contrast with the paper, where the rows are used instead. Lots of "transposes" are in order in translating between one and the other.
+Throughout, the ROWS of S_k are used as the basis for the subspace used at iterate k. Lots of "transposes" are in order in translating between this and the CommonDirections algorithm coded elsewhere in this repository (itself based on https://doi.org/10.1007/s12532-022-00219-z (Lee, Wang, and Lin, 2022)).
 """
 import autograd.numpy as np
 from autograd import grad
@@ -56,6 +56,10 @@ class Cartis2022Algorithm3:
     # B stands for B_k, a PD approximation to the Hessian (think of quasi-Newton methods).
     def local_model(self, grad_hat: np.ndarray, B_hat: np.ndarray, s_hat: np.ndarray):
         return np.dot(grad_hat, s_hat) + 0.5 * np.dot(s_hat, B_hat @ s_hat)
+    
+    # This method the local REGularised model, denoted by \hat{q}_k in the reference paper
+    def local_model_reg(self, grad_hat: np.ndarray, B_hat: np.ndarray, s_hat: np.ndarray, S: np.ndarray, alpha: float):
+        return self.local_model(grad_hat, B_hat, s_hat) + (np.linalg.norm(np.transpose(S) @ s_hat) ** 2) / (2 * alpha)
 
     # This method will implement the (approximate) minimisation of the local model needed at each iterate
     # IN THIS ALGO, the local model is a convex quadratic, so it shouldn't be so so hard.

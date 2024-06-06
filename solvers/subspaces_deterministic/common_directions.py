@@ -13,11 +13,6 @@ from ..utils import SolverOutput
 
 np.random.seed(42)
 
-class Objective:
-    def __init__(self, input_dim, func):
-        self.input_dim = input_dim # Input dimension
-        self.func = func # callable, returns objective value
-
 class CommonDirections:
     def __init__(self, obj, subspace_update_method: str, subspace_dim, reg_lambda, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, iter_print_gap=20, verbose=False):
         """

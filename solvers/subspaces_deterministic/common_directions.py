@@ -56,7 +56,7 @@ class CommonDirections:
     def regularise_hessian(self, H):
         lambda_min = np.min(np.linalg.eigh(H)[0])
         if lambda_min < self.reg_lambda: # Regularise
-            print('USING HESSIAN REGULARISATION!')
+            # print('USING HESSIAN REGULARISATION!')
             H = H + (self.reg_lambda - lambda_min) * np.identity(self.subspace_dim)
         
         # TO MAKE THIS A STEEPEST DESCENT METHOD
@@ -165,6 +165,9 @@ class CommonDirections:
                 print('TERMINATED')
                 print('------------------------------------------------------------------------------------------')
                 print(f"k = {k:4}, x = [{x_str}], f(x) = {f_x:8.6e}, g_norm = {norm_grad_f_x:8.6e}")
+                print('------------------------------------------------------------------------------------------')
+                print()
+                print()
                 break
             
             direction = - P @ np.linalg.inv(H) @ np.transpose(P) @ grad_f_x

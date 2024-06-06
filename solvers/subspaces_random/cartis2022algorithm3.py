@@ -1,5 +1,5 @@
 """
-Code for algorithms based on randomised subspace unconstrained optimisation ideas from Cartis, Fowkes, and Shao, "Randomised subspace methods for non-convex optimization, with applications to nonlinear least-squares", 2022. https://arxiv.org/abs/2211.09873
+Code based on Algorithm 3 from Cartis, Fowkes, and Shao, "Randomised subspace methods for non-convex optimization, with applications to nonlinear least-squares", 2022. https://arxiv.org/abs/2211.09873
 
 In my own bibliography, this paper's shorthand designation is "cartis2022", hence the nomenclature in this file.
 
@@ -51,10 +51,11 @@ class Cartis2022Algorithm3:
         if self.ensemble == 'scaled_gaussian':
             return np.random.normal(scale=np.sqrt(1 / self.subspace_dim), size=(self.obj.input_dim, self.subspace_dim))
         
-    # This method will implement the local model function (m_k) determined by the algorithm at each iterate.
+    # This method will implement the local model function (\hat{m_k}) determined by the algorithm at each iterate.
     # This model is of reduced dimension relative to the ambient problem input dimension.
-    def local_model(self):
-        pass
+    # B stands for B_k, a PD approximation to the Hessian (think of quasi-Newton methods).
+    def local_model(self, grad_hat: np.ndarray, B_hat: np.ndarray, s_hat: np.ndarray):
+        return np.dot(grad_hat, s_hat) + 0.5 * np.dot(s_hat, B_hat @ s_hat)
 
     # This method will implement the (approximate) minimisation of the local model needed at each iterate
     # IN THIS ALGO, the local model is a convex quadratic, so it shouldn't be so so hard.

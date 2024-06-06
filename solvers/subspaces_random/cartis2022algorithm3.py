@@ -5,9 +5,13 @@ In my own bibliography, this paper's shorthand designation is "cartis2022", henc
 
 Throughout, the ROWS of S_k are used as the basis for the subspace used at iterate k. Lots of "transposes" are in order in translating between this and the CommonDirections algorithm coded elsewhere in this repository (itself based on https://doi.org/10.1007/s12532-022-00219-z (Lee, Wang, and Lin, 2022)).
 """
+
+from functools import partial
 import autograd.numpy as np
 from autograd import grad
 from ..utils import SolverOutput
+from ..classical.linesearch_bArmijo import LinesearchBacktrackingArmijo
+from problems.test_problems import Objective
 
 np.random.seed(42)
 
@@ -54,17 +58,22 @@ class Cartis2022Algorithm3:
     # This method will implement the local model function (\hat{m_k}) determined by the algorithm at each iterate.
     # This model is of reduced dimension relative to the ambient problem input dimension.
     # B stands for B_k, a PD approximation to the Hessian (think of quasi-Newton methods).
-    def local_model(self, grad_hat: np.ndarray, B_hat: np.ndarray, s_hat: np.ndarray):
+    def local_model(self, s_hat: np.ndarray, grad_hat: np.ndarray, B_hat: np.ndarray):
         return np.dot(grad_hat, s_hat) + 0.5 * np.dot(s_hat, B_hat @ s_hat)
     
     # This method the local REGularised model, denoted by \hat{q}_k in the reference paper
-    def local_model_reg(self, grad_hat: np.ndarray, B_hat: np.ndarray, s_hat: np.ndarray, S: np.ndarray, alpha: float):
+    def local_model_reg(self, s_hat: np.ndarray, grad_hat: np.ndarray, B_hat: np.ndarray, S: np.ndarray, alpha: float):
         return self.local_model(grad_hat, B_hat, s_hat) + (np.linalg.norm(np.transpose(S) @ s_hat) ** 2) / (2 * alpha)
 
     # This method will implement the (approximate) minimisation of the local model needed at each iterate
     # IN THIS ALGO, the local model is a convex quadratic, so it shouldn't be so so hard.
-    def min_local_model(self):
-        pass
+    def min_local_model(self, grad_hat: np.ndarray, B_hat: np.ndarray, S: np.ndarray, alpha: float):
+        # This creates a single-argument function from self.local_model_reg by fixing all its arguments except for s_hat
+        obj_func = partial(self.local_model_reg, grad_hat=grad_hat, B_hat=B_hat, S=S, alpha=alpha)
+        obj = Objective(input_dim=self.subspace_dim, func=obj_func)
+        # NEED TO KEEP GOING HERE, BY USING AN UNCONSTRAINED ALGORITHM TO SOLVE THE INNER REGULARISED LOCAL SUBPROBLEM:
+        # THINGS TO THING ABOUT: DEVELOPING A MORE GENERAL UNCONSTRAINED OPTIMISER, WITH MORE GENERAL STOPPING CRITERIA. FOR INSTANCE, PASS A CALLABLE (WITH INPUT ARGUMENT SUCH AS THE OBJECTIVE INPUT, THE GRADIENT, ETC.) WITH A BOOLEAN OUTPUT TO THE SOLVER CLASS SO THAT THE ALGORITHM TERMINATES ONLY WHEN THAT 0UTPUT IS TRUE. THUS CAN IMPLEMENT STOPPING CONDITIONS SUCH AS IN ALGORITHM 3 OF CARTIS2022, AND ANY OTHERS.
+
 
     # This method will run the actual algorithm (outer iterations, if you will, while calling min_local_model to run the inner iterations) and return an approximate local minimiser of the function of interest
     def optimise(self):

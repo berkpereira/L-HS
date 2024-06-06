@@ -23,8 +23,8 @@ class CommonDirections:
         :param subspace_dim: Method for building subspace basis.
         :param reg_lambda: Minimum allowable (POSITIVE) eigenvalue of projected Hessian. If Hessian at some point has eigenvalue below this, REGularisation will be applied to obtain a matrix with minimum eigenvalue equal to reg_lambda.
         :param alpha: The Armijo condition parameter.
-        :param tau: The backtracking step size reduction factor.
         :param tol: The tolerance for the stopping condition.
+        :param tau: The backtracking step size reduction factor.
         :param max_iter: The maximum number of iterations.
         :param iter_print_gap: Period for printing an iteration's info.
         """

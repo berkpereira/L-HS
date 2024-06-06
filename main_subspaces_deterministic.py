@@ -1,6 +1,8 @@
 import problems.test_problems
 import solvers
 import plotting
+import os
+os.system('clear')
 
 # For reference:
 test_problems_list = ['rosenbrock', # 0

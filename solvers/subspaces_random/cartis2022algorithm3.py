@@ -18,7 +18,7 @@ from problems.test_problems import Objective
 np.random.seed(42)
 
 class Cartis2022Algorithm3:
-    def __init__(self, obj, subspace_dim, gamma1, const_c, const_p, kappa_T, theta, alpha_max, alpha0, ensemble: str, hash_size=None, alpha=0.001, t_init=1, inner_tau=0.5, tol=1e-6, outer_max_iter=1000, inner_max_iter=1000, iter_print_gap=20, verbose=False):
+    def __init__(self, obj, subspace_dim, gamma1, const_c, const_p, kappa_T, theta, alpha_max, alpha0, ensemble: str, hash_size=None, inner_beta=0.001, t_init=1, inner_tau=0.5, tol=1e-4, outer_max_iter=1000, inner_max_iter=1000, iter_print_gap=20, verbose=False):
         pass
         self.obj = obj
         self.subspace_dim = subspace_dim
@@ -47,7 +47,7 @@ class Cartis2022Algorithm3:
         if self.ensemble == 'hash':
             self.hash_size = hash_size
         self.func = self.obj.func # callable objective func
-        self.alpha = alpha
+        self.inner_beta = inner_beta
         self.t_init = t_init
         self.inner_tau = inner_tau
         self.tol = tol
@@ -67,11 +67,11 @@ class Cartis2022Algorithm3:
     # We employ backtracking Armijo linesearch
     def inner_step_func(self, obj, s_hat, search_dir, deriv_info, kwargs): # "kwargs" reflects **kwargs from the LinesearchGeneral method
         tau = kwargs['tau']
-        alpha = kwargs['alpha']
+        beta = kwargs['beta']
         
         t = 1
         trial_step = t * search_dir
-        while obj.func(s_hat) - obj.func(s_hat + trial_step) < alpha * np.dot(deriv_info[0], trial_step):
+        while obj.func(s_hat) - obj.func(s_hat + trial_step) < beta * np.dot(deriv_info[0], trial_step):
             t *= tau
         
         return t
@@ -90,7 +90,7 @@ class Cartis2022Algorithm3:
             return np.random.normal(scale=np.sqrt(1 / self.subspace_dim), size=(self.obj.input_dim, self.subspace_dim))
 
     # This method will implement the (approximate) minimisation of the local model needed at each iterate
-    def min_local_model(self, g_vec: np.ndarray, hess: np.ndarray, S: np.ndarray, alpha: float):
+    def min_local_model(self, g_vec: np.ndarray, hess: np.ndarray, S: np.ndarray, beta: float):
         # g_vec and hess are the relevant "parameters" of the regularised quadratic local model, see ref. paper, Algorithm 3
 
         # Regularised local quadratic model
@@ -101,7 +101,7 @@ class Cartis2022Algorithm3:
         def deriv_info_func(s_hat):
             return [g_vec + (hess @ s_hat), hess]
 
-        inner_optimiser = LinesearchGeneral(obj=obj, deriv_info_func=deriv_info_func, direction_func=self.inner_dir_func, step_func=self.inner_step_func, stop_crit_func=self.inner_stop_crit_func, max_iter=self.inner_max_iter, iter_print_period=1, verbose=False, S=S, tau=self.inner_tau, alpha=alpha)
+        inner_optimiser = LinesearchGeneral(obj=obj, deriv_info_func=deriv_info_func, direction_func=self.inner_dir_func, step_func=self.inner_step_func, stop_crit_func=self.inner_stop_crit_func, max_iter=self.inner_max_iter, iter_print_period=1, verbose=False, S=S, tau=self.inner_tau, beta=beta)
 
         inner_solver_output = inner_optimiser.optimise(np.zeros(self.subspace_dim))
         return inner_solver_output
@@ -111,10 +111,31 @@ class Cartis2022Algorithm3:
 
     # CODE BELOW LARGELY PLACEHOLDER FOR NOW
     def optimise(self, x0):
+        k = 0
+        x = x0
+        alpha = self.alpha_max
+        f_x = self.func(x)
+        f_vals = [f_x]
+        
+        # NOTICE HOW WE'RE ALLOWING OURSELVES TO COMPUTE THE FULL GRADIENT VECTOR HERE!
+        # LATER ON WILL WANT TO REMOVE THESE, BUT FOR NOW IT'S EASIER TO GET THINGS WORKING THUSLY.
+        grad_f_x = self.grad_func(x)
 
-
-        for k in range(self.max_iter):
-            # stuff, stuff
+        for k in range(self.outer_max_iter):
+            if np.linalg.norm(grad_f_x) < self.tol:
+                if self.verbose:
+                    x_str = ", ".join([f"{xi:8.4f}" for xi in x])
+                    print('------------------------------------------------------------------------------------------')
+                    print('TERMINATED')
+                    print('------------------------------------------------------------------------------------------')
+                    print(f"Iteration {k:4}: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}")
+                break
+            
+            S = self.draw_sketch()
+            
+            # FOR NOW NOT WORRYING MUCH ABOUT B_k, set to zeros (still valid)
+            B = np.zeros(shape=(self.obj.input_dim, self.obj.input_dim))
+            
             reg_hessian = S @ (B + (1 / alpha) * np.identity(self.obj.input_dim)) @ np.transpose(S)
             red_grad = S @ grad_f_x
 

@@ -1,6 +1,5 @@
 import autograd.numpy as np
 from autograd import grad, hessian
-from scipy.optimize import rosen
 from ..utils import SolverOutput
 
 class LinesearchBacktrackingArmijo:
@@ -14,7 +13,7 @@ class LinesearchBacktrackingArmijo:
         :param tau: The backtracking step size reduction factor.
         :param tol: The tolerance for the stopping condition.
         :param max_iter: The maximum number of iterations.
-        :param iter_print_gap: Period for printing an iteration's info.
+        :param iter_print_gap: "Period" (in iterations) for printing an iteration's info.
         """
         self.method = method
         self.obj = obj
@@ -62,11 +61,12 @@ class LinesearchBacktrackingArmijo:
             norm_grad_f_x = np.linalg.norm(grad_f_x)
             
             if norm_grad_f_x < self.tol:
-                x_str = ", ".join([f"{xi:8.4f}" for xi in x])
-                print('------------------------------------------------------------------------------------------')
-                print('TERMINATED')
-                print('------------------------------------------------------------------------------------------')
-                print(f"Iteration {k:4}: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {norm_grad_f_x:10.6e}")
+                if self.verbose:
+                    x_str = ", ".join([f"{xi:8.4f}" for xi in x])
+                    print('------------------------------------------------------------------------------------------')
+                    print('TERMINATED')
+                    print('------------------------------------------------------------------------------------------')
+                    print(f"Iteration {k:4}: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {norm_grad_f_x:10.6e}")
                 break
             
             if self.method == 'SD':

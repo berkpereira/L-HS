@@ -106,9 +106,10 @@ class Cartis2022Algorithm3:
         # RECOVER FULL-DIMENSIONAL METHOD
         if self.subspace_dim == self.obj.input_dim:
             return np.identity(self.obj.input_dim)
-        
-        if self.ensemble == 'scaled_gaussian':
-            return np.random.normal(scale=np.sqrt(1 / self.subspace_dim), size=(self.obj.input_dim, self.subspace_dim))
+        elif self.ensemble == 'scaled_gaussian':
+            return np.random.normal(scale=np.sqrt(1 / self.subspace_dim), size=(self.subspace_dim, self.obj.input_dim))
+        else:
+            raise Exception('Unrecognised sketching matrix scheme!')
 
     # This method will implement the (approximate) minimisation of the local model needed at each iterate
     def min_local_model(self, local_obj, g_vec: np.ndarray, hess: np.ndarray, S: np.ndarray, beta: float):

@@ -6,11 +6,18 @@ In my own bibliography, this paper's shorthand designation is "cartis2022", henc
 Throughout, the ROWS of S_k are used as the basis for the subspace used at iterate k. Lots of "transposes" are in order in translating between this and the CommonDirections algorithm coded elsewhere in this repository (itself based on https://doi.org/10.1007/s12532-022-00219-z (Lee, Wang, and Lin, 2022)).
 
 At the moment, we make the reference paper's Algorithm 3 concrete by employing a backtracking Newton's method. This is because the local model at each iterate is a convex quadratic with essentially an already known/computed Hessian.
+
+BEWARE
+BEWARE
+BEWARE
+BEWARE
+BEWARE
+BEWARE
+AS IT STANDS, SOME ELEMENTS OF THIS ALGORITHM ARE BOGUS: FOR INSTANCE, WE ARE ALLOWING FOR THE USE OF THE ACTUAL FULL HESSIAN. THIS IS JUST FOR INITIAL TESTS, TRYING TO RECOVER SOMETHING LIKE A CLASSICAL BACKTRACKING NEWTON'S METHOD.
 """
 
-from functools import partial
 import autograd.numpy as np
-from autograd import grad
+from autograd import grad, hessian
 from ..utils import SolverOutput
 from ..classical.linesearch_general import LinesearchGeneral
 from problems.test_problems import Objective
@@ -18,10 +25,14 @@ from problems.test_problems import Objective
 np.random.seed(42)
 
 class Cartis2022Algorithm3:
-    def __init__(self, obj, subspace_dim, gamma1, const_c, const_p, kappa_T, theta, alpha_max, alpha0, ensemble: str, hash_size=None, inner_beta=0.001, t_init=1, inner_tau=0.5, tol=1e-4, outer_max_iter=1000, inner_max_iter=1000, iter_print_gap=20, verbose=False):
+    def __init__(self, obj, subspace_dim, gamma1, const_c, const_p, kappa_T, theta, alpha_max, ensemble: str, hash_size=None, inner_beta=0.001, inner_t_init=1, inner_tau=0.5, tol=1e-4, outer_max_iter=1000, inner_max_iter=1000, iter_print_gap=20, verbose=False):
         pass
         self.obj = obj
         self.subspace_dim = subspace_dim
+        self.gamma1 = gamma1
+        if not (0 < self.gamma1 < 1):
+            raise ValueError('gamma1 must be in (0,1).')
+        self.gamma2 = 1 / (self.gamma1 ** const_c)
         self.const_c = const_c
         if not (isinstance(self.const_c, int) and self.const_c > 0):
             raise ValueError('const_c must be positive integer!')
@@ -31,24 +42,22 @@ class Cartis2022Algorithm3:
         if not (kappa_T > 0):
             raise ValueError('kappa_T must be positive!')
         self.kappa_T = kappa_T
-        self.gamma1 = gamma1
-        if not (0 < self.gamma1 < 1):
-            raise ValueError('gamma1 must be in (0,1).')
-        self.gamma2 = 1 / (self.gamma1 ** const_c)
         self.theta = theta
         if not (0 < self.theta < 1):
             raise ValueError('theta must be in (0,1).')
         self.alpha_max = alpha_max
         if not self.alpha_max > 0:
             raise ValueError('alpha_max must be positive!')
-        self.alpha0 = alpha0
+        
+        self.alpha0 = self.alpha_max * (self.gamma1 ** self.const_p)
+        
         self.ensemble = ensemble
         # hashing ensembles not fully developed here yet
         if self.ensemble == 'hash':
             self.hash_size = hash_size
         self.func = self.obj.func # callable objective func
         self.inner_beta = inner_beta
-        self.t_init = t_init
+        self.inner_t_init = inner_t_init
         self.inner_tau = inner_tau
         self.tol = tol
         self.outer_max_iter = outer_max_iter
@@ -57,10 +66,15 @@ class Cartis2022Algorithm3:
         self.iter_print_gap = iter_print_gap
         self.verbose = verbose
 
+
+
+        # ALLOW HESSIAN FOR TESTS ONLY
+        self.hess_func = hessian(self.func)
+
     # Below we specify methods necessary to perform the inner iterations' subproblem
 
     # Using Newton direction, as the Newton system is of low dimension and PD
-    def inner_dir_func(self, obj, x, deriv_info: list):
+    def inner_dir_func(self, obj, x, deriv_info: list, kwargs):
         gradient, hess = deriv_info[0], deriv_info[1]
         return - np.linalg.solve(hess, gradient)
     
@@ -69,7 +83,7 @@ class Cartis2022Algorithm3:
         tau = kwargs['tau']
         beta = kwargs['beta']
         
-        t = 1
+        t = self.inner_t_init
         trial_step = t * search_dir
         while obj.func(s_hat) - obj.func(s_hat + trial_step) < beta * np.dot(deriv_info[0], trial_step):
             t *= tau
@@ -80,12 +94,19 @@ class Cartis2022Algorithm3:
         
         S = kwargs['S']
 
-        if (np.linalg.norm(deriv_info[0]) <= self.kappa_T * (np.linalg.norm(np.transpose(S) @ s_hat) ** 2) and obj.func(s_hat) <= obj.func(np.zeros(obj.input_dim))):
+        # BELOW IS ORIGINAL, SUPPOSED ONE
+        if (np.linalg.norm(deriv_info[0]) <= self.kappa_T * (np.linalg.norm(np.transpose(S) @ s_hat) ** 2) and obj.func(s_hat) <= obj.func(np.zeros(obj.input_dim))) or k >= self.inner_max_iter:
             return True
         else:
             return False
 
+
+    # MAY USE A FULL-DIMENSIONAL IDENTITY TO START TRYING OUT THE ALGORITHM
     def draw_sketch(self) -> np.ndarray:
+        # RECOVER FULL-DIMENSIONAL METHOD
+        if self.subspace_dim == self.obj.input_dim:
+            return np.identity(self.obj.input_dim)
+        
         if self.ensemble == 'scaled_gaussian':
             return np.random.normal(scale=np.sqrt(1 / self.subspace_dim), size=(self.obj.input_dim, self.subspace_dim))
 
@@ -97,7 +118,7 @@ class Cartis2022Algorithm3:
         def deriv_info_func(s_hat):
             return [g_vec + (hess @ s_hat), hess]
 
-        inner_optimiser = LinesearchGeneral(obj=local_obj, deriv_info_func=deriv_info_func, direction_func=self.inner_dir_func, step_func=self.inner_step_func, stop_crit_func=self.inner_stop_crit_func, max_iter=self.inner_max_iter, iter_print_period=1, verbose=False, S=S, tau=self.inner_tau, beta=beta)
+        inner_optimiser = LinesearchGeneral(obj=local_obj, deriv_info_func=deriv_info_func, direction_func=self.inner_dir_func, step_func=self.inner_step_func, stop_crit_func=self.inner_stop_crit_func, max_iter=self.inner_max_iter, verbose=False, S=S, tau=self.inner_tau, beta=beta)
 
         inner_solver_output = inner_optimiser.optimise(np.zeros(self.subspace_dim))
         return inner_solver_output
@@ -137,6 +158,7 @@ class Cartis2022Algorithm3:
             B = np.zeros(shape=(self.obj.input_dim, self.obj.input_dim))
 
             red_reg_hessian = S @ (B + (1 / alpha) * np.identity(self.obj.input_dim)) @ np.transpose(S)
+
             red_grad = S @ grad_f_x
             
             # Regularised local quadratic model
@@ -153,7 +175,8 @@ class Cartis2022Algorithm3:
             if self.check_suff_decrease(x=x, trial_step_hat=trial_s_hat, trial_step=trial_s, local_model_func=local_model_func): # successful iteration
                 if self.verbose and k % self.iter_print_gap == 0:
                     x_str = ", ".join([f"{xi:8.4f}" for xi in x])
-                    print(f"Iteration {k:4} SUCCESSFUL: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}")
+                    # print(f"Iteration {k:4} SUCCESSFUL: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}, alpha = {alpha:5.3e}")
+                    print(f"Iteration {k:4}   SUCCESSFUL: f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}, alpha = {alpha:5.3e}")
                 x = x + trial_s
                 
                 f_x = self.func(x)
@@ -164,7 +187,8 @@ class Cartis2022Algorithm3:
             else: # unsuccessful iteration
                 if self.verbose and k % self.iter_print_gap == 0:
                     x_str = ", ".join([f"{xi:8.4f}" for xi in x])
-                    print(f"Iteration {k:4} UNSUCCESSFUL: x = [{x_str}], f(x) = {f_x:10.6e}")
+                    # print(f"Iteration {k:4} UNSUCCESSFUL: x = [{x_str}], f(x) = {f_x:10.6e}, alpha = {alpha:5.3e}")
+                    print(f"Iteration {k:4} UNSUCCESSFUL: f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}, alpha = {alpha:5.3e}")
                 # x goes without update
                 alpha *= self.gamma1
         

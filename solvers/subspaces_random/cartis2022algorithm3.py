@@ -5,7 +5,7 @@ In my own bibliography, this paper's shorthand designation is "cartis2022", henc
 
 Throughout, the ROWS of S_k are used as the basis for the subspace used at iterate k. Lots of "transposes" are in order in translating between this and the CommonDirections algorithm coded elsewhere in this repository (itself based on https://doi.org/10.1007/s12532-022-00219-z (Lee, Wang, and Lin, 2022)).
 
-At the moment, we make the reference paper's Algorithm 3 concrete by employing a backtracking Newton's method. This is because, with extremely high probability, the local model at each iterate is a convex quadratic with essentially an already known/computed Hessian.
+At the moment, we make the reference paper's Algorithm 3 concrete by employing a backtracking Newton's method. This is because the local model at each iterate is a convex quadratic with essentially an already known/computed Hessian.
 """
 
 from functools import partial
@@ -90,26 +90,26 @@ class Cartis2022Algorithm3:
             return np.random.normal(scale=np.sqrt(1 / self.subspace_dim), size=(self.obj.input_dim, self.subspace_dim))
 
     # This method will implement the (approximate) minimisation of the local model needed at each iterate
-    def min_local_model(self, g_vec: np.ndarray, hess: np.ndarray, S: np.ndarray, beta: float):
+    def min_local_model(self, local_obj, g_vec: np.ndarray, hess: np.ndarray, S: np.ndarray, beta: float):
         # g_vec and hess are the relevant "parameters" of the regularised quadratic local model, see ref. paper, Algorithm 3
-
-        # Regularised local quadratic model
-        obj_func = lambda s_hat: np.dot(g_vec, s_hat) + 0.5 * np.dot(s_hat, hess @ s_hat)
-        obj = Objective(input_dim=self.subspace_dim, func=obj_func)
-        
+                
         # Below returns 1st- and 2nd-order derivative information of the regularised local quadratic model
         def deriv_info_func(s_hat):
             return [g_vec + (hess @ s_hat), hess]
 
-        inner_optimiser = LinesearchGeneral(obj=obj, deriv_info_func=deriv_info_func, direction_func=self.inner_dir_func, step_func=self.inner_step_func, stop_crit_func=self.inner_stop_crit_func, max_iter=self.inner_max_iter, iter_print_period=1, verbose=False, S=S, tau=self.inner_tau, beta=beta)
+        inner_optimiser = LinesearchGeneral(obj=local_obj, deriv_info_func=deriv_info_func, direction_func=self.inner_dir_func, step_func=self.inner_step_func, stop_crit_func=self.inner_stop_crit_func, max_iter=self.inner_max_iter, iter_print_period=1, verbose=False, S=S, tau=self.inner_tau, beta=beta)
 
         inner_solver_output = inner_optimiser.optimise(np.zeros(self.subspace_dim))
         return inner_solver_output
-
+    
+    # The below method checks for sufficient decrease in the full-space objective following a lower-dimensional inner subproblem solution
+    def check_suff_decrease(self, x, trial_step_hat, trial_step, local_model_func: callable):
+        if self.obj.func(x) - self.obj.func(x + trial_step) >= self.theta * (local_model_func(np.zeros(self.subspace_dim)) - local_model_func(trial_step_hat)):
+            return True
+        else:
+            return False
 
     # This method will run the actual algorithm (outer iterations, if you will, while calling min_local_model to run the inner iterations) and return an approximate local minimiser of the function of interest
-
-    # CODE BELOW LARGELY PLACEHOLDER FOR NOW
     def optimise(self, x0):
         k = 0
         x = x0
@@ -135,8 +135,38 @@ class Cartis2022Algorithm3:
             
             # FOR NOW NOT WORRYING MUCH ABOUT B_k, set to zeros (still valid)
             B = np.zeros(shape=(self.obj.input_dim, self.obj.input_dim))
-            
-            reg_hessian = S @ (B + (1 / alpha) * np.identity(self.obj.input_dim)) @ np.transpose(S)
-            red_grad = S @ grad_f_x
 
-            # then use reg hessian and red grad to return the appropriate minimiser of the regularised model, then check for sufficient decrease, if not reduce alpha and try again, etc.
+            red_reg_hessian = S @ (B + (1 / alpha) * np.identity(self.obj.input_dim)) @ np.transpose(S)
+            red_grad = S @ grad_f_x
+            
+            # Regularised local quadratic model
+            local_model_func = lambda s_hat: np.dot(red_grad, s_hat) + 0.5 * np.dot(s_hat, red_reg_hessian @ s_hat)
+            local_model_obj = Objective(input_dim=self.subspace_dim, func=local_model_func)
+            
+            # Solve (approx.) inner regularised subproblem
+            inner_solver_output = self.min_local_model(local_obj=local_model_obj, g_vec=red_grad, hess=red_reg_hessian, S=S, beta=self.inner_beta)
+
+            # Store trial step
+            trial_s_hat = inner_solver_output.final_x
+            trial_s = np.transpose(S) @ trial_s_hat
+
+            if self.check_suff_decrease(x=x, trial_step_hat=trial_s_hat, trial_step=trial_s, local_model_func=local_model_func): # successful iteration
+                if self.verbose and k % self.iter_print_gap == 0:
+                    x_str = ", ".join([f"{xi:8.4f}" for xi in x])
+                    print(f"Iteration {k:4} SUCCESSFUL: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}")
+                x = x + trial_s
+                
+                f_x = self.func(x)
+                f_vals.append(f_x)
+                grad_f_x = self.grad_func(x)
+
+                alpha = np.min((self.alpha_max, self.gamma2 * alpha))
+            else: # unsuccessful iteration
+                if self.verbose and k % self.iter_print_gap == 0:
+                    x_str = ", ".join([f"{xi:8.4f}" for xi in x])
+                    print(f"Iteration {k:4} UNSUCCESSFUL: x = [{x_str}], f(x) = {f_x:10.6e}")
+                # x goes without update
+                alpha *= self.gamma1
+        
+        return SolverOutput(x, k, f_vals)
+            

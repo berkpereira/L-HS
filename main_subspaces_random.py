@@ -16,12 +16,12 @@ test_problems_list = ['rosenbrock',                      # 0
 
 
 PROBLEM_NAME = test_problems_list[2]
-INPUT_DIM = 1000 # NOTE: depending on the problem, this may have no effect
+INPUT_DIM = 100 # NOTE: depending on the problem, this may have no effect
 
-SUBSPACE_DIM = 30
+SUBSPACE_DIM = 10
 
-TOL = 1e-6
-OUTER_MAX_ITER = 100
+TOL = 0 # for algorithm run up to outer max iters
+OUTER_MAX_ITER = 3000
 INNER_MAX_ITER = 10
 
 ITER_PRINT_GAP = 1
@@ -44,7 +44,7 @@ def main():
     output_list = [optimiser.optimise(x0)]
 
     # Plot
-    plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list)
+    # plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list)
 
 # Profile the main function
 if __name__ == '__main__':
@@ -53,9 +53,14 @@ if __name__ == '__main__':
     main()
     pr.disable()
 
+    if not input('CHANGE THE FILE NAME, YOU NUGGET (ok): ') == 'ok':
+        raise Exception('Nugget')
+    
+    results_file_name = 'profiler_results_full_grad.txt'
+
     # Write profiling results to a text file
-    with open('profiler_results.txt', 'w') as f:
+    with open(results_file_name, 'w') as f:
         ps = pstats.Stats(pr, stream=f).sort_stats(pstats.SortKey.CUMULATIVE)
         ps.print_stats()
 
-    print("Profiling results have been written to 'profiler_results.txt'")
+    print(f'Profiling results have been written to {results_file_name}')

@@ -7,14 +7,6 @@ Throughout, the ROWS of S_k are used as the basis for the subspace used at itera
 
 At the moment, we make the reference paper's Algorithm 3 concrete by employing a backtracking Newton's method. This is because the local model at each iterate is a convex quadratic with essentially an already known/computed Hessian.
 
-BEWARE
-BEWARE
-BEWARE
-BEWARE
-BEWARE
-BEWARE
-AS IT STANDS, SOME ELEMENTS OF THIS ALGORITHM MAY BE BOGUS FOR INITIAL TESTS.
-
 NEXT TO DO
 NEXT TO DO
 NEXT TO DO
@@ -26,7 +18,7 @@ PROFILER RESULTS SHOW THAT GRADIENTS TAKE UP BIG CHUNK OF TIME, AND ALSO THE NAT
 """
 
 import autograd.numpy as np
-from autograd import grad, hessian
+from autograd import grad, hessian, make_jvp
 from ..utils import SolverOutput
 from ..classical.linesearch_general import LinesearchGeneral
 from problems.test_problems import Objective
@@ -71,14 +63,13 @@ class Cartis2022Algorithm3:
         self.tol = tol
         self.outer_max_iter = outer_max_iter
         self.inner_max_iter = inner_max_iter
+
+
         self.grad_func = grad(self.func)
+
+        
         self.iter_print_gap = iter_print_gap
         self.verbose = verbose
-
-
-
-        # ALLOW HESSIAN FOR TESTS ONLY
-        self.hess_func = hessian(self.func)
 
     # Below we specify methods necessary to perform the inner iterations' subproblem
 

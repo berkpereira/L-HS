@@ -118,9 +118,9 @@ class CommonDirections:
                 P[:,-3 * G.shape[1]:] = np.hstack((G, X, D))
         
         # Orthogonalise the basis matrix
+        print(f'Cond. number of basis matrix pre-QR: {np.linalg.cond(P):8.6e}')
         P, _ = np.linalg.qr(P)
         return P
-
 
     def optimise(self, x0):
         """
@@ -213,4 +213,4 @@ class CommonDirections:
             H = self.regularise_hessian(H)
 
         
-        return SolverOutput(x, k, f_vals)
+        return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals)

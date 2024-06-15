@@ -1,11 +1,15 @@
 """
 This script is largely based on the work from https://doi.org/10.1007/s12532-022-00219-z (Lee, Wang, and Lin, 2022).
 
+However, we extend that paper's algorithm with further variants including randomisation ideas.
+
 The idea of the method proposed there is to tackle unconstrained Lipschitz-differentiable optimisation by reducing
 problem to subspaces of some fixed dimension at each iterate, using previously used computation.
 In an extreme example where the subspace dimension is 1, we could take linesearch methods to fall into this.
 However, the idea here is to use higher subspace dimensions to speed up convergence.
 """
+
+from dataclasses import dataclass
 
 import autograd.numpy as np
 from autograd import grad, hessian
@@ -13,8 +17,22 @@ from ..utils import SolverOutput
 
 np.random.seed(42)
 
+@dataclass
+class CommonDirectionsConfig:
+    obj: any
+    subspace_update_method: str
+    subspace_dim: int
+    reg_lambda: float
+    alpha: float = 0.001
+    t_init: float = 1
+    tau: float = 0.5
+    tol: float = 1e-6
+    max_iter: int = 1_000
+    iter_print_gap:int = 20
+    verbose: bool = False
+
 class CommonDirections:
-    def __init__(self, obj, subspace_update_method: str, subspace_dim, reg_lambda, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, iter_print_gap=20, verbose=False):
+    def __init__(self, config: CommonDirectionsConfig):
         """
         Initialise the optimiser with the objective function and relevant parameters.
         
@@ -28,9 +46,8 @@ class CommonDirections:
         :param max_iter: The maximum number of iterations.
         :param iter_print_gap: Period for printing an iteration's info.
         """
-        self.obj = obj
-        self.subspace_update_method = subspace_update_method
-        self.subspace_dim = subspace_dim
+        for key, value in config.__dict__.items():
+            setattr(self, key, value)
         
         if self.subspace_update_method == 'iterates_grads':
             if self.subspace_dim % 2 != 0:
@@ -39,17 +56,9 @@ class CommonDirections:
             if self.subspace_dim % 3 != 0:
                 raise Exception('With iterates_grads_diagnewtons method, subspace dimension must be multiple of 3.')
         
-        self.reg_lambda = reg_lambda
         self.func = self.obj.func # callable objective func
-        self.alpha = alpha
-        self.t_init = t_init
-        self.tau = tau
-        self.tol = tol
-        self.max_iter = max_iter
         self.grad_func = grad(self.func)
         self.hess_func = hessian(self.func) # for now have it as a full Hessian; later may use autograd.hessian_vector_product
-        self.iter_print_gap = iter_print_gap
-        self.verbose = verbose
 
     # Return regularised Hessian (or any matrix for that matter)
     # Outputs a matrix whose eigenvalue is lower-bounded by self.reg_lambda (sharp bound)

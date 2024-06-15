@@ -36,10 +36,7 @@ def powell(input_dim): # NOTE: input_dim must be multiple of 4
 def well_conditioned_convex_quadratic(input_dim):
     x0 = np.ones(input_dim, dtype='float32')
     def func(x):
-        out = 0
-        for i in range(input_dim):
-            out += (i + 1) * x[i] ** 2
-        return 0.5 * out
+        return 0.5 * sum(x ** 2)
     x_sol = np.zeros(input_dim)
     f_sol = 0
     return x0, Objective(input_dim, func, x_sol, f_sol)

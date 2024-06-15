@@ -67,9 +67,7 @@ class CommonDirections:
         if lambda_min < self.reg_lambda: # Regularise
             # print('USING HESSIAN REGULARISATION!')
             H = H + (self.reg_lambda - lambda_min) * np.identity(self.subspace_dim)
-        
-        # TO MAKE THIS A STEEPEST DESCENT METHOD
-        # H = np.identity(self.subspace_dim)
+            
         return H
 
     def backtrack_armijo(self, x, direction, f_x, grad_f_x):

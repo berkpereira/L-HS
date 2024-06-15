@@ -56,5 +56,5 @@ class LinesearchGeneral:
         
         f_vals = np.array(f_vals) # convert into np array
         
-        return SolverOutput(x, k, f_vals)
+        return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals)
 

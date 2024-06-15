@@ -17,59 +17,67 @@ FORGO FULL GRADIENTS, IMPLEMENT AS DIRECTIONAL DERIVATIVES.
 BUT::::PROFILER RESULTS SHOW THAT GRADIENTS TAKE UP BIG CHUNK OF TIME, AND ALSO THE NATURE OF OUR METHODS ARE TO AVOID EVER COMPUTING FULL GRADIENT!
 """
 
+from dataclasses import dataclass
+
 import autograd.numpy as np
 from autograd import grad, hessian, make_jvp
 from ..utils import SolverOutput
-from ..classical.linesearch_general import LinesearchGeneral
+from ..full_space.linesearch_general import LinesearchGeneral
 from problems.test_problems import Objective
 
 np.random.seed(42)
 
+@dataclass
+class Cartis2022Algorithm3Config:
+    obj: any
+    subspace_dim: int
+    gamma1: float
+    const_c: int
+    const_p: int
+    kappa_T: float
+    theta: float
+    alpha_max: float
+    ensemble: str
+    hash_size: int = 0
+    inner_beta: float = 0.001
+    inner_t_init: float = 1
+    inner_tau: float = 0.5
+    tol: float = 1e-4
+    outer_max_iter: int = 1_000
+    inner_max_iter: int = 1_000
+    iter_print_gap: int = 20
+    verbose: bool = False
+
 class Cartis2022Algorithm3:
-    def __init__(self, obj, subspace_dim, gamma1, const_c, const_p, kappa_T, theta, alpha_max, ensemble: str, hash_size=None, inner_beta=0.001, inner_t_init=1, inner_tau=0.5, tol=1e-4, outer_max_iter=1000, inner_max_iter=1000, iter_print_gap=20, verbose=False):
-        pass
-        self.obj = obj
-        self.subspace_dim = subspace_dim
-        self.gamma1 = gamma1
+    def __init__(self, config):
+        for key, value in config.__dict__.items():
+            setattr(self, key, value)
+
         if not (0 < self.gamma1 < 1):
             raise ValueError('gamma1 must be in (0,1).')
-        self.gamma2 = 1 / (self.gamma1 ** const_c)
-        self.const_c = const_c
+        self.gamma2 = 1 / (self.gamma1 ** self.const_c)
+
         if not (isinstance(self.const_c, int) and self.const_c > 0):
             raise ValueError('const_c must be positive integer!')
-        self.const_p = const_p
+
         if not (isinstance(self.const_p, int) and self.const_p > 0):
             raise ValueError('const_p must be positive integer!')
-        if not (kappa_T > 0):
+        if not (self.kappa_T > 0):
             raise ValueError('kappa_T must be positive!')
-        self.kappa_T = kappa_T
-        self.theta = theta
+        self.kappa_T = self.kappa_T
+        
         if not (0 < self.theta < 1):
             raise ValueError('theta must be in (0,1).')
-        self.alpha_max = alpha_max
+        
         if not self.alpha_max > 0:
             raise ValueError('alpha_max must be positive!')
         
         self.alpha0 = self.alpha_max * (self.gamma1 ** self.const_p)
         
-        self.ensemble = ensemble
-        # hashing ensembles not fully developed here yet
-        if self.ensemble == 'hash':
-            self.hash_size = hash_size
         self.func = self.obj.func # callable objective func
-        self.inner_beta = inner_beta
-        self.inner_t_init = inner_t_init
-        self.inner_tau = inner_tau
-        self.tol = tol
-        self.outer_max_iter = outer_max_iter
-        self.inner_max_iter = inner_max_iter
-
 
         self.grad_func = grad(self.func)
-
         
-        self.iter_print_gap = iter_print_gap
-        self.verbose = verbose
 
     # Below we specify methods necessary to perform the inner iterations' subproblem
 
@@ -111,7 +119,8 @@ class Cartis2022Algorithm3:
         else:
             raise Exception('Unrecognised sketching matrix scheme!')
 
-    # This method will implement the (approximate) minimisation of the local model needed at each iterate
+    # This method will implement the (approximate) minimisation of the local model needed at each iterate.
+    # Notice that the local regularised model is a (convex) quadratic.
     def min_local_model(self, local_obj, g_vec: np.ndarray, hess: np.ndarray, S: np.ndarray, beta: float):
         # g_vec and hess are the relevant "parameters" of the regularised quadratic local model, see ref. paper, Algorithm 3
                 
@@ -192,6 +201,8 @@ class Cartis2022Algorithm3:
                     print(f"Iteration {k:4} UNSUCCESSFUL: f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}, alpha = {alpha:5.3e}")
                 # x goes without update
                 alpha *= self.gamma1
+
+                f_vals.append(f_x)
         
         return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals)
             

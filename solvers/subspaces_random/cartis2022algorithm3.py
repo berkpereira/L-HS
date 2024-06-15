@@ -14,7 +14,7 @@ NEXT TO DO
 NEXT TO DO
 NEXT TO DO
 FORGO FULL GRADIENTS, IMPLEMENT AS DIRECTIONAL DERIVATIVES.
-PROFILER RESULTS SHOW THAT GRADIENTS TAKE UP BIG CHUNK OF TIME, AND ALSO THE NATURE OF OUR METHODS ARE TO AVOID EVER COMPUTING FULL GRADIENT!
+BUT::::PROFILER RESULTS SHOW THAT GRADIENTS TAKE UP BIG CHUNK OF TIME, AND ALSO THE NATURE OF OUR METHODS ARE TO AVOID EVER COMPUTING FULL GRADIENT!
 """
 
 import autograd.numpy as np
@@ -193,5 +193,5 @@ class Cartis2022Algorithm3:
                 # x goes without update
                 alpha *= self.gamma1
         
-        return SolverOutput(x, k, f_vals)
+        return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals)
             

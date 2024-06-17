@@ -19,12 +19,12 @@ np.random.seed(42)
 @dataclass
 class ProjectedCommonDirectionsConfig:
     obj: any                    # Objective class instance.
-    use_hess: bool = True       # Determines whether method uses Hessian information. If not, it uses in general a user-specified matrix B_k (think quasi-Newton methods). Default of True reflects Lee et al.'s reference paper's method.
     subspace_update_method: str # Determines method for updating subspace.
-    random_proj: bool = False   # Determines whether to use RANDOM matrices in projecting gradients.
-    ensemble: str = ''          # Determines the random ensemble from which to draw random matrices for gradient projections.
     subspace_dim: int           # Dimension of subproblem subspace.
     reg_lambda: float           # Minimum allowable (POSITIVE) eigenvalue of projected Hessian.
+    use_hess: bool = True       # Determines whether method uses Hessian information. If not, it uses in general a user-specified matrix B_k (think quasi-Newton methods). Default of True reflects Lee et al.'s reference paper's method.
+    random_proj: bool = False   # Determines whether to use RANDOM matrices in projecting gradients.
+    ensemble: str = ''          # Determines the random ensemble from which to draw random matrices for gradient projections.
     alpha: float = 0.001        # The Armijo condition scaling parameter.
     t_init: float = 1
     tau: float = 0.5            # The backtracking step size reduction factor.
@@ -88,11 +88,11 @@ class ProjectedCommonDirections:
             W = self.draw_sketch()
         else:
             W = kwargs['Q_prev']
-        proj_grad = W @ np.dot(np.transpose(W), full_grad)
+        proj_grad = W @ np.transpose(W) @ full_grad
         return proj_grad
 
     # Which basis of subspace to use in the method
-    def update_subspace(self, method: str, **kwargs):
+    def update_subspace(self, **kwargs):
         # method: str. Options:
         # method == 'grads', retain m past gradient vectors 
         # method == 'iterates_grads', (34) from Lee et al., 2022
@@ -130,7 +130,7 @@ class ProjectedCommonDirections:
                 P[:,-3 * G.shape[1]:] = np.hstack((G, X, D))
         
         # Orthogonalise the basis matrix
-        print(f'Cond. number of basis matrix pre-QR: {np.linalg.cond(P):8.6e}')
+        #print(f'Cond. number of basis matrix pre-QR: {np.linalg.cond(P):8.6e}')
         Q, _ = np.linalg.qr(P)
         return Q
 
@@ -149,6 +149,8 @@ class ProjectedCommonDirections:
 
         # The first projected gradient takes a projection from an entirely random matrix
         proj_grad = self.project_gradient(full_grad, random_proj=True)
+
+
 
         # IN FUTURE will want to implement Hessian actions product using Hessian actions (B-vector products), see autograd.hessian_vector_products
         if self.use_hess:
@@ -175,7 +177,7 @@ class ProjectedCommonDirections:
         else:
             D = None
         
-        Q = self.update_subspace(self.subspace_update_method, grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+        Q = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
 
         # Project B matrix
         # Later may want to do this using Hessian actions in the case where Hessian information is used at all.
@@ -203,12 +205,20 @@ class ProjectedCommonDirections:
                 x_str = ", ".join([f"{xi:7.4f}" for xi in x])
                 print(f"k = {k:4}, x = [{x_str}], f(x) = {f_x:6.6e}, g_norm = {norm_full_grad:6.6e}, step = {step_size:8.6f}")
 
-            # Compute new relevant quantities
+
+            if np.linalg.norm(step_size * direction) < 1e-10:
+                print('Probably stuck now!')
+            
+            if np.linalg.norm(proj_grad) / np.linalg.norm(full_grad) < 1e-8:
+                print('Projected grad is probably too small!')
+            
             x = x + step_size * direction
 
             f_x = self.func(x)
             full_grad = self.grad_func(x)
             norm_full_grad = np.linalg.norm(full_grad)
+
+            proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
 
             if self.use_hess:
                 hess_f_x = self.hess_func(x)
@@ -239,11 +249,10 @@ class ProjectedCommonDirections:
                 X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
                 D = np.hstack((D, np.linalg.solve(np.diag(np.diag(hess_f_x)), proj_grad).reshape(-1, 1))) # append newest crude diagonal Newton direction approximation
             
-            Q = self.update_subspace(self.subspace_update_method, grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+            Q = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
 
             proj_B = np.transpose(Q) @ (full_B @ Q)
-
-            proj_B = self.regularise_hessian(B)
+            proj_B = self.regularise_hessian(proj_B)
 
         
         return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals)

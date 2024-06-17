@@ -7,6 +7,9 @@ The idea of the method proposed there is to tackle unconstrained Lipschitz-diffe
 problem to subspaces of some fixed dimension at each iterate, using previously used computation.
 In an extreme example where the subspace dimension is 1, we could take linesearch methods to fall into this.
 However, the idea here is to use higher subspace dimensions to speed up convergence.
+
+DETAILED DESCRIPTION:
+
 """
 
 from dataclasses import dataclass
@@ -19,36 +22,25 @@ np.random.seed(42)
 
 @dataclass
 class CommonDirectionsConfig:
-    obj: any
-    subspace_update_method: str
-    subspace_dim: int
-    reg_lambda: float
-    alpha: float = 0.001
+    obj: any # Objective class instance.
+    subspace_update_method: str # Determines method for updating subspace.
+    subspace_dim: int # Dimension of subproblem subspace.
+    reg_lambda: float # Minimum allowable (POSITIVE) eigenvalue of projected Hessian. If Hessian at some point has eigenvalue below this, REGularisation will be applied to obtain a matrix with minimum eigenvalue equal to reg_lambda.
+    alpha: float = 0.001 # The Armijo condition scaling parameter.
     t_init: float = 1
-    tau: float = 0.5
-    tol: float = 1e-6
-    max_iter: int = 1_000
-    iter_print_gap:int = 20
+    tau: float = 0.5 # The backtracking step size reduction factor.
+    tol: float = 1e-6 # The tolerance for the stopping condition.
+    max_iter: int = 1_000 # The maximum number of iterations.
+    iter_print_gap:int = 20 # Period for printing an iteration's info.
     verbose: bool = False
 
 class CommonDirections:
     def __init__(self, config: CommonDirectionsConfig):
-        """
-        Initialise the optimiser with the objective function and relevant parameters.
-        
-        :param obj: Objective class instance.
-        :param subspace_dim: Dimension of subspace.
-        :param subspace_dim: Method for building subspace basis.
-        :param reg_lambda: Minimum allowable (POSITIVE) eigenvalue of projected Hessian. If Hessian at some point has eigenvalue below this, REGularisation will be applied to obtain a matrix with minimum eigenvalue equal to reg_lambda.
-        :param alpha: The Armijo condition parameter.
-        :param tol: The tolerance for the stopping condition.
-        :param tau: The backtracking step size reduction factor.
-        :param max_iter: The maximum number of iterations.
-        :param iter_print_gap: Period for printing an iteration's info.
-        """
+        # Set all attributes given in CommonDirectionsConfig
         for key, value in config.__dict__.items():
             setattr(self, key, value)
         
+        # Some simple checks on allowable subspace dimension
         if self.subspace_update_method == 'iterates_grads':
             if self.subspace_dim % 2 != 0:
                 raise Exception('With iterates_grads method, subspace dimension must be multiple of 2.')

@@ -208,13 +208,10 @@ class ProjectedCommonDirections:
             if self.verbose and k % self.iter_print_gap == 0:
                 x_str = ", ".join([f"{xi:7.4f}" for xi in x])
                 print(f"k = {k:4}, x = [{x_str}], f(x) = {f_x:6.6e}, g_norm = {norm_full_grad:6.6e}, step = {step_size:8.6f}")
-
-
-            if np.linalg.norm(step_size * direction) < 1e-10:
-                print('Probably stuck now!')
             
-            if np.linalg.norm(proj_grad) / np.linalg.norm(full_grad) < 1e-8:
-                print('Projected grad is probably too small!')
+            
+            if k > 10 and np.linalg.norm(direction*step_size) > 1e-2:
+                print()
             
             x = x + step_size * direction
 
@@ -223,6 +220,8 @@ class ProjectedCommonDirections:
             norm_full_grad = np.linalg.norm(full_grad)
 
             proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
+
+            G_unlimited = np.hstack((G_unlimited, proj_grad.reshape(-1,1)))
 
             if self.use_hess:
                 hess_f_x = self.hess_func(x)
@@ -252,8 +251,6 @@ class ProjectedCommonDirections:
                 G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
                 X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
                 D = np.hstack((D, np.linalg.solve(np.diag(np.diag(hess_f_x)), proj_grad).reshape(-1, 1))) # append newest crude diagonal Newton direction approximation
-            
-            G_unlimited = np.hstack((G_unlimited, proj_grad.reshape(-1,1)))
             
             Q = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
 

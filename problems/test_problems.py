@@ -21,7 +21,6 @@ def rosenbrock(input_dim):
     return x0, Objective(input_dim, rosen, x_sol, f_sol)
 
 # See https://www.sfu.ca/~ssurjano/powell.html
-# global minimum at origin, f(0) = 0
 def powell(input_dim): # NOTE: input_dim must be multiple of 4
     if input_dim % 4 != 0:
         raise Exception('input_dim must be multiple of 4.')

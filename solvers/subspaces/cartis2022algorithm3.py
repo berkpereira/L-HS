@@ -109,7 +109,7 @@ class Cartis2022Algorithm3:
             return False
 
 
-    # MAY USE A FULL-DIMENSIONAL IDENTITY TO START TRYING OUT THE ALGORITHM
+    # Draw a FAT sketching matrix from random ensemble.
     def draw_sketch(self) -> np.ndarray:
         # RECOVER FULL-DIMENSIONAL METHOD
         if self.subspace_dim == self.obj.input_dim:

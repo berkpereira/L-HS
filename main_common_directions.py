@@ -16,26 +16,31 @@ subspace_methods_list = ['grads', # 0
 
 # SELECT PROBLEM
 PROBLEM_NAME = test_problems_list[0]
-INPUT_DIM = 24 # NOTE: depending on the problem, this may have no effect
+INPUT_DIM = 30
 x0, obj = problems.test_problems.select_problem(problem_name=PROBLEM_NAME, input_dim=INPUT_DIM)
 
 # SOLVER CONFIG
-SUBSPACE_METHOD = subspace_methods_list[0]
+SUBSPACE_METHOD = subspace_methods_list[1]
 REG_LAMBDA = 0.001
-MAX_ITER = 100
+ALPHA = 0.01
+T_INIT = 1
+TAU = 0.5
+
+MAX_ITER = 3000
 TOL = 1e-10
 ITER_PRINT_GAP = 20
 
 # Run solver(s)
 output_list = []
-for SUBSPACE_DIM in range(6, 25, 6):
+for SUBSPACE_DIM in range(6, 7, 6):
     SOLVER_CONFIG = CommonDirectionsConfig(obj=obj,
                                            subspace_update_method=SUBSPACE_METHOD,
                                            subspace_dim=SUBSPACE_DIM,
                                            reg_lambda=REG_LAMBDA,
-                                           alpha=0.01,
-                                           t_init=1,
+                                           alpha=ALPHA,
+                                           t_init=T_INIT,
                                            tol=TOL,
+                                           tau=TAU,
                                            max_iter=MAX_ITER,
                                            iter_print_gap=ITER_PRINT_GAP,
                                            verbose=False)

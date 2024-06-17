@@ -1,5 +1,15 @@
 import matplotlib.pyplot as plt
-from solvers.utils import SolverOutput
+
+# Enable LaTeX rendering
+plt.rcParams.update({
+    'font.size': 11,
+    "text.usetex": True,
+    "font.family": "serif",
+    "axes.grid": True,
+    'grid.alpha': 0.5,
+    'savefig.bbox': 'tight',
+    'savefig.pad_inches': 0.1
+})
 
 def plot_loss_vs_iteration(solver_outputs, labels=None):
     """

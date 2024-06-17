@@ -148,6 +148,7 @@ class ProjectedCommonDirections:
         norm_full_grad = np.linalg.norm(full_grad)
 
         # The first projected gradient takes a projection from an entirely random matrix
+        
         proj_grad = self.project_gradient(full_grad, random_proj=True)
 
 
@@ -166,6 +167,9 @@ class ProjectedCommonDirections:
         # Initialise this here, depending on subspace method used:
         G = np.array(proj_grad, ndmin=2) # store gradient vectors
         G = G.reshape(-1, 1)
+
+        G_unlimited = G # for storage of ALL gradients for debugging
+
         if self.subspace_update_method != 'grads':
             X = np.array(x, ndmin=2) # store iterates
             X = X.reshape(-1, 1)
@@ -248,6 +252,8 @@ class ProjectedCommonDirections:
                 G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
                 X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
                 D = np.hstack((D, np.linalg.solve(np.diag(np.diag(hess_f_x)), proj_grad).reshape(-1, 1))) # append newest crude diagonal Newton direction approximation
+            
+            G_unlimited = np.hstack((G_unlimited, proj_grad.reshape(-1,1)))
             
             Q = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
 

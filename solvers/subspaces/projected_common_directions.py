@@ -66,7 +66,7 @@ class ProjectedCommonDirections:
     def regularise_hessian(self, B):
         lambda_min = np.min(np.linalg.eigh(B)[0])
         if lambda_min < self.reg_lambda: # Regularise
-            # print('USING HESSIAN REGULARISATION!')
+            print('USING HESSIAN REGULARISATION!')
             B = B + (self.reg_lambda - lambda_min) * np.identity(self.subspace_dim)
             
         return B
@@ -130,17 +130,10 @@ class ProjectedCommonDirections:
                 P[:,-3 * G.shape[1]:] = np.hstack((G, X, D))
         
         # Orthogonalise the basis matrix
-        #print(f'Cond. number of basis matrix pre-QR: {np.linalg.cond(P):8.6e}')
         Q, _ = np.linalg.qr(P)
-        return Q
+        return Q, np.linalg.cond(P)
 
     def optimise(self, x0):
-        """
-        Perform solver step
-        
-        :param x0: The initial guess for the minimum.
-        :return: The point that approximately minimizes the objective function.
-        """
         # Initialise algorithm
         x = x0
         f_x = self.func(x)
@@ -148,10 +141,7 @@ class ProjectedCommonDirections:
         norm_full_grad = np.linalg.norm(full_grad)
 
         # The first projected gradient takes a projection from an entirely random matrix
-        
         proj_grad = self.project_gradient(full_grad, random_proj=True)
-
-
 
         # IN FUTURE will want to implement Hessian actions product using Hessian actions (B-vector products), see autograd.hessian_vector_products
         if self.use_hess:
@@ -161,14 +151,20 @@ class ProjectedCommonDirections:
             raise Exception('Have not (yet!) implemented methods with user-provided B approximations to the Hessian!')
 
         # For later plotting
-        f_vals = np.array([f_x], dtype='float32')
+        f_vals_list = [f_x]
+        update_norms_list = []
+        angles_to_full_grad_list = []
+        full_grad_norms_list = [np.linalg.norm(full_grad)]
+        proj_grad_norms_list = [np.linalg.norm(proj_grad)]
 
         # Need to keep in parallel information from few previous iterates.
         # Initialise this here, depending on subspace method used:
         G = np.array(proj_grad, ndmin=2) # store gradient vectors
         G = G.reshape(-1, 1)
 
-        G_unlimited = G # for storage of ALL gradients for debugging
+        # G_proj_unlimited = G # for storage of ALL PROJECTED gradients (for debugging)
+        # G_full_unlimited = np.array(full_grad, ndmin=2)
+        # G_full_unlimited = G_full_unlimited.reshape(-1, 1)
 
         if self.subspace_update_method != 'grads':
             X = np.array(x, ndmin=2) # store iterates
@@ -181,7 +177,9 @@ class ProjectedCommonDirections:
         else:
             D = None
         
-        Q = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+        Q, last_cond_no = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+
+        cond_nos_list = [last_cond_no]
 
         # Project B matrix
         # Later may want to do this using Hessian actions in the case where Hessian information is used at all.
@@ -192,11 +190,11 @@ class ProjectedCommonDirections:
 
         for k in range(self.max_iter):
             if norm_full_grad < self.tol:
-                x_str = ", ".join([f"{xi:8.4f}" for xi in x])
+                x_str = ", ".join([f"{xi:7.4f}" for xi in x])
                 print('------------------------------------------------------------------------------------------')
                 print('TERMINATED')
                 print('------------------------------------------------------------------------------------------')
-                print(f"k = {k:4}, x = [{x_str}], f(x) = {f_x:8.6e}, g_norm = {norm_full_grad:8.6e}")
+                print(f"k = {k:4} || x = [{x_str}] || f(x) = {f_x:8.6e} || g_norm = {norm_full_grad:8.6e}")
                 print('------------------------------------------------------------------------------------------')
                 print()
                 print()
@@ -207,13 +205,21 @@ class ProjectedCommonDirections:
             
             if self.verbose and k % self.iter_print_gap == 0:
                 x_str = ", ".join([f"{xi:7.4f}" for xi in x])
-                print(f"k = {k:4}, x = [{x_str}], f(x) = {f_x:6.6e}, g_norm = {norm_full_grad:6.6e}, step = {step_size:8.6f}")
+                print(f"k = {k:4} || x = [{x_str}] || f(x) = {f_x:6.6e} || g_norm = {norm_full_grad:6.6e} || t = {step_size:8.6f}")
             
-            
-            if k > 10 and np.linalg.norm(direction*step_size) > 1e-2:
-                print()
             
             x = x + step_size * direction
+
+
+            last_update_norm = np.linalg.norm(step_size * direction)
+            last_angle_to_full_grad = np.dot(direction, -full_grad) / (np.linalg.norm(direction) * np.linalg.norm(full_grad)) * 180 / np.pi
+            angles_to_full_grad_list.append(last_angle_to_full_grad)
+
+            update_norms_list.append(last_update_norm)
+
+            if self.random_proj and last_update_norm < 1e-10:
+                print('Very small update with randomised projections!')
+
 
             f_x = self.func(x)
             full_grad = self.grad_func(x)
@@ -221,7 +227,13 @@ class ProjectedCommonDirections:
 
             proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
 
-            G_unlimited = np.hstack((G_unlimited, proj_grad.reshape(-1,1)))
+
+            full_grad_norms_list.append(np.linalg.norm(full_grad))
+            proj_grad_norms_list.append(np.linalg.norm(proj_grad))
+
+
+            # G_proj_unlimited = np.hstack((G_proj_unlimited, proj_grad.reshape(-1,1)))
+            # G_full_unlimited = np.hstack((G_full_unlimited, full_grad.reshape(-1,1)))
 
             if self.use_hess:
                 hess_f_x = self.hess_func(x)
@@ -230,7 +242,7 @@ class ProjectedCommonDirections:
                 raise Exception('Not yet implemented!')
             
             # Update records of previous iterations, for further plotting
-            f_vals = np.append(f_vals, f_x)
+            f_vals_list.append(f_x)
 
             if self.subspace_update_method == 'grads':
                 if G.shape[1] == self.subspace_dim:
@@ -252,10 +264,24 @@ class ProjectedCommonDirections:
                 X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
                 D = np.hstack((D, np.linalg.solve(np.diag(np.diag(hess_f_x)), proj_grad).reshape(-1, 1))) # append newest crude diagonal Newton direction approximation
             
-            Q = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+            Q, last_cond_no = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+
+            cond_nos_list.append(last_cond_no)
 
             proj_B = np.transpose(Q) @ (full_B @ Q)
             proj_B = self.regularise_hessian(proj_B)
 
-        
-        return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals)
+        # Convert these to arrays for later plotting
+        f_vals = np.array(f_vals_list)
+        update_norms = np.array(update_norms_list)
+        full_grad_norms = np.array(full_grad_norms_list)
+        proj_grad_norms = np.array(proj_grad_norms_list)
+        angles_to_full_grad = np.array(angles_to_full_grad_list)
+        cond_nos = np.array(cond_nos_list) # condition numbers of P matrix at each iteration
+
+        return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals, 
+                            update_norms=update_norms,
+                            full_grad_norms=full_grad_norms,
+                            proj_grad_norms=proj_grad_norms,
+                            angles_to_full_grad=angles_to_full_grad,
+                            cond_nos=cond_nos)

@@ -14,8 +14,11 @@ class Objective:
         self.x_sol = x_sol
         self.f_sol = f_sol
 
+# Using standard x0, see Appendix B of Dennis and Schnabel textbook 
 def rosenbrock(input_dim):
-    x0 = np.zeros(input_dim, dtype='float32')
+    x0 = np.ones(input_dim, dtype='float32')
+    x0[::2] = -1.2
+
     x_sol = np.ones(input_dim)
     f_sol = 0
     return x0, Objective(input_dim, rosen, x_sol, f_sol)

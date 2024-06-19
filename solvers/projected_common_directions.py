@@ -148,7 +148,7 @@ class ProjectedCommonDirections:
             hess_f_x = self.hess_func(x)
             full_B = hess_f_x
         else:
-            raise Exception('Have not (yet!) implemented methods with user-provided B approximations to the Hessian!')
+            raise NotImplementedError('Have not (yet!) implemented methods with user-provided B approximations to the Hessian!')
 
         # For later plotting
         f_vals_list = [f_x]
@@ -239,7 +239,7 @@ class ProjectedCommonDirections:
                 hess_f_x = self.hess_func(x)
                 full_B = hess_f_x
             else:
-                raise Exception('Not yet implemented!')
+                raise NotImplementedError('Not yet implemented!')
             
             # Update records of previous iterations, for further plotting
             f_vals_list.append(f_x)

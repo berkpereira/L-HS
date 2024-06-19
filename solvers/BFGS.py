@@ -1,17 +1,26 @@
 """
-In this module we implement quasi-Newton methods, in particular of the unlimited-memory sort (i.e., we do not strive to save up on storage of secant pairs, etc., as one may do with a method like L-BFGS).
+In this module we implement quasi-Newton methods, in particular of the
+unlimited-memory sort (i.e., we do not strive to save up on storage of secant
+pairs, etc., as one may do with a method like L-BFGS).
 
-Throughout, we denote, at iteration k, an approximation to the Hessian by B_k, and the inverse of B_k by H_k. Using Sherman-Morrison-Woodbury formula, we can directly update the inverse H_k as opposed to B_k, sidestepping the solution of a linear system in determining the search direction.
+Throughout, we denote, at iteration k, an approximation to the Hessian by B_k,
+and the inverse of B_k by H_k. Using Sherman-Morrison-Woodbury formula, we can
+directly update the inverse H_k as opposed to B_k, sidestepping the solution of
+a linear system in determining the search direction.
 
-The BFGS implementation follows the description from the well-known textbook Numerical Optimization by Nocedal and Wright, 2nd ed., Chapter 6.1.
-
-
+The BFGS implementation follows the description from the well-known textbook
+Numerical Optimization by Nocedal and Wright, 2nd ed., Chapter 6.1.
 
 TODO:
-Perhaps try some of the H0 re-scaling heuristics used in practice. E.g., see Nocedal & Wright, 2nd ed., p. 142 (Sec. 6.1 (BFGS), implementation)
+Improve linesearch algorithm --- the scipy implementation seems to fail on a
+(very) badly conditioned quadratic. May want to consider the Hager-Zhang
+linesearch algorithm, which seems to be the state of the art (See reference
+paper: https://epubs.siam.org/doi/abs/10.1137/030601880. Also see
+implementation within TensorFlow:
+https://github.com/tensorflow/probability/blob/main/tensorflow_probability/python/optimizer/linesearch/hager_zhang.py)
 
-
-
+Try some of the H0 re-scaling heuristics used in practice.
+E.g., see Nocedal & Wright, 2nd ed., p. 142 (Sec. 6.1 (BFGS), implementation)
 """
 
 from dataclasses import dataclass
@@ -25,6 +34,7 @@ class BFGSLinesearchConfig:
     obj: any
     c1: float = 1e-4 # Armijo condition scaling
     c2: float = 0.9  # Strong curvature condition scaling
+    linesearch_max_iter: int = 10 # Number of max iterations in the linesearch
     tol: float = 1e-6
     max_iter: int = 1_000
     iter_print_gap: int = 20
@@ -38,9 +48,12 @@ class BFGSLinesearch:
         self.func = self.obj.func
         self.grad_func = grad(self.func)
 
-    # We use scipy's implementation of a strong-Wolfe-condition-ensuring linesearch (provided direction is a descent direction, of course)
+    # We use scipy's implementation of a strong-Wolfe-condition-ensuring
+    # linesearch (provided direction is a descent direction, of course)
     def strong_wolfe_linesearch(self, x, direction):
-        return scipy.optimize.line_search(self.func, self.grad_func, x, direction, c1=self.c1, c2=self.c2)
+        return scipy.optimize.line_search(self.func, self.grad_func, x,
+                                          direction, c1=self.c1, c2=self.c2,
+                                          maxiter=self.linesearch_max_iter)
     
     def optimise(self, x0: np.ndarray, H0: np.ndarray):
         # Initialise with initial inputs given
@@ -73,8 +86,13 @@ class BFGSLinesearch:
             # Compute search direction
             direction = - H @ grad_vec
             # Compute step size
-            # TODO: use some of the output arguments of this linesearch function, which returns quantities we do actually need (currently some of this is being computed twice at each iteration)
-            step_size, _, _, _, _, _ = self.strong_wolfe_linesearch(x=x, direction=direction)
+            # TODO: use some of the output arguments of this linesearch
+            # function, which returns quantities we do actually need (currently
+            # some of this is being computed twice at each iteration)
+            step_size, _, _, _, _, _ = self.strong_wolfe_linesearch(x=x,direction=direction)
+
+            if step_size is None:
+                raise Exception('Strong Wolfe conditions linesearch failed within the alloted max iterations!')
 
             if self.verbose and k % self.iter_print_gap == 0:
                 x_str = ", ".join([f"{xi:7.4f}" for xi in x])
@@ -89,7 +107,8 @@ class BFGSLinesearch:
             x_diff = x_next - x
             grad_diff = grad_next - grad_vec
 
-            # Update BFGS approx. to the inverse Hessian (Nocedal & Wright, 2nd ed, Eq. (6.17))
+            # Update BFGS approx. to the inverse Hessian (Nocedal & Wright,
+            # 2nd ed, Eq. (6.17))
             rho = 1 / (np.dot(x_diff, grad_diff))
             H_next = (np.identity(self.obj.input_dim) - rho * np.outer(x_diff, grad_diff)) @ H @ (np.identity(self.obj.input_dim) - rho * np.outer(grad_diff, x_diff)) + rho * np.outer(x_diff, x_diff)
 

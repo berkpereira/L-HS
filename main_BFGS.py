@@ -18,7 +18,7 @@ subspace_methods_list = ['grads', # 0
 
 # SELECT PROBLEM
 PROBLEM_NAME = test_problems_list[0]
-INPUT_DIM = 50
+INPUT_DIM = 30
 x0, obj = problems.test_problems.select_problem(problem_name=PROBLEM_NAME, input_dim=INPUT_DIM)
 
 # Initial inverse Hessian approximation
@@ -27,14 +27,16 @@ H0 = np.identity(INPUT_DIM)
 # SOLVER CONFIG
 C1 = 0.0001 # Armijo condition scaling in linesearch
 C2 = 0.9 # Strong curvature condition scaling in linesearch
+LINESEARCH_MAX_ITER = 100 # Maximum number of inner iterations in the linesearch procedure.
 
-TOL = 1e-5
+TOL = 1e-6
 MAX_ITER = 1_000
 ITER_PRINT_GAP = 20
 
 SOLVER_CONFIG = BFGSLinesearchConfig(obj=obj,
                                      c1=C1,
                                      c2=C2,
+                                     linesearch_max_iter=LINESEARCH_MAX_ITER,
                                      tol=TOL,
                                      max_iter=MAX_ITER,
                                      iter_print_gap=ITER_PRINT_GAP,

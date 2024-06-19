@@ -1,7 +1,5 @@
 """
-In this module we implement quasi-Newton methods, in particular of the
-unlimited-memory sort (i.e., we do not strive to save up on storage of secant
-pairs, etc., as one may do with a method like L-BFGS).
+In this module we implement a (unlimited-memory) BFGS linesearch method.
 
 Throughout, we denote, at iteration k, an approximation to the Hessian by B_k,
 and the inverse of B_k by H_k. Using Sherman-Morrison-Woodbury formula, we can
@@ -28,6 +26,7 @@ from autograd import grad
 from solvers.utils import SolverOutput
 import autograd.numpy as np
 import scipy.optimize
+from .utils import strong_wolfe_linesearch
 
 @dataclass
 class BFGSLinesearchConfig:
@@ -51,9 +50,9 @@ class BFGSLinesearch:
     # We use scipy's implementation of a strong-Wolfe-condition-ensuring
     # linesearch (provided direction is a descent direction, of course)
     def strong_wolfe_linesearch(self, x, direction):
-        return scipy.optimize.line_search(self.func, self.grad_func, x,
-                                          direction, c1=self.c1, c2=self.c2,
-                                          maxiter=self.linesearch_max_iter)
+        return strong_wolfe_linesearch(func=self.func, grad_func=self.grad_func,
+                                       x=x, direction=direction, c1=self.c1,
+                                       c2=self.c2, max_iter=self.linesearch_max_iter)
     
     def optimise(self, x0: np.ndarray, H0: np.ndarray):
         # Initialise with initial inputs given

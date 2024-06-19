@@ -1,3 +1,5 @@
+import scipy.optimize
+
 class SolverOutput():
     def __init__(self, solver, final_x, final_k, f_vals, update_norms=None, **kwargs):
         self.solver = solver
@@ -11,6 +13,11 @@ class SolverOutput():
             setattr(self, key, value)
         
 
-# It may be useful to implement classical (unlimited memory) BFGS B_k update below.
-def BFGS_update():
-    pass
+# Can use scipy's implementation of a strong-Wolfe-condition-ensuring
+# linesearch (provided direction is a descent direction, of course).
+# We use this in (L)BFGS linesearch methods to ensure positive-definiteness of
+# hessian approximations.
+def strong_wolfe_linesearch(func, grad_func, x, direction, c1, c2, max_iter):
+    return scipy.optimize.line_search(func, grad_func, x,
+                                        direction, c1=c1, c2=c2,
+                                        maxiter=max_iter)

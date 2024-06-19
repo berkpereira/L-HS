@@ -116,8 +116,9 @@ class CommonDirections:
                 P[:,:(self.subspace_dim - 3 * G.shape[1])] = np.random.normal(size=(self.obj.input_dim, self.subspace_dim - 3 * G.shape[1]))
                 P[:,-3 * G.shape[1]:] = np.hstack((G, X, D))
         
+        
+        # print(f'Condition number of subspace basis (pre-QR): {np.linalg.cond(P):6.4e}')
         # Orthogonalise the basis matrix
-        print(f'Cond. number of basis matrix pre-QR: {np.linalg.cond(P):8.6e}')
         P, _ = np.linalg.qr(P)
         return P
 
@@ -136,7 +137,9 @@ class CommonDirections:
         hess_f_x = self.hess_func(x)
 
         # For further plotting
-        f_vals = np.array([f_x], dtype='float32')
+        f_vals_list = [f_x]
+        grad_norms_list = [norm_grad_f_x]
+
 
         # Need to keep in parallel information from few previous iterates
         G = np.array(grad_f_x, ndmin=2) # store gradient vectors
@@ -185,7 +188,8 @@ class CommonDirections:
             norm_grad_f_x = np.linalg.norm(grad_f_x)
             
             # Update records of previous iterations, for further plotting
-            f_vals = np.append(f_vals, f_x)
+            f_vals_list.append(f_x)
+            grad_norms_list.append(norm_grad_f_x)
 
             if self.subspace_update_method == 'grads':
                 if G.shape[1] == self.subspace_dim:
@@ -211,5 +215,8 @@ class CommonDirections:
             H = np.transpose(P) @ (hess_f_x @ P) # IN FUTURE will want to implement the latter product using Hessian actions (H-vector products), see autograd.hessian_vector_products
             H = self.regularise_hessian(H)
 
-        
-        return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals)
+
+        f_vals = np.array(f_vals_list)
+        grad_norms = np.array(grad_norms_list)
+        return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals,
+                            grad_norms=grad_norms)

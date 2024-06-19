@@ -7,35 +7,25 @@ The BFGS implementation follows the description from the well-known textbook Num
 
 
 
-
-
-
-
-
-
-
 TODO:
-Implement a linesearch method ensuring the Wolfe conditions!
-Look at Nocedal & Wright, 2nd ed. page 60, which is also implemented in scipy.optimize.line_search !
-
 Then try out the method!
 (Then implement L-BFGS...)
 
 
 
-
-
-
-
-
 """
+
 from dataclasses import dataclass
 from autograd import grad
+from utils import SolverOutput
 import autograd.numpy as np
+import scipy.optimize
 
+@dataclass
 class BFGSLinesearchConfig:
     obj: any
-    
+    c1: float = 1e-4 # Armijo condition scaling
+    c2: float = 0.9  # Strong curvature condition scaling
     t_init: float = 1
     tol: float = 1e-6
     max_iter: int = 1_000
@@ -49,11 +39,19 @@ class BFGSLinesearch:
         
         self.func = self.obj.func
         self.grad_func = grad(self.func)
+
+    # We use scipy's implementation of a strong-Wolfe-condition-ensuring linesearch (provided direction is a descent direction, of course)
+    def strong_wolfe_linesearch(self, x, grad_vec, direction):
+        return scipy.optimize.line_search(self.func, grad_vec, x, direction, c1=self.c1, c2=self.c2)
     
     def optimise(self, x0: np.ndarray, H0: np.ndarray):
         # Initialise with initial inputs given
         x = x0
         H = H0
+
+        # Check that initial H is symmetric PD
+        if (not np.allclose(H, np.transpose(H))) or np.any(np.linalg.eig(H)[0] <= 0):
+            raise Exception('Initial H matrix must be symmetric positive definite!')
         
         x_next = x
         f_next = self.func(x_next)
@@ -75,7 +73,7 @@ class BFGSLinesearch:
 
             # Compute search direction
             direction = - H @ grad_vec
-            step_size = self.wolfe_linesearch(x, ...)
+            step_size = self.strong_wolfe_linesearch(x, grad_vec=grad_vec, direction=direction)
 
             if self.verbose and k % self.iter_print_gap == 0:
                 x_str = ", ".join([f"{xi:7.4f}" for xi in x])
@@ -90,16 +88,15 @@ class BFGSLinesearch:
             x_diff = x_next - x
             grad_diff = grad_next - grad_vec
 
-            # Update approx. to the inverse Hessian (Nocedal & Wright, 2nd ed, Eq. (6.17))
+            # Update BFGS approx. to the inverse Hessian (Nocedal & Wright, 2nd ed, Eq. (6.17))
             rho = 1 / (np.dot(x_diff, grad_diff))
             H_next = (np.identity(self.obj.input_dim) - rho * np.outer(x_diff, grad_diff)) @ H @ (np.identity(self.obj.input_dim) - rho * np.outer(grad_diff, x_diff)) + rho * np.outer(x_diff, x_diff)
 
-
             # Append to recorded data
             f_vals_list.append(f_x)
-            update_norms_list.append()
-            angles_to_grad_list.append()
-            grad_norms_list.append()
+            update_norms_list.append(np.linalg.norm(x_diff))
+            angles_to_grad_list.append(np.arccos(np.dot(direction, grad_vec) / (np.linalg.norm(direction) * grad_norm)) * 180 / np.pi)
+            grad_norms_list.append(grad_norm)
 
             # Termination!
             if grad_norm < self.tol:
@@ -112,3 +109,16 @@ class BFGSLinesearch:
                 print()
                 print()
                 break
+        
+        f_vals = np.array(f_vals)
+        update_norms = np.array(update_norms_list)
+        angles_to_grad = np.array(angles_to_grad_list)
+        grad_norms = np.array(grad_norms_list)
+
+        return SolverOutput(solver=self,
+                            final_x=x,
+                            final_k=k,
+                            f_vals=f_vals,
+                            update_norms=update_norms,
+                            angles_to_grad=angles_to_grad,
+                            grad_norms=grad_norms)

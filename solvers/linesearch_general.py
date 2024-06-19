@@ -6,7 +6,7 @@ One assumption we make is that we always use the current iterate's function valu
 
 from autograd import grad
 import autograd.numpy as np
-from ..utils import SolverOutput
+from solvers.utils import SolverOutput
 
 class LinesearchGeneral:
     def __init__(self, obj, deriv_info_func: callable, direction_func: callable, step_func: callable, stop_crit_func: callable, max_iter: int, iter_print_period: int=20, verbose=False, **kwargs):

@@ -1,6 +1,6 @@
 import autograd.numpy as np
 from autograd import grad, hessian
-from ..utils import SolverOutput
+from solvers.utils import SolverOutput
 
 class LinesearchBacktrackingArmijo:
     def __init__(self, method, obj, alpha=0.001, t_init=1, tau=0.5, tol=1e-6, max_iter=1000, iter_print_gap=20, verbose=False):

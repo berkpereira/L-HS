@@ -21,8 +21,8 @@ from dataclasses import dataclass
 
 import autograd.numpy as np
 from autograd import grad, hessian, make_jvp
-from ..utils import SolverOutput
-from ..full_space.linesearch_general import LinesearchGeneral
+from solvers.utils import SolverOutput
+from solvers.linesearch_general import LinesearchGeneral
 from problems.test_problems import Objective
 
 np.random.seed(42)

@@ -8,8 +8,7 @@ The BFGS implementation follows the description from the well-known textbook Num
 
 
 TODO:
-Then try out the method!
-(Then implement L-BFGS...)
+Perhaps try some of the H0 re-scaling heuristics used in practice. E.g., see Nocedal & Wright, 2nd ed., p. 142 (Sec. 6.1 (BFGS), implementation)
 
 
 
@@ -17,7 +16,7 @@ Then try out the method!
 
 from dataclasses import dataclass
 from autograd import grad
-from utils import SolverOutput
+from solvers.utils import SolverOutput
 import autograd.numpy as np
 import scipy.optimize
 
@@ -26,7 +25,6 @@ class BFGSLinesearchConfig:
     obj: any
     c1: float = 1e-4 # Armijo condition scaling
     c2: float = 0.9  # Strong curvature condition scaling
-    t_init: float = 1
     tol: float = 1e-6
     max_iter: int = 1_000
     iter_print_gap: int = 20
@@ -41,8 +39,8 @@ class BFGSLinesearch:
         self.grad_func = grad(self.func)
 
     # We use scipy's implementation of a strong-Wolfe-condition-ensuring linesearch (provided direction is a descent direction, of course)
-    def strong_wolfe_linesearch(self, x, grad_vec, direction):
-        return scipy.optimize.line_search(self.func, grad_vec, x, direction, c1=self.c1, c2=self.c2)
+    def strong_wolfe_linesearch(self, x, direction):
+        return scipy.optimize.line_search(self.func, self.grad_func, x, direction, c1=self.c1, c2=self.c2)
     
     def optimise(self, x0: np.ndarray, H0: np.ndarray):
         # Initialise with initial inputs given
@@ -54,6 +52,7 @@ class BFGSLinesearch:
             raise Exception('Initial H matrix must be symmetric positive definite!')
         
         x_next = x
+        H_next = H
         f_next = self.func(x_next)
         grad_next = self.grad_func(x_next)
         
@@ -73,7 +72,9 @@ class BFGSLinesearch:
 
             # Compute search direction
             direction = - H @ grad_vec
-            step_size = self.strong_wolfe_linesearch(x, grad_vec=grad_vec, direction=direction)
+            # Compute step size
+            # TODO: use some of the output arguments of this linesearch function, which returns quantities we do actually need (currently some of this is being computed twice at each iteration)
+            step_size, _, _, _, _, _ = self.strong_wolfe_linesearch(x=x, direction=direction)
 
             if self.verbose and k % self.iter_print_gap == 0:
                 x_str = ", ".join([f"{xi:7.4f}" for xi in x])
@@ -95,7 +96,7 @@ class BFGSLinesearch:
             # Append to recorded data
             f_vals_list.append(f_x)
             update_norms_list.append(np.linalg.norm(x_diff))
-            angles_to_grad_list.append(np.arccos(np.dot(direction, grad_vec) / (np.linalg.norm(direction) * grad_norm)) * 180 / np.pi)
+            angles_to_grad_list.append(np.arccos(np.dot(direction, - grad_vec) / (np.linalg.norm(direction) * grad_norm)) * 180 / np.pi)
             grad_norms_list.append(grad_norm)
 
             # Termination!
@@ -110,7 +111,7 @@ class BFGSLinesearch:
                 print()
                 break
         
-        f_vals = np.array(f_vals)
+        f_vals = np.array(f_vals_list)
         update_norms = np.array(update_norms_list)
         angles_to_grad = np.array(angles_to_grad_list)
         grad_norms = np.array(grad_norms_list)

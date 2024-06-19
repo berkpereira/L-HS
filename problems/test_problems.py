@@ -14,7 +14,11 @@ class Objective:
         self.x_sol = x_sol
         self.f_sol = f_sol
 
-# Using standard x0, see Appendix B of Dennis and Schnabel textbook 
+# Using standard x0, see Appendix B of Dennis and Schnabel textbook.
+# Note that this scipy version of an extended Rosenbrock function has
+# multiple stationary points in high-dimensions! For details, see the paper
+# https://dl.acm.org/doi/abs/10.1162/evco.2009.17.3.437
+# The starting point seems to have a significant influence on whether the minimum is found or not.
 def rosenbrock(input_dim):
     x0 = np.ones(input_dim, dtype='float32')
     x0[::2] = -1.2

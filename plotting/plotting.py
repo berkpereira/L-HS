@@ -25,15 +25,18 @@ def plot_loss_vs_iteration(solver_outputs, labels=None):
     plt.figure(figsize=FIGSIZE_REF)
     
     if labels is None:
-        labels = [f"Subspace dim = {solver_outputs[i].solver.subspace_dim}" for i in range(len(solver_outputs))]
+        try: # If subspace dimension is a meaningful concept for the solver
+            labels = [f"Subspace dim = {solver_outputs[i].solver.subspace_dim}" for i in range(len(solver_outputs))]
+        except: # Generic chronological numbering
+            labels = [f"Solver {i}" for i in range(len(solver_outputs))]
 
     for solver_output, label in zip(solver_outputs, labels):
         plt.plot(solver_output.f_vals, linestyle='-', label=label)
     
     plt.yscale('log')
     plt.xlabel('Iteration')
-    plt.ylabel('Function value (log scale)')
-    plt.title('Loss vs Iteration Comparison')
+    plt.ylabel('Function value')
+    plt.title('Loss vs Iteration')
     plt.legend()
     plt.grid(True, which="both", ls="-")
 
@@ -42,12 +45,23 @@ def plot_scalar_vs_iteration(solver_outputs, attr_names: list, log_plot: bool, l
     plt.figure(figsize=FIGSIZE_REF)
     
     if labels is None:
-        labels = [f"Subspace dim = {solver_outputs[i].solver.subspace_dim}" for i in range(len(solver_outputs))]
+        try:
+            labels = [f"Subspace dim = {solver_outputs[i].solver.subspace_dim}" for i in range(len(solver_outputs))]
+        except:
+            labels = [f"Solver {i}" for i in range(len(solver_outputs))]
 
     for attr_name in attr_names:
         for solver_output, label in zip(solver_outputs, labels):
             values = getattr(solver_output, attr_name)
             plt.plot(values, linestyle='-', label=f"{label} ({attr_name})")
+    
+
+    title_str = ''
+    for attr_name in attr_names:
+        title_str += attr_name + ' '
+        title_str += 'vs Iteration'
+    
+    plt.title(title_str)
     
     if log_plot:
         plt.yscale('log')

@@ -17,8 +17,9 @@ paper: https://epubs.siam.org/doi/abs/10.1137/030601880. Also see
 implementation within TensorFlow:
 https://github.com/tensorflow/probability/blob/main/tensorflow_probability/python/optimizer/linesearch/hager_zhang.py)
 
-Try some of the H0 re-scaling heuristics used in practice.
-E.g., see Nocedal & Wright, 2nd ed., p. 142 (Sec. 6.1 (BFGS), implementation)
+When we refer to a heuristic of rescaling H0, this refers to a technique used
+in practice when the initial H0 provided is simply an identity matrix.
+This is presented in Nocedal & Wright, 2nd ed., Sec. 6.1 (Implementation).
 """
 
 from dataclasses import dataclass
@@ -31,6 +32,7 @@ from .utils import strong_wolfe_linesearch
 @dataclass
 class BFGSLinesearchConfig:
     obj: any
+    H0_rescale_heuristic: bool = True # Whethere to use rescaling heuristic of H0.
     c1: float = 1e-4 # Armijo condition scaling
     c2: float = 0.9  # Strong curvature condition scaling
     linesearch_max_iter: int = 10 # Number of max iterations in the linesearch
@@ -58,6 +60,12 @@ class BFGSLinesearch:
         # Initialise with initial inputs given
         x = x0
         H = H0
+
+        # Check whether starting H0 is the identity.
+        if np.array_equal(H0, np.identity(self.obj.input_dim)):
+            H0_is_eye = True
+        else:
+            H0_is_eye = False
 
         # Check that initial H is symmetric PD
         if (not np.allclose(H, np.transpose(H))) or np.any(np.linalg.eig(H)[0] <= 0):
@@ -105,6 +113,16 @@ class BFGSLinesearch:
             # Compute secant pair
             x_diff = x_next - x
             grad_diff = grad_next - grad_vec
+
+            # Use heuristic to rescale H0 after the first step but *before*
+            # the first BFGS update to H. This is from Nocedal & Wright, 2nd. ed.,
+            # Sec. 6.1 (Implementation).
+            if k == 0 and H0_is_eye and self.H0_rescale_heuristic:
+                H = np.dot(grad_diff, x_diff) / np.dot(grad_diff, grad_diff) * np.identity(self.obj.input_dim)
+                print()
+                print(f'Used H0 rescale heuristic! Scaled identity by {np.dot(grad_diff, x_diff) / np.dot(grad_diff, grad_diff)}')
+                print()
+                
 
             # Update BFGS approx. to the inverse Hessian (Nocedal & Wright,
             # 2nd ed, Eq. (6.17))

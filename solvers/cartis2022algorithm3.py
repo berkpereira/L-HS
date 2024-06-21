@@ -7,14 +7,8 @@ Throughout, the ROWS of S_k are used as the basis for the subspace used at itera
 
 At the moment, we make the reference paper's Algorithm 3 concrete by employing a backtracking Newton's method. This is because the local model at each iterate is a convex quadratic with essentially an already known/computed Hessian.
 
-NEXT TO DO
-NEXT TO DO
-NEXT TO DO
-NEXT TO DO
-NEXT TO DO
-NEXT TO DO
-FORGO FULL GRADIENTS, IMPLEMENT AS DIRECTIONAL DERIVATIVES.
-BUT::::PROFILER RESULTS SHOW THAT GRADIENTS TAKE UP BIG CHUNK OF TIME, AND ALSO THE NATURE OF OUR METHODS ARE TO AVOID EVER COMPUTING FULL GRADIENT!
+TODO:
+implement the recording of more metrics to plot later.
 """
 
 from dataclasses import dataclass
@@ -86,7 +80,8 @@ class Cartis2022Algorithm3:
         gradient, hess = deriv_info[0], deriv_info[1]
         return - np.linalg.solve(hess, gradient)
     
-    # We employ backtracking Armijo linesearch
+    # We employ backtracking Armijo linesearch, though,
+    # if using the Newton direction, this is always just = 1 (pure Newton on the regularised quadratic model).
     def inner_step_func(self, obj, s_hat, search_dir, deriv_info, kwargs): # "kwargs" reflects **kwargs from the LinesearchGeneral method
         tau = kwargs['tau']
         beta = kwargs['beta']
@@ -142,18 +137,28 @@ class Cartis2022Algorithm3:
 
     # This method will run the actual algorithm (outer iterations, if you will, while calling min_local_model to run the inner iterations) and return an approximate local minimiser of the function of interest
     def optimise(self, x0):
-        k = 0
         x = x0
         alpha = self.alpha_max
         f_x = self.func(x)
-        f_vals = [f_x]
-        
-        # NOTICE HOW WE'RE ALLOWING OURSELVES TO COMPUTE THE FULL GRADIENT VECTOR HERE!
-        # LATER ON WILL WANT TO REMOVE THESE, BUT FOR NOW IT'S EASIER TO GET THINGS WORKING THUSLY.
+        # NOTICE HOW WE'RE ALLOWING OURSELVES TO COMPUTE THE FULL
+        # GRADIENT VECTOR HERE!
+        # LATER ON MAY WANT TO REMOVE THESE, BUT FOR NOW IT'S EASIER
+        # TO GET THINGS WORKING THUSLY.
         grad_f_x = self.grad_func(x)
+        full_grad_norm = np.linalg.norm(grad_f_x)
+
+        # Store stuff for plotting
+        f_vals_list = [f_x]
+        update_norms_list = [] # this one will only include info with successful iterations
+        angles_to_grad_list = []
+        full_grad_norms_list = [full_grad_norm]
+        proj_grad_norms_list = []
+        red_grad_norms_list = []
+        successful_iters_list = []
+
 
         for k in range(self.outer_max_iter):
-            if np.linalg.norm(grad_f_x) < self.tol:
+            if full_grad_norm < self.tol:
                 if self.verbose:
                     x_str = ", ".join([f"{xi:8.4f}" for xi in x])
                     print('------------------------------------------------------------------------------------------')
@@ -170,6 +175,12 @@ class Cartis2022Algorithm3:
             red_reg_hessian = S @ (B + (1 / alpha) * np.identity(self.obj.input_dim)) @ np.transpose(S)
 
             red_grad = S @ grad_f_x
+            red_grad_norms_list.append(np.linalg.norm(red_grad))
+
+            # the projected gradient is just for "monitoring" purposes, it has 
+            # no actual use in the algorithm.
+            proj_grad = np.transpose(S) @ red_grad
+            proj_grad_norms_list.append(np.linalg.norm(proj_grad))
             
             # Regularised local quadratic model
             local_model_func = lambda s_hat: np.dot(red_grad, s_hat) + 0.5 * np.dot(s_hat, red_reg_hessian @ s_hat)
@@ -182,27 +193,68 @@ class Cartis2022Algorithm3:
             trial_s_hat = inner_solver_output.final_x
             trial_s = np.transpose(S) @ trial_s_hat
 
-            if self.check_suff_decrease(x=x, trial_step_hat=trial_s_hat, trial_step=trial_s, local_model_func=local_model_func): # successful iteration
+            if self.check_suff_decrease(x=x,
+                                        trial_step_hat=trial_s_hat,
+                                        trial_step=trial_s,
+                                        local_model_func=local_model_func): # SUCCESSFUL iteration
+                # Print stuff
                 if self.verbose and k % self.iter_print_gap == 0:
                     x_str = ", ".join([f"{xi:8.4f}" for xi in x])
-                    # print(f"Iteration {k:4} SUCCESSFUL: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}, alpha = {alpha:5.3e}")
-                    print(f"Iteration {k:4}   SUCCESSFUL: f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}, alpha = {alpha:5.3e}")
+                    print(f"Iteration {k:4} S: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}, alpha = {alpha:5.3e}")
+                
                 x = x + trial_s
                 
+                update_norms_list.append(np.linalg.norm(trial_s))
+
+
                 f_x = self.func(x)
-                f_vals.append(f_x)
                 grad_f_x = self.grad_func(x)
 
                 alpha = np.min((self.alpha_max, self.gamma2 * alpha))
-            else: # unsuccessful iteration
+
+                successful_iters_list.append(True)
+
+            else: # UNSUCCESSFUL iteration
                 if self.verbose and k % self.iter_print_gap == 0:
                     x_str = ", ".join([f"{xi:8.4f}" for xi in x])
-                    # print(f"Iteration {k:4} UNSUCCESSFUL: x = [{x_str}], f(x) = {f_x:10.6e}, alpha = {alpha:5.3e}")
-                    print(f"Iteration {k:4} UNSUCCESSFUL: f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}, alpha = {alpha:5.3e}")
+                    print(f"Iteration {k:4} U: x = [{x_str}], f(x) = {f_x:10.6e}, grad norm = {np.linalg.norm(grad_f_x):10.6e}, step size = {np.linalg.norm(trial_s):8.6f}, alpha = {alpha:5.3e}")
+                
                 # x goes without update
+
                 alpha *= self.gamma1
 
-                f_vals.append(f_x)
+                successful_iters_list.append(False)
+
+
+            # append to data
+            f_vals_list.append(f_x)
+            full_grad_norm = np.linalg.norm(grad_f_x)
+            full_grad_norms_list.append(full_grad_norm)
         
-        return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals)
+        f_vals = np.array(f_vals_list)
+        successful_iters = np.array(successful_iters_list)
+        update_norms = np.array(update_norms_list)
+        full_grad_norms = np.array(full_grad_norms_list)
+        proj_grad_norms = np.array(proj_grad_norms_list)
+        red_grad_norms  = np.array(red_grad_norms_list)
+
+        # Derived outputs.
+        # Note the slicing of the full gradient, which has one more entry
+        # than others: that of the final iterate, which triggers termination.
+        red_full_grad_norm_ratios  = red_grad_norms / full_grad_norms[:-1]
+        proj_full_grad_norm_ratios = proj_grad_norms / full_grad_norms[:-1]
+
+        direction_deriv_evals = self.subspace_dim * k
+        
+        return SolverOutput(solver=self,
+                            final_x=x,
+                            final_k=k,
+                            f_vals=f_vals,
+                            successful_iters=successful_iters,
+                            update_norms=update_norms,
+                            full_grad_norms=full_grad_norms,
+                            proj_grad_norms=proj_grad_norms,
+                            red_grad_norms=red_grad_norms,
+                            proj_full_grad_norm_ratios=proj_full_grad_norm_ratios,
+                            red_full_grad_norm_ratios=red_full_grad_norm_ratios)
             

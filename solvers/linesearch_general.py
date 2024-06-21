@@ -35,7 +35,7 @@ class LinesearchGeneral:
         
         stop_cond = self.stop_crit_func(self.obj, self.max_iter, k, x, f_x, deriv_info, self.kwargs)
 
-        f_vals = [f_x]
+        f_vals_list = [f_x]
 
         while not stop_cond:
             k += 1
@@ -50,11 +50,11 @@ class LinesearchGeneral:
             f_x = self.obj.func(x)
             deriv_info = self.deriv_info_func(x)
 
-            f_vals.append(f_x)
+            f_vals_list.append(f_x)
             
             stop_cond = self.stop_crit_func(self.obj, self.max_iter, k, x, f_x, deriv_info, self.kwargs)
         
-        f_vals = np.array(f_vals) # convert into np array
+        f_vals = np.array(f_vals_list) # convert into np array
         
         return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals)
 

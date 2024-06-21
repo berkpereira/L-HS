@@ -93,7 +93,7 @@ class BFGSLinesearch:
             # Compute search direction
             direction = - H @ grad_vec
             # Compute step size
-            # TODO: use some of the output arguments of this linesearch
+            # TODO (not vital): use some of the output arguments of this linesearch
             # function, which returns quantities we do actually need (currently
             # some of this is being computed twice at each iteration)
             step_size, _, _, _, _, _ = self.strong_wolfe_linesearch(x=x,direction=direction)

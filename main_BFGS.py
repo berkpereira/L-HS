@@ -27,7 +27,7 @@ H0 = np.identity(INPUT_DIM)
 # SOLVER CONFIG
 C1 = 0.0001                # Armijo condition scaling in linesearch (commonly 1e-4)
 C2 = 0.9                   # Strong curvature condition scaling in linesearch (commonly 0.9)
-LINESEARCH_MAX_ITER = 10  # Maximum number of linesearch iterations.
+LINESEARCH_MAX_ITER = 10   # Maximum number of linesearch iterations.
 
 TOL = 1e-6
 MAX_ITER = 1_000

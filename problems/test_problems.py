@@ -4,7 +4,7 @@ Defines test problems and initial iterates to be imported into other scripts to 
 Can also include solutions, if known.
 """
 
-import numpy as np
+import autograd.numpy as np
 from scipy.optimize import rosen
 
 class Objective:

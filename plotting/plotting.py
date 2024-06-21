@@ -11,9 +11,9 @@ plt.rcParams.update({
     'savefig.pad_inches': 0.1
 })
 
-FIGSIZE_REF = (12, 6)
-
-
+FIGSIZE_REF = (17, 8)
+LINE_WIDTH = 1
+MARKER_SIZE = 1
 
 def plot_loss_vs_iteration(solver_outputs, labels=None):
     """
@@ -41,7 +41,7 @@ def plot_loss_vs_iteration(solver_outputs, labels=None):
     plt.grid(True, which="both", ls="-")
 
 # Below for plotting various quantities
-def plot_scalar_vs_iteration(solver_outputs, attr_names: list, log_plot: bool, labels=None):
+def plot_scalar_vs_iteration(solver_outputs, attr_names: list, log_plot: bool, alpha: float=1, use_markers: bool=False, marker_str: str='o', labels=None):
     plt.figure(figsize=FIGSIZE_REF)
     
     if labels is None:
@@ -53,14 +53,14 @@ def plot_scalar_vs_iteration(solver_outputs, attr_names: list, log_plot: bool, l
     for attr_name in attr_names:
         for solver_output, label in zip(solver_outputs, labels):
             values = getattr(solver_output, attr_name)
-            plt.plot(values, linestyle='-', label=f"{label} ({attr_name})")
+            
+            plt.plot(values, linestyle='None' if use_markers else '-', alpha=alpha, linewidth=LINE_WIDTH, marker=marker_str if use_markers else 'None', markersize=MARKER_SIZE, label=f"{label} ({attr_name})")
     
-
+    # Construct title
     title_str = ''
     for attr_name in attr_names:
         title_str += attr_name + ' '
-        title_str += 'vs Iteration'
-    
+    title_str += 'vs Iteration'
     plt.title(title_str)
     
     if log_plot:

@@ -18,12 +18,26 @@ np.random.seed(42)
 
 @dataclass
 class ProjectedCommonDirectionsConfig:
-    obj: any                    # Objective class instance.
-    subspace_update_method: str # Determines method for updating subspace.
-    subspace_dim: int           # Dimension of subproblem subspace.
-    reg_lambda: float           # Minimum allowable (POSITIVE) eigenvalue of projected Hessian.
+    """
+    obj: Objective class instance.
+    subspace_update_method: Determines method for updating subspace.
+    subspace_dim: Dimension of subproblem subspace.
+    reg_lambda: Minimum allowable (POSITIVE) eigenvalue of projected Hessian.
+    ...
+    
+    reproject: NOTE: relevant only to DETERMINISTIC variant. If False, each
+    gradient is projected only once, using the Q matrix from the previous iter.
+    If True, then each gradient is also reprojected, at the next iteration,
+    using its own iteration's Q matrix.
+    
+    """
+    obj: any                    
+    subspace_update_method: str
+    subspace_dim: int           
+    reg_lambda: float
     use_hess: bool = True       # Determines whether method uses Hessian information. If not, it uses in general a user-specified matrix B_k (think quasi-Newton methods). Default of True reflects Lee et al.'s reference paper's method.
     random_proj: bool = False   # Determines whether to use RANDOM matrices in projecting gradients.
+    reproject: bool = False     
     ensemble: str = ''          # Determines the random ensemble from which to draw random matrices for gradient projections.
     alpha: float = 0.001        # The Armijo condition scaling parameter.
     t_init: float = 1

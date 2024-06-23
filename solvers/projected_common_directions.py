@@ -131,7 +131,8 @@ class ProjectedCommonDirections:
         
         # Orthogonalise the basis matrix
         Q, _ = np.linalg.qr(P)
-        return Q, np.linalg.cond(P)
+        # Also returning condition number of P for storing (and plotting)
+        return Q, np.linalg.cond(P), np.linalg.matrix_rank(P)
 
     def optimise(self, x0):
         # Initialise algorithm
@@ -177,9 +178,10 @@ class ProjectedCommonDirections:
         else:
             D = None
         
-        Q, last_cond_no = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+        Q, last_cond_no, last_P_rank = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
 
         cond_nos_list = [last_cond_no]
+        P_ranks_list = [last_P_rank]
 
         # Project B matrix
         # Later may want to do this using Hessian actions in the case where Hessian information is used at all.
@@ -264,9 +266,10 @@ class ProjectedCommonDirections:
                 X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
                 D = np.hstack((D, np.linalg.solve(np.diag(np.diag(hess_f_x)), proj_grad).reshape(-1, 1))) # append newest crude diagonal Newton direction approximation
             
-            Q, last_cond_no = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+            Q, last_cond_no, last_P_rank = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
 
             cond_nos_list.append(last_cond_no)
+            P_ranks_list.append(last_P_rank)
 
             proj_B = np.transpose(Q) @ (full_B @ Q)
             proj_B = self.regularise_hessian(proj_B)
@@ -278,10 +281,12 @@ class ProjectedCommonDirections:
         proj_grad_norms = np.array(proj_grad_norms_list)
         angles_to_full_grad = np.array(angles_to_full_grad_list)
         cond_nos = np.array(cond_nos_list) # condition numbers of P matrix at each iteration
+        P_ranks = np.array(P_ranks_list)
 
         return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals, 
                             update_norms=update_norms,
                             full_grad_norms=full_grad_norms,
                             proj_grad_norms=proj_grad_norms,
                             angles_to_full_grad=angles_to_full_grad,
-                            cond_nos=cond_nos)
+                            cond_nos=cond_nos,
+                            P_ranks=P_ranks)

@@ -154,6 +154,7 @@ class ProjectedCommonDirections:
         # For later plotting
         f_vals_list = [f_x]
         update_norms_list = []
+        direction_norms_list = []
         angles_to_full_grad_list = []
         full_grad_norms_list = [np.linalg.norm(full_grad)]
         proj_grad_norms_list = [np.linalg.norm(proj_grad)]
@@ -203,18 +204,22 @@ class ProjectedCommonDirections:
                 break
             
             direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ proj_grad
+            
+            direction_norms_list.append(np.linalg.norm(direction))
+
             step_size = self.backtrack_armijo(x, direction, f_x, proj_grad)
             
             if self.verbose and k % self.iter_print_gap == 0:
                 x_str = ", ".join([f"{xi:7.4f}" for xi in x])
                 print(f"k = {k:4} || x = [{x_str}] || f(x) = {f_x:6.6e} || g_norm = {norm_full_grad:6.6e} || t = {step_size:8.6f}")
             
+
             
             x = x + step_size * direction
 
 
             last_update_norm = np.linalg.norm(step_size * direction)
-            last_angle_to_full_grad = np.dot(direction, -full_grad) / (np.linalg.norm(direction) * np.linalg.norm(full_grad)) * 180 / np.pi
+            last_angle_to_full_grad = np.arccos(np.dot(direction, -full_grad) / (np.linalg.norm(direction) * np.linalg.norm(full_grad))) * 180 / np.pi
             angles_to_full_grad_list.append(last_angle_to_full_grad)
 
             update_norms_list.append(last_update_norm)
@@ -277,6 +282,7 @@ class ProjectedCommonDirections:
         # Convert these to arrays for later plotting
         f_vals = np.array(f_vals_list)
         update_norms = np.array(update_norms_list)
+        direction_norms = np.array(direction_norms_list)
         full_grad_norms = np.array(full_grad_norms_list)
         proj_grad_norms = np.array(proj_grad_norms_list)
         angles_to_full_grad = np.array(angles_to_full_grad_list)
@@ -285,6 +291,7 @@ class ProjectedCommonDirections:
 
         return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals, 
                             update_norms=update_norms,
+                            direction_norms=direction_norms,
                             full_grad_norms=full_grad_norms,
                             proj_grad_norms=proj_grad_norms,
                             angles_to_full_grad=angles_to_full_grad,

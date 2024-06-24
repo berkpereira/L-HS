@@ -6,13 +6,24 @@ We also seek to make this version of the algorithm more general, including varia
 The common thread to all of these methods is that THE FULL GRADIENT IS NEVER USED IN ITSELF IN THE ALGORITHM.
 
 For discussion of these ideas, see relevant docs/*.md file.
+
+
+TODO:
+TODO:
+TODO:
+TODO:
+TODO:
+TODO:
+TODO:
+implement functionality to do with new reproject attribute.
+See notes in week25/post-meeting.md for details.
 """
 
 from dataclasses import dataclass
 
 import autograd.numpy as np
 from autograd import grad, hessian
-from solvers.utils import SolverOutput
+from solvers.utils import SolverOutput, scaled_gaussian, haar
 
 np.random.seed(42)
 
@@ -25,7 +36,7 @@ class ProjectedCommonDirectionsConfig:
     reg_lambda: Minimum allowable (POSITIVE) eigenvalue of projected Hessian.
     ...
     
-    reproject: NOTE: relevant only to DETERMINISTIC variant. If False, each
+    reproject_grad: NOTE: relevant only to DETERMINISTIC variant. If False, each
     gradient is projected only once, using the Q matrix from the previous iter.
     If True, then each gradient is also reprojected, at the next iteration,
     using its own iteration's Q matrix.
@@ -37,7 +48,7 @@ class ProjectedCommonDirectionsConfig:
     reg_lambda: float
     use_hess: bool = True       # Determines whether method uses Hessian information. If not, it uses in general a user-specified matrix B_k (think quasi-Newton methods). Default of True reflects Lee et al.'s reference paper's method.
     random_proj: bool = False   # Determines whether to use RANDOM matrices in projecting gradients.
-    reproject: bool = False     
+    reproject_grad: bool = False     
     ensemble: str = ''          # Determines the random ensemble from which to draw random matrices for gradient projections.
     alpha: float = 0.001        # The Armijo condition scaling parameter.
     t_init: float = 1
@@ -67,11 +78,12 @@ class ProjectedCommonDirections:
 
     # Draw a TALL sketching matrix from random ensemble.
     def draw_sketch(self):
-        # Recovering full-dimensional method.
-        if self.subspace_dim == self.obj.input_dim:
+        if self.subspace_dim == self.obj.input_dim: # Recovering full-dimensional method
             return np.identity(self.obj.input_dim)
         elif self.ensemble == 'scaled_gaussian':
-            return np.random.normal(scale=np.sqrt(1 / self.subspace_dim), size=(self.obj.input_dim, self.subspace_dim))
+            return scaled_gaussian(self.obj.input_dim, self.subspace_dim)
+        elif self.ensemble == 'haar':
+            return haar(self.obj.input_dim, self.subspace_dim)
         else:
             raise Exception('Unrecognised sketching matrix scheme!')
 
@@ -112,9 +124,11 @@ class ProjectedCommonDirections:
         # method == 'iterates_grads', (34) from Lee et al., 2022
         # method == 'iterates_grads_diagnewtons', (35) from Lee et al., 2022
 
-        # G should store some past gradient vectors
-        # X should store some past iterate vectors
-        # D should store some past crude Newton direction approximations (obtained by multiplying the inverse of the diagonal of Hessian diagonal by the gradient)
+        # G should store some past PROJECTED gradient vectors.
+        # X should store some past iterate vectors.
+        # D should store some past crude Newton direction
+        # approximations (obtained by multiplying the inverse of the
+        # diagonal of Hessian diagonal by the gradient).
         if self.subspace_update_method == 'grads':
             G = kwargs['grads_matrix']
             if G.shape[1] == self.subspace_dim:
@@ -147,6 +161,37 @@ class ProjectedCommonDirections:
         Q, _ = np.linalg.qr(P)
         # Also returning condition number of P for storing (and plotting)
         return Q, np.linalg.cond(P), np.linalg.matrix_rank(P)
+
+    def update_stored_vectors(self, x, proj_grad, G, X, D):
+        # Update stored vectors required for subspace constructions.
+        if self.subspace_update_method == 'grads':
+            if G.shape[1] == self.subspace_dim:
+                G = np.delete(G, 0, 1) # delete first (oldest) column
+            if self.reproject_grad and self.subspace_dim > 1:
+                raise NotImplementedError('Must implement gradient reprojection!')
+                # G[:,-1] =  # must re-assign the final column at this stage to be reprojected grad
+            G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
+        elif self.subspace_update_method == 'iterates_grads':
+            if 2 * G.shape[1] == self.subspace_dim:
+                G = np.delete(G, 0, 1) # delete first (oldest) column
+                X = np.delete(X, 0, 1)
+            if self.reproject_grad and self.subspace_dim > 1:
+                raise NotImplementedError('Must implement gradient reprojection!')
+                # G[:,-1] = # must re-assign the final column at this stage to be reprojected grad
+            G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
+            X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
+        elif self.subspace_update_method == 'iterates_grads_diagnewtons':
+            raise Exception('Implementation of "iterates_grads_diagnewtons" subspace construction in the projected case not yet thought out!')
+            if 3 * G.shape[1] == self.subspace_dim:
+                G = np.delete(G, 0, 1) # delete first (oldest) column
+                X = np.delete(X, 0, 1)
+                D = np.delete(D, 0, 1)
+            G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
+            X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
+            D = np.hstack((D, np.linalg.solve(np.diag(np.diag(hess_f_x)), proj_grad).reshape(-1, 1))) # append newest crude diagonal Newton direction approximation
+        
+        # Return updated matrices
+        return G, X, D
 
     def optimise(self, x0):
         # Initialise algorithm
@@ -241,17 +286,14 @@ class ProjectedCommonDirections:
             if self.random_proj and last_update_norm < 1e-10:
                 print('Very small update with randomised projections!')
 
-
             f_x = self.func(x)
             full_grad = self.grad_func(x)
             norm_full_grad = np.linalg.norm(full_grad)
 
             proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
 
-
             full_grad_norms_list.append(np.linalg.norm(full_grad))
             proj_grad_norms_list.append(np.linalg.norm(proj_grad))
-
 
             # G_proj_unlimited = np.hstack((G_proj_unlimited, proj_grad.reshape(-1,1)))
             # G_full_unlimited = np.hstack((G_full_unlimited, full_grad.reshape(-1,1)))
@@ -265,25 +307,10 @@ class ProjectedCommonDirections:
             # Update records of previous iterations, for further plotting
             f_vals_list.append(f_x)
 
-            if self.subspace_update_method == 'grads':
-                if G.shape[1] == self.subspace_dim:
-                    G = np.delete(G, 0, 1) # delete first (oldest) column
-                G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
-            elif self.subspace_update_method == 'iterates_grads':
-                if 2 * G.shape[1] == self.subspace_dim:
-                    G = np.delete(G, 0, 1) # delete first (oldest) column
-                    X = np.delete(X, 0, 1)
-                G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
-                X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
-            elif self.subspace_update_method == 'iterates_grads_diagnewtons':
-                raise Exception('Implementation of "iterates_grads_diagnewtons" subspace construction in the projected case not yet thought out!')
-                if 3 * G.shape[1] == self.subspace_dim:
-                    G = np.delete(G, 0, 1) # delete first (oldest) column
-                    X = np.delete(X, 0, 1)
-                    D = np.delete(D, 0, 1)
-                G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
-                X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
-                D = np.hstack((D, np.linalg.solve(np.diag(np.diag(hess_f_x)), proj_grad).reshape(-1, 1))) # append newest crude diagonal Newton direction approximation
+            # Update stored vectors required for subspace constructions.
+            G, X, D = self.update_stored_vectors(x=x,
+                                                 proj_grad=proj_grad,
+                                                 G=G, X=X, D=D)
             
             Q, last_cond_no, last_P_rank = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
 

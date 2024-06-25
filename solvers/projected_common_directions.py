@@ -6,17 +6,6 @@ We also seek to make this version of the algorithm more general, including varia
 The common thread to all of these methods is that THE FULL GRADIENT IS NEVER USED IN ITSELF IN THE ALGORITHM.
 
 For discussion of these ideas, see relevant docs/*.md file.
-
-
-TODO:
-TODO:
-TODO:
-TODO:
-TODO:
-TODO:
-TODO:
-implement functionality to do with new reproject attribute.
-See notes in week25/post-meeting.md for details.
 """
 
 from dataclasses import dataclass
@@ -71,6 +60,13 @@ class ProjectedCommonDirections:
         if self.subspace_update_method == 'iterates_grads_diagnewtons':
             if self.subspace_dim % 3 != 0:
                 raise Exception('With iterates_grads_diagnewtons method, subspace dimension must be multiple of 3.')
+        
+        # Checks on gradient reprojection and whether subspace dimension allows it
+        if (self.reproject_grad and 
+            ((self.subspace_update_method == 'grads' and self.subspace_dim <= 1)
+             or (self.subspace_update_method == 'iterates_grads' and self.subspace_dim <= 2)
+             or (self.subspace_update_method == 'iterates_grads_diagnewtons' and self.subspace_dim <= 3))):
+            raise Exception("Gradients can only be reprojected if we're storing more than one for each subspace!")
         
         self.func = self.obj.func # callable objective func
         self.grad_func = grad(self.func)
@@ -162,22 +158,28 @@ class ProjectedCommonDirections:
         # Also returning condition number of P for storing (and plotting)
         return Q, np.linalg.cond(P), np.linalg.matrix_rank(P)
 
-    def update_stored_vectors(self, x, proj_grad, G, X, D):
-        # Update stored vectors required for subspace constructions.
+    # Update stored vectors required for subspace constructions.
+    def update_stored_vectors(self, x, proj_grad, full_grad_prev, Q_prev,
+                              grads_matrix,
+                              iterates_matrix,
+                              hess_diag_dirs_matrix):
+        G = grads_matrix
+        X = iterates_matrix
+        D = hess_diag_dirs_matrix
         if self.subspace_update_method == 'grads':
             if G.shape[1] == self.subspace_dim:
                 G = np.delete(G, 0, 1) # delete first (oldest) column
-            if self.reproject_grad and self.subspace_dim > 1:
-                raise NotImplementedError('Must implement gradient reprojection!')
-                # G[:,-1] =  # must re-assign the final column at this stage to be reprojected grad
+            if (not self.random_proj) and self.reproject_grad:
+                reproj_grad = Q_prev @ np.transpose(Q_prev) @ full_grad_prev
+                G[:,-1] = reproj_grad # must re-assign the final column at this stage to be reprojected grad
             G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
         elif self.subspace_update_method == 'iterates_grads':
             if 2 * G.shape[1] == self.subspace_dim:
                 G = np.delete(G, 0, 1) # delete first (oldest) column
                 X = np.delete(X, 0, 1)
-            if self.reproject_grad and self.subspace_dim > 1:
-                raise NotImplementedError('Must implement gradient reprojection!')
-                # G[:,-1] = # must re-assign the final column at this stage to be reprojected grad
+            if (not self.random_proj) and self.reproject_grad:
+                reproj_grad = Q_prev @ np.transpose(Q_prev) @ full_grad_prev
+                G[:,-1] = reproj_grad # must re-assign the final column at this stage to be reprojected grad
             G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
             X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
         elif self.subspace_update_method == 'iterates_grads_diagnewtons':
@@ -194,7 +196,6 @@ class ProjectedCommonDirections:
         return G, X, D
 
     def optimise(self, x0):
-        # Initialise algorithm
         x = x0
         f_x = self.func(x)
         full_grad = self.grad_func(x)
@@ -272,19 +273,15 @@ class ProjectedCommonDirections:
                 x_str = ", ".join([f"{xi:7.4f}" for xi in x])
                 print(f"k = {k:4} || x = [{x_str}] || f(x) = {f_x:6.6e} || g_norm = {norm_full_grad:6.6e} || t = {step_size:8.6f}")
             
-
             
-            x = x + step_size * direction
+            full_grad_prev = full_grad
 
+            x = x + step_size * direction
 
             last_update_norm = np.linalg.norm(step_size * direction)
             last_angle_to_full_grad = np.arccos(np.dot(direction, -full_grad) / (np.linalg.norm(direction) * np.linalg.norm(full_grad))) * 180 / np.pi
-            angles_to_full_grad_list.append(last_angle_to_full_grad)
-
             update_norms_list.append(last_update_norm)
-
-            if self.random_proj and last_update_norm < 1e-10:
-                print('Very small update with randomised projections!')
+            angles_to_full_grad_list.append(last_angle_to_full_grad)
 
             f_x = self.func(x)
             full_grad = self.grad_func(x)
@@ -302,7 +299,7 @@ class ProjectedCommonDirections:
                 hess_f_x = self.hess_func(x)
                 full_B = hess_f_x
             else:
-                raise NotImplementedError('Not yet implemented!')
+                raise NotImplementedError('Quasi-Newton stuff not yet implemented!')
             
             # Update records of previous iterations, for further plotting
             f_vals_list.append(f_x)
@@ -310,9 +307,15 @@ class ProjectedCommonDirections:
             # Update stored vectors required for subspace constructions.
             G, X, D = self.update_stored_vectors(x=x,
                                                  proj_grad=proj_grad,
-                                                 G=G, X=X, D=D)
-            
-            Q, last_cond_no, last_P_rank = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
+                                                 full_grad_prev=full_grad_prev,
+                                                 Q_prev=Q,
+                                                 grads_matrix=G,
+                                                 iterates_matrix=X,
+                                                 hess_diag_dirs_matrix=D)
+                        
+            Q, last_cond_no, last_P_rank = self.update_subspace(grads_matrix=G,
+                                                                iterates_matrix=X,
+                                                                hess_diag_dirs_matrix=D)
 
             cond_nos_list.append(last_cond_no)
             P_ranks_list.append(last_P_rank)

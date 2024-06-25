@@ -6,8 +6,6 @@ Namely, here we implement a version of that algorithm that never uses full gradi
 We also seek to make this version of the algorithm more general, including variants that do/do not use Hessian information, etc.
 The common thread to all of these methods is that THE FULL GRADIENT IS NEVER USED IN ITSELF IN THE ALGORITHM.
 
-There are broadly two ideas for how to "define" projected gradients. One could use randomisation or refrain from it. Suppose that at each iteration our $P_k$ subspace matrix construction makes use of gradient information (in some form) at the previous m iterates.
-
 ## Some notation
 
 We use $P_k$ to denote matrices whose column range is contained in the subspace to which we reduce the problem. These columns are constructed using problem information (e.g., iterates, projected gradients of the objective, ...). We may refer to the orthogonalised basis as $\hat{Q}_k$, through the QR factorisation
@@ -27,10 +25,10 @@ $$
 Note that thus the entire subspace orthonormal basis matrix is
 $$
 \begin{align}
-Q_k = \left[ \hat{Q}_k, \, \tilde{Q}_k \right]
+Q_k = \left[ \hat{Q}_k, \, \tilde{Q}_k \right] \in \mathbb{R}^{n \times m}
 \end{align}
 $$
-Note that $m$ is the dimension of the matrices used to compute projected gradients as well (whether deterministic or randomised ones).
+Note that $m (= m_1 + m_2)$ is the dimension of the matrices used to compute projected gradients as well (whether deterministic or randomised ones).
 
 
 We use $B_k$ to refer to either the Hessian (if the relevant Boolean attribute of the solver class is set to true) or some other approximation to the Hessian (think quasi-Newton). If the user sets $B_k = I$, Newton-like directions become steepest descent-like directions instead.
@@ -58,11 +56,11 @@ We could store $m$ past projected gradients as is, which seems sensible.
 
 A (seemingly much more compute-intensive) alternative (which is not implemented) would be to recompute $m$ projected gradients at each iteration, using only the previously known (k-1)th basis $Q_{k-1}$. This would scale, for each iteration, the number of directional derivatives to be computed up by a factor of $m$.
 
-Yet another, not so expensive, alternative, is to reproject gradients, after the "fact", so that the projection matrix and iterate have the same iteration subscript. That is, at iteration $k$:
+Yet another, not so expensive, alternative, is to reproject gradients, after the "fact", so that the projection matrix and iterate **have the same iteration subscript**. That is, at iteration $k$, we do:
 $$
 \begin{align}
 \tilde{\nabla}{f}(x_k) &:= Q_{k-1} Q_{k-1}^\top \nabla{f}(x_k), \\
-\tilde{\nabla}{f}(x_{k-1}) &:= Q_{k-1} Q_{k-1}^\top \nabla{f}(x_k). \quad \text{(reassignment!)}
+\tilde{\nabla}{f}(x_{k-1}) &:= Q_{k-1} Q_{k-1}^\top \nabla{f}(x_{k-1}). \quad \text{(reassignment)}
 \end{align}
 $$
 In this manner, all gradients except for the current one are projected, after the fact (i.e., for use in subsequent subspace constructions), with the subspace basis matrix used in their corresponding iteration.
@@ -75,4 +73,16 @@ While using randomisation, we may use the ideas above while, instead, choosing t
 $$
 \tilde{\nabla}{f}(x_k) = S_k S_k^\top \nabla{f}(x_k),
 $$
-where $S_k$ is a (**tall**) sketching matrix from an appropriately chosen random ensemble. In this case, the word projection takes on its less strict sense from randomised NLA (not the classical meaning from linear algebra/functional analysis, where exact idempotence is required).
+where
+$$
+S_k \in \mathbb{R}^{n \times m}
+$$
+is a (**tall**) sketching matrix from an appropriately chosen random ensemble. In this case, the word projection takes on its less strict sense from randomised NLA (not the classical meaning from linear algebra/functional analysis, where exact idempotence is required).
+
+In this case there would seem to be little need to require reprojection of gradients, since projection matrices are randomised.
+
+## Subspace basis constructions
+
+Generically, we use $m_1$ directions derived from problem information, such as past iterates, projected gradients, etc.
+
+In general, we also have $m_2$ (which may be zero) directions, orthogonal to the aforementioned $m_1$ directions, appended to extend the subspace with some degree of randomness.

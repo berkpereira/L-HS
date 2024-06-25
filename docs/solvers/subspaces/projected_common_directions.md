@@ -10,9 +10,28 @@ There are broadly two ideas for how to "define" projected gradients. One could u
 
 ## Some notation
 
-We use $P_k$ to denote matrices whose column range describes the subspace on which we solve the subproblem at each iteration. These are **not**, in general, orthonormal.
+We use $P_k$ to denote matrices whose column range is contained in the subspace to which we reduce the problem. These columns are constructed using problem information (e.g., iterates, projected gradients of the objective, ...). We may refer to the orthogonalised basis as $\hat{Q}_k$, through the QR factorisation
+$$
+P_k = \hat{Q}_k \hat{R}_k \in \mathbb{R}^{n \times m_1}, \quad \forall k \in \mathbb{N}
+$$
 
-We therefore use $Q_k$ to denote matrices with the same column space as $P_k$, but which are orthonormal (i.e., $Q_k^\top Q_k = I$). This is what we use in computations in the main optimiser loop.
+However, in general we may also, at each iteration, append a few randomised directions, orthogonal to those of $\hat{Q}_k$. We may refer to their orthogonalised basis matrix as $\tilde{Q}_k$. Note that
+$$
+\tilde{Q}_k \in \mathbb{R}^{n \times m_2}, \quad \forall k \in \mathbb{N}
+$$
+As mentioned, this is constructed so that
+$$
+\tilde{Q}_k^\top \hat{Q}_k = 0, \quad \forall k \in \mathbb{N}.
+$$
+
+Note that thus the entire subspace orthonormal basis matrix is
+$$
+\begin{align}
+Q_k = \left[ \hat{Q}_k, \, \tilde{Q}_k \right]
+\end{align}
+$$
+Note that $m$ is the dimension of the matrices used to compute projected gradients as well (whether deterministic or randomised ones).
+
 
 We use $B_k$ to refer to either the Hessian (if the relevant Boolean attribute of the solver class is set to true) or some other approximation to the Hessian (think quasi-Newton). If the user sets $B_k = I$, Newton-like directions become steepest descent-like directions instead.
 $$
@@ -23,16 +42,32 @@ $$
 
 ### Without randomisation
 
-Without using randomisation, we can, in constructing P_k, use a projection of the gradient at the current iterate using the orthogonalised subspace basis matrix of iteration (k-1).
+#### Without reprojection
+
+Without using randomisation, we can, in constructing $P_k$, use a projection of the gradient at the current iterate using the orthogonalised subspace basis matrix of iteration $(k-1)$.
 $$
 \begin{align}
-P_k = Q_k R_k \quad \forall k \in \mathbb{N} \text{ (QR decomposition)} \\
-\tilde{\nabla}{f}(x_{k+1}) := Q_k Q_k^\top \nabla{f}(x_{k+1}) \\
-P_{k+1} = P_{k+1}\left(\tilde{\nabla}{f}(x_{k+1})\right)
+P_k = \hat{Q}_k \hat{R}_k \quad \forall k \in \mathbb{N} \text{ (QR decomposition)} \\
+\tilde{\nabla}{f}(x_k) := Q_{k-1} Q_{k-1}^\top \nabla{f}(x_{k}) \\
 \end{align}
 $$
 
-We could store $m$ past projected gradients as is, which seems more sensible. A (seemingly much more compute-intensive) alternative would be to recompute $m$ projected gradients at each iteration, using only the previously known (k-1)th basis $Q_{k-1}$. This would scale, for each iteration, the number of directional derivatives to be computed up by a factor of m. For this reason I stick with the former option, at least to begin with.
+We could store $m$ past projected gradients as is, which seems sensible.
+
+#### With reprojection
+
+A (seemingly much more compute-intensive) alternative (which is not implemented) would be to recompute $m$ projected gradients at each iteration, using only the previously known (k-1)th basis $Q_{k-1}$. This would scale, for each iteration, the number of directional derivatives to be computed up by a factor of $m$.
+
+Yet another, not so expensive, alternative, is to reproject gradients, after the "fact", so that the projection matrix and iterate have the same iteration subscript. That is, at iteration $k$:
+$$
+\begin{align}
+\tilde{\nabla}{f}(x_k) &:= Q_{k-1} Q_{k-1}^\top \nabla{f}(x_k), \\
+\tilde{\nabla}{f}(x_{k-1}) &:= Q_{k-1} Q_{k-1}^\top \nabla{f}(x_k). \quad \text{(reassignment!)}
+\end{align}
+$$
+In this manner, all gradients except for the current one are projected, after the fact (i.e., for use in subsequent subspace constructions), with the subspace basis matrix used in their corresponding iteration.
+
+**Note that**, if we only store a **single** projected gradient in $P_k$ at each iteration, none of this reassignment takes place, since each gradient is discarded by the time we're considering the next iterate.
 
 ### With randomisation
 

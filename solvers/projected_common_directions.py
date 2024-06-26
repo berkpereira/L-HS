@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import autograd.numpy as np
 from autograd import grad, hessian
-from solvers.utils import SolverOutput, scaled_gaussian, haar
+from solvers.utils import SolverOutput, scaled_gaussian, haar, append_orth_dirs
 
 np.random.seed(42)
 
@@ -29,6 +29,10 @@ class ProjectedCommonDirectionsConfig:
     gradient is projected only once, using the Q matrix from the previous iter.
     If True, then each gradient is also reprojected, at the next iteration,
     using its own iteration's Q matrix.
+
+    append_rand_dirs: NOTE: Determines how many random directions to append
+    to the (otherwise deterministic) subspace matrix at each iteration.
+    Uses solvers.utils.append_orth_dirs.
     
     """
     obj: any                    
@@ -37,7 +41,8 @@ class ProjectedCommonDirectionsConfig:
     reg_lambda: float
     use_hess: bool = True       # Determines whether method uses Hessian information. If not, it uses in general a user-specified matrix B_k (think quasi-Newton methods). Default of True reflects Lee et al.'s reference paper's method.
     random_proj: bool = False   # Determines whether to use RANDOM matrices in projecting gradients.
-    reproject_grad: bool = False     
+    reproject_grad: bool = False  
+    append_rand_dirs: int = 0
     ensemble: str = ''          # Determines the random ensemble from which to draw random matrices for gradient projections.
     alpha: float = 0.001        # The Armijo condition scaling parameter.
     t_init: float = 1
@@ -52,20 +57,28 @@ class ProjectedCommonDirections:
         # Set all attributes given in ProjectedCommonDirectionsConfig
         for key, value in config.__dict__.items():
             setattr(self, key, value)
+
+        # With "deterministic" in this context we refer to directions in the
+        # column space of P_k which have some relation to problem information.
+        # In this context, even RANDOMLY projected gradients of f are still
+        # called "deterministic" directions.
+        # The contrast is made with random orthogonal appended directions used
+        # at each iteration.
+        self.no_determ_dirs = self.subspace_dim - self.append_rand_dirs
         
         # Some simple checks on allowable subspace dimension
         if self.subspace_update_method == 'iterates_grads':
-            if self.subspace_dim % 2 != 0:
-                raise Exception('With iterates_grads method, subspace dimension must be multiple of 2.')
+            if self.no_determ_dirs % 2 != 0:
+                raise Exception('With iterates_grads method, "deterministic" subspace dimension must be multiple of 2.')
         if self.subspace_update_method == 'iterates_grads_diagnewtons':
-            if self.subspace_dim % 3 != 0:
-                raise Exception('With iterates_grads_diagnewtons method, subspace dimension must be multiple of 3.')
+            if self.no_determ_dirs % 3 != 0:
+                raise Exception('With iterates_grads_diagnewtons method, "deterministic" subspace dimension must be multiple of 3.')
         
         # Checks on gradient reprojection and whether subspace dimension allows it
-        if (self.reproject_grad and 
-            ((self.subspace_update_method == 'grads' and self.subspace_dim <= 1)
-             or (self.subspace_update_method == 'iterates_grads' and self.subspace_dim <= 2)
-             or (self.subspace_update_method == 'iterates_grads_diagnewtons' and self.subspace_dim <= 3))):
+        if (self.reproject_grad and (not self.random_proj) and
+            ((self.subspace_update_method == 'grads' and self.no_determ_dirs <= 1)
+             or (self.subspace_update_method == 'iterates_grads' and self.no_determ_dirs <= 2)
+             or (self.subspace_update_method == 'iterates_grads_diagnewtons' and self.no_determ_dirs <= 3))):
             raise Exception("Gradients can only be reprojected if we're storing more than one for each subspace!")
         
         self.func = self.obj.func # callable objective func
@@ -125,36 +138,26 @@ class ProjectedCommonDirections:
         # D should store some past crude Newton direction
         # approximations (obtained by multiplying the inverse of the
         # diagonal of Hessian diagonal by the gradient).
+
         if self.subspace_update_method == 'grads':
             G = kwargs['grads_matrix']
-            if G.shape[1] == self.subspace_dim:
-                P = G
-            else:
-                P = np.zeros(shape=(self.obj.input_dim, self.subspace_dim))
-                P[:,:(self.subspace_dim - G.shape[1])] = np.random.normal(size=(self.obj.input_dim, self.subspace_dim - G.shape[1]))
-                P[:,-G.shape[1]:] = G
+            P = G
         elif self.subspace_update_method == 'iterates_grads':
             G = kwargs['grads_matrix']
             X = kwargs['iterates_matrix']
-            if 2 * G.shape[1] == self.subspace_dim:
-                P = np.hstack((G, X))
-            else:
-                P = np.zeros(shape=(self.obj.input_dim, self.subspace_dim))
-                P[:,:(self.subspace_dim - 2 * G.shape[1])] = np.random.normal(size=(self.obj.input_dim, self.subspace_dim - 2 * G.shape[1]))
-                P[:,-2 * G.shape[1]:] = np.hstack((G, X))
+            P = np.hstack((G, X))
         elif self.subspace_update_method == 'iterates_grads_diagnewtons':
+            raise NotImplementedError('Subspace construction not yet implemented in projected case.')
             G = kwargs['grads_matrix']
             X = kwargs['iterates_matrix']
             D = kwargs['hess_diag_dirs_matrix']
-            if 3 * G.shape[1] == self.subspace_dim:
-                P = np.hstack((G, X, D))
-            else:
-                P = np.zeros(shape=(self.obj.input_dim, self.subspace_dim))
-                P[:,:(self.subspace_dim - 3 * G.shape[1])] = np.random.normal(size=(self.obj.input_dim, self.subspace_dim - 3 * G.shape[1]))
-                P[:,-3 * G.shape[1]:] = np.hstack((G, X, D))
+            P = np.hstack((G, X, D))
         
-        # Orthogonalise the basis matrix
-        Q, _ = np.linalg.qr(P)
+        # Add orthogonal random directions as necessary
+        Q = append_orth_dirs(curr_mat=P,
+                             no_dirs=self.subspace_dim - P.shape[1],
+                             curr_is_orth=False)
+        
         # Also returning condition number of P for storing (and plotting)
         return Q, np.linalg.cond(P), np.linalg.matrix_rank(P)
 
@@ -167,14 +170,14 @@ class ProjectedCommonDirections:
         X = iterates_matrix
         D = hess_diag_dirs_matrix
         if self.subspace_update_method == 'grads':
-            if G.shape[1] == self.subspace_dim:
+            if G.shape[1] == self.no_determ_dirs:
                 G = np.delete(G, 0, 1) # delete first (oldest) column
             if (not self.random_proj) and self.reproject_grad:
                 reproj_grad = Q_prev @ np.transpose(Q_prev) @ full_grad_prev
                 G[:,-1] = reproj_grad # must re-assign the final column at this stage to be reprojected grad
             G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
         elif self.subspace_update_method == 'iterates_grads':
-            if 2 * G.shape[1] == self.subspace_dim:
+            if 2 * G.shape[1] == self.no_determ_dirs:
                 G = np.delete(G, 0, 1) # delete first (oldest) column
                 X = np.delete(X, 0, 1)
             if (not self.random_proj) and self.reproject_grad:
@@ -184,7 +187,7 @@ class ProjectedCommonDirections:
             X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
         elif self.subspace_update_method == 'iterates_grads_diagnewtons':
             raise Exception('Implementation of "iterates_grads_diagnewtons" subspace construction in the projected case not yet thought out!')
-            if 3 * G.shape[1] == self.subspace_dim:
+            if 3 * G.shape[1] == self.no_determ_dirs:
                 G = np.delete(G, 0, 1) # delete first (oldest) column
                 X = np.delete(X, 0, 1)
                 D = np.delete(D, 0, 1)

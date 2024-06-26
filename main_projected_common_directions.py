@@ -18,20 +18,21 @@ subspace_methods_list = ['grads',                        # 0
 
 # SELECT PROBLEM
 PROBLEM_NAME = test_problems_list[0]
-INPUT_DIM = 16
+INPUT_DIM = 10
 x0, obj = problems.test_problems.select_problem(problem_name=PROBLEM_NAME, input_dim=INPUT_DIM)
 
 # SOLVER CONFIG
 SUBSPACE_METHOD = subspace_methods_list[1]
 
 SUBSPACE_DIM = 6
-APPEND_RAND_DIRS = 0 # compare with setting this equal to 2: yields worse results!...
+APPEND_RAND_DIRS = 2
 
 REG_LAMBDA = 0.01
 USE_HESS = True
 
-RANDOM_PROJ = True
+RANDOM_PROJ = False
 
+# NOTE: makes no difference in the randomised case
 REPROJECT_GRAD = False
 
 ENSEMBLE = 'haar'
@@ -40,7 +41,7 @@ ALPHA = 0.01
 T_INIT = 1
 TAU = 0.5
 
-MAX_ITER = 1_000
+MAX_ITER = 3_000
 TOL = 1e-3
 ITER_PRINT_GAP = 20
 

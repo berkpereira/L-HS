@@ -46,19 +46,24 @@ def haar(m, n):
 # It returns an orthonormal matrix including the directions of curr_mat's columns
 # along with no_dirs (int) random directions.
 def append_orth_dirs(curr_mat: np.ndarray, no_dirs: int, curr_is_orth: bool):
-    n = curr_mat.shape[0] # column/ambient dimension
-    A = np.random.randn(n, no_dirs)
-
     # curr_is_orth: bool. Input argument which specifies whether curr_mat is
     # an orthonormal matrix.
     if curr_is_orth:
         curr_mat_orth = curr_mat
     else:
-        curr_mat_orth, _ = np.qr(curr_mat)
+        curr_mat_orth, _ = np.linalg.qr(curr_mat)
+
+    # If 0 directions to be added, simply return the
+    # orthogonalised input matrix.
+    if no_dirs == 0:
+        return curr_mat_orth
+
+    n = curr_mat.shape[0] # column/ambient dimension
+    A = np.random.randn(n, no_dirs)
     
     # orthogonalise directions in A versus curr_mat
-    A = A - curr_mat_orth @ np.transpose(curr_mat_orth) @ curr_mat
+    A = (np.eye(n) - curr_mat_orth @ np.transpose(curr_mat_orth)) @ A
     
-    new_dirs_mat, _ = np.qr(A)
+    new_dirs_mat, _ = np.linalg.qr(A)
 
     return np.hstack((curr_mat_orth, new_dirs_mat))

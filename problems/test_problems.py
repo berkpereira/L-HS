@@ -21,7 +21,7 @@ class Objective:
 # The starting point seems to have a significant influence on whether the minimum is found or not.
 def rosenbrock(input_dim):
     x0 = np.ones(input_dim, dtype='float32')
-    x0[::2] = -1.2
+    x0[::2] = -1.2 # assign -1.2 to every other entry in x0
 
     x_sol = np.ones(input_dim)
     f_sol = 0

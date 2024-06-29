@@ -14,13 +14,11 @@ import autograd.numpy as np
 from autograd import grad, hessian
 from solvers.utils import SolverOutput, scaled_gaussian, haar, append_orth_dirs
 
-np.random.seed(42)
-
 @dataclass
 class ProjectedCommonDirectionsConfig:
     """
     obj: Objective class instance.
-    subspace_update_method: Determines method for updating subspace.
+    subspace_constr_method: Determines method for updating subspace.
     subspace_dim: Dimension of subproblem subspace.
     reg_lambda: Minimum allowable (POSITIVE) eigenvalue of projected Hessian.
     ...
@@ -36,7 +34,7 @@ class ProjectedCommonDirectionsConfig:
     
     """
     obj: any                    
-    subspace_update_method: str
+    subspace_constr_method: str
     subspace_dim: int           
     reg_lambda: float
     use_hess: bool = True       # Determines whether method uses Hessian information. If not, it uses in general a user-specified matrix B_k (think quasi-Newton methods). Default of True reflects Lee et al.'s reference paper's method.
@@ -58,27 +56,33 @@ class ProjectedCommonDirections:
         for key, value in config.__dict__.items():
             setattr(self, key, value)
 
+        if self.subspace_constr_method == 'random' and self.append_rand_dirs > 0:
+            raise Exception('It makes no sense to append random directions when the entire subspace construction is random anyway!')
+
         # With "deterministic" in this context we refer to directions in the
         # column space of P_k which have some relation to problem information.
         # In this context, even RANDOMLY projected gradients of f are still
         # called "deterministic" directions.
         # The contrast is made with random orthogonal appended directions used
         # at each iteration.
-        self.no_determ_dirs = self.subspace_dim - self.append_rand_dirs
+        self.no_problem_dirs = self.subspace_dim - self.append_rand_dirs
+
+        if self.no_problem_dirs <= 0 and self.subspace_constr_method != 'random':
+            raise Exception('It makes no sense to have no problem information in subspace construction when not using a purely randomised subspace approach!')
         
         # Some simple checks on allowable subspace dimension
-        if self.subspace_update_method == 'iterates_grads':
-            if self.no_determ_dirs % 2 != 0:
+        if self.subspace_constr_method == 'iterates_grads':
+            if self.no_problem_dirs % 2 != 0:
                 raise Exception('With iterates_grads method, "deterministic" subspace dimension must be multiple of 2.')
-        if self.subspace_update_method == 'iterates_grads_diagnewtons':
-            if self.no_determ_dirs % 3 != 0:
+        if self.subspace_constr_method == 'iterates_grads_diagnewtons':
+            if self.no_problem_dirs % 3 != 0:
                 raise Exception('With iterates_grads_diagnewtons method, "deterministic" subspace dimension must be multiple of 3.')
         
         # Checks on gradient reprojection and whether subspace dimension allows it
         if (self.reproject_grad and (not self.random_proj) and
-            ((self.subspace_update_method == 'grads' and self.no_determ_dirs <= 1)
-             or (self.subspace_update_method == 'iterates_grads' and self.no_determ_dirs <= 2)
-             or (self.subspace_update_method == 'iterates_grads_diagnewtons' and self.no_determ_dirs <= 3))):
+            ((self.subspace_constr_method == 'grads' and self.no_problem_dirs <= 1)
+             or (self.subspace_constr_method == 'iterates_grads' and self.no_problem_dirs <= 2)
+             or (self.subspace_constr_method == 'iterates_grads_diagnewtons' and self.no_problem_dirs <= 3))):
             raise Exception("Gradients can only be reprojected if we're storing more than one for each subspace!")
         
         self.func = self.obj.func # callable objective func
@@ -139,27 +143,68 @@ class ProjectedCommonDirections:
         # approximations (obtained by multiplying the inverse of the
         # diagonal of Hessian diagonal by the gradient).
 
-        if self.subspace_update_method == 'grads':
+        if self.subspace_constr_method == 'grads':
             G = kwargs['grads_matrix']
             P = G
-        elif self.subspace_update_method == 'iterates_grads':
+        elif self.subspace_constr_method == 'iterates_grads':
             G = kwargs['grads_matrix']
             X = kwargs['iterates_matrix']
             P = np.hstack((G, X))
-        elif self.subspace_update_method == 'iterates_grads_diagnewtons':
+        elif self.subspace_constr_method == 'iterates_grads_diagnewtons':
             raise NotImplementedError('Subspace construction not yet implemented in projected case.')
             G = kwargs['grads_matrix']
             X = kwargs['iterates_matrix']
             D = kwargs['hess_diag_dirs_matrix']
             P = np.hstack((G, X, D))
+        elif self.subspace_constr_method == 'random':
+            # In this case no problem information is used in building the subspace basis
+            P = None
         
         # Add orthogonal random directions as necessary
-        Q = append_orth_dirs(curr_mat=P,
-                             no_dirs=self.subspace_dim - P.shape[1],
-                             curr_is_orth=False)
+        if self.subspace_constr_method == 'random': # Using purely randomised subspace construction
+            Q = append_orth_dirs(curr_mat=P,
+                                ambient_dim=self.obj.input_dim,
+                                no_dirs=self.subspace_dim,
+                                curr_is_orth=False)
+        else: 
+            Q = append_orth_dirs(curr_mat=P,
+                                ambient_dim=self.obj.input_dim,
+                                no_dirs=self.subspace_dim - P.shape[1],
+                                curr_is_orth=False)
         
         # Also returning condition number of P for storing (and plotting)
-        return Q, np.linalg.cond(P), np.linalg.matrix_rank(P)
+        if self.subspace_constr_method != 'random':
+            return Q, np.linalg.cond(P), np.linalg.matrix_rank(P)
+        else:
+            return Q, None, None
+
+    # Initialise the vectors to be stored throughout the algorithm (if any)
+    def init_stored_vectors(self, x, grad_vec):
+        if self.subspace_constr_method == 'grads':
+            G = np.array(grad_vec, ndmin=2) # store gradient vectors
+            G = G.reshape(-1, 1)
+            X = None
+            D = None
+        elif self.subspace_constr_method == 'iterates_grads':
+            G = np.array(grad_vec, ndmin=2) # store gradient vectors
+            G = G.reshape(-1, 1)
+            X = np.array(x, ndmin=2) # store iterates
+            X = X.reshape(-1, 1)
+            D = None
+        elif self.subspace_constr_method == 'iterates_grads_diagnewtons':
+            raise NotImplementedError('Not implemented!')
+            G = np.array(grad_vec, ndmin=2) # store gradient vectors
+            G = G.reshape(-1, 1)
+            X = np.array(x, ndmin=2) # store iterates
+            X = X.reshape(-1, 1)
+            D = np.linalg.solve(np.diag(np.diag(hess_f_x)), grad_vec)
+            D = D.reshape(-1, 1)
+        elif self.subspace_constr_method == 'random':
+            G = None
+            X = None
+            D = None
+        
+        return G, X, D
 
     # Update stored vectors required for subspace constructions.
     def update_stored_vectors(self, x, proj_grad, full_grad_prev, Q_prev,
@@ -169,15 +214,15 @@ class ProjectedCommonDirections:
         G = grads_matrix
         X = iterates_matrix
         D = hess_diag_dirs_matrix
-        if self.subspace_update_method == 'grads':
-            if G.shape[1] == self.no_determ_dirs:
+        if self.subspace_constr_method == 'grads':
+            if G.shape[1] == self.no_problem_dirs:
                 G = np.delete(G, 0, 1) # delete first (oldest) column
             if (not self.random_proj) and self.reproject_grad:
                 reproj_grad = Q_prev @ np.transpose(Q_prev) @ full_grad_prev
                 G[:,-1] = reproj_grad # must re-assign the final column at this stage to be reprojected grad
             G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
-        elif self.subspace_update_method == 'iterates_grads':
-            if 2 * G.shape[1] == self.no_determ_dirs:
+        elif self.subspace_constr_method == 'iterates_grads':
+            if 2 * G.shape[1] == self.no_problem_dirs:
                 G = np.delete(G, 0, 1) # delete first (oldest) column
                 X = np.delete(X, 0, 1)
             if (not self.random_proj) and self.reproject_grad:
@@ -185,9 +230,9 @@ class ProjectedCommonDirections:
                 G[:,-1] = reproj_grad # must re-assign the final column at this stage to be reprojected grad
             G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
             X = np.hstack((X, x.reshape(-1,1))) # append newest iterate
-        elif self.subspace_update_method == 'iterates_grads_diagnewtons':
+        elif self.subspace_constr_method == 'iterates_grads_diagnewtons':
             raise Exception('Implementation of "iterates_grads_diagnewtons" subspace construction in the projected case not yet thought out!')
-            if 3 * G.shape[1] == self.no_determ_dirs:
+            if 3 * G.shape[1] == self.no_problem_dirs:
                 G = np.delete(G, 0, 1) # delete first (oldest) column
                 X = np.delete(X, 0, 1)
                 D = np.delete(D, 0, 1)
@@ -198,13 +243,34 @@ class ProjectedCommonDirections:
         # Return updated matrices
         return G, X, D
 
+    def print_iter_info(self, terminal: bool, k: int, x, f_x, norm_full_grad, step_size):
+        x_str = ", ".join([f"{xi:7.4f}" for xi in x])
+        info_str = f"k = {k:4} || x = [{x_str}] || f(x) = {f_x:8.6e} || g_norm = {norm_full_grad:8.6e}"
+        
+        if not terminal:
+            info_str += " || t = {step_size:8.6f}"
+
+        if terminal:
+            print('------------------------------------------------------------------------------------------')
+            print('TERMINATED')
+            print('------------------------------------------------------------------------------------------')
+            print(info_str)
+            print('------------------------------------------------------------------------------------------')
+            print()
+            print()
+        else:
+            print(info_str)
+
+
+
+    # Optimisation loop
     def optimise(self, x0):
         x = x0
         f_x = self.func(x)
         full_grad = self.grad_func(x)
         norm_full_grad = np.linalg.norm(full_grad)
 
-        # The first projected gradient takes a projection from an entirely random matrix
+        # The first projected gradient takes a projection from an entirely random matrix, always
         proj_grad = self.project_gradient(full_grad, random_proj=True)
 
         # IN FUTURE will want to implement Hessian actions product using Hessian actions (B-vector products), see autograd.hessian_vector_products
@@ -222,25 +288,7 @@ class ProjectedCommonDirections:
         full_grad_norms_list = [np.linalg.norm(full_grad)]
         proj_grad_norms_list = [np.linalg.norm(proj_grad)]
 
-        # Need to keep in parallel information from few previous iterates.
-        # Initialise this here, depending on subspace method used:
-        G = np.array(proj_grad, ndmin=2) # store gradient vectors
-        G = G.reshape(-1, 1)
-
-        # G_proj_unlimited = G # for storage of ALL PROJECTED gradients (for debugging)
-        # G_full_unlimited = np.array(full_grad, ndmin=2)
-        # G_full_unlimited = G_full_unlimited.reshape(-1, 1)
-
-        if self.subspace_update_method != 'grads':
-            X = np.array(x, ndmin=2) # store iterates
-            X = X.reshape(-1, 1)
-        else:
-            X = None
-        if self.subspace_update_method == 'iterates_grads_diagnewtons':
-            D = np.linalg.solve(np.diag(np.diag(hess_f_x)), proj_grad)
-            D = D.reshape(-1, 1)
-        else:
-            D = None
+        G, X, D = self.init_stored_vectors(x=x, grad_vec=proj_grad)
         
         Q, last_cond_no, last_P_rank = self.update_subspace(grads_matrix=G, iterates_matrix=X, hess_diag_dirs_matrix=D)
 
@@ -255,76 +303,66 @@ class ProjectedCommonDirections:
         proj_B = self.regularise_hessian(proj_B)
 
         for k in range(self.max_iter):
+            # Termination
             if norm_full_grad < self.tol:
-                x_str = ", ".join([f"{xi:7.4f}" for xi in x])
-                print('------------------------------------------------------------------------------------------')
-                print('TERMINATED')
-                print('------------------------------------------------------------------------------------------')
-                print(f"k = {k:4} || x = [{x_str}] || f(x) = {f_x:8.6e} || g_norm = {norm_full_grad:8.6e}")
-                print('------------------------------------------------------------------------------------------')
-                print()
-                print()
+                if self.verbose:
+                    self.print_iter_info(terminal=True, k=k, x=x, f_x=f_x,
+                                         norm_full_grad=norm_full_grad,
+                                         step_size=step_size)
                 break
-            
-            direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ proj_grad
-            
-            direction_norms_list.append(np.linalg.norm(direction))
-
-            step_size = self.backtrack_armijo(x, direction, f_x, proj_grad)
-            
-            if self.verbose and k % self.iter_print_gap == 0:
-                x_str = ", ".join([f"{xi:7.4f}" for xi in x])
-                print(f"k = {k:4} || x = [{x_str}] || f(x) = {f_x:6.6e} || g_norm = {norm_full_grad:6.6e} || t = {step_size:8.6f}")
-            
             
             full_grad_prev = full_grad
 
-            x = x + step_size * direction
+            # Compute upcoming update
+            direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ full_grad
+            step_size = self.backtrack_armijo(x, direction, f_x, full_grad)
 
+            # Compute upcoming update's info:
             last_update_norm = np.linalg.norm(step_size * direction)
             last_angle_to_full_grad = np.arccos(np.dot(direction, -full_grad) / (np.linalg.norm(direction) * np.linalg.norm(full_grad))) * 180 / np.pi
-            update_norms_list.append(last_update_norm)
-            angles_to_full_grad_list.append(last_angle_to_full_grad)
+            
+            # Print iteration info if applicable
+            if self.verbose and k % self.iter_print_gap == 0:
+                self.print_iter_info(terminal=False, k=k, x=x,
+                                     f_x=f_x, norm_full_grad=norm_full_grad,
+                                     step_size=step_size)
+            
+            # Update iterate
+            x = x + step_size * direction
 
+            # Compute basic quantities at new iterate
             f_x = self.func(x)
             full_grad = self.grad_func(x)
             norm_full_grad = np.linalg.norm(full_grad)
-
             proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
-
-            full_grad_norms_list.append(np.linalg.norm(full_grad))
-            proj_grad_norms_list.append(np.linalg.norm(proj_grad))
-
-            # G_proj_unlimited = np.hstack((G_proj_unlimited, proj_grad.reshape(-1,1)))
-            # G_full_unlimited = np.hstack((G_full_unlimited, full_grad.reshape(-1,1)))
-
             if self.use_hess:
                 hess_f_x = self.hess_func(x)
                 full_B = hess_f_x
             else:
                 raise NotImplementedError('Quasi-Newton stuff not yet implemented!')
-            
-            # Update records of previous iterations, for further plotting
-            f_vals_list.append(f_x)
 
             # Update stored vectors required for subspace constructions.
-            G, X, D = self.update_stored_vectors(x=x,
-                                                 proj_grad=proj_grad,
+            G, X, D = self.update_stored_vectors(x=x, proj_grad=proj_grad,
                                                  full_grad_prev=full_grad_prev,
-                                                 Q_prev=Q,
-                                                 grads_matrix=G,
-                                                 iterates_matrix=X,
-                                                 hess_diag_dirs_matrix=D)
-                        
+                                                 Q_prev=Q, grads_matrix=G,
+                                                 iterates_matrix=X, hess_diag_dirs_matrix=D)
+            
+            # Update subspace basis matrix
             Q, last_cond_no, last_P_rank = self.update_subspace(grads_matrix=G,
                                                                 iterates_matrix=X,
                                                                 hess_diag_dirs_matrix=D)
 
-            cond_nos_list.append(last_cond_no)
-            P_ranks_list.append(last_P_rank)
-
+            # Append info for later plotting
             proj_B = np.transpose(Q) @ (full_B @ Q)
             proj_B = self.regularise_hessian(proj_B)
+            direction_norms_list.append(np.linalg.norm(direction))
+            update_norms_list.append(last_update_norm)
+            angles_to_full_grad_list.append(last_angle_to_full_grad)
+            f_vals_list.append(f_x)
+            full_grad_norms_list.append(np.linalg.norm(full_grad))
+            proj_grad_norms_list.append(np.linalg.norm(proj_grad))
+            cond_nos_list.append(last_cond_no)
+            P_ranks_list.append(last_P_rank)
 
         # Convert these to arrays for later plotting
         f_vals = np.array(f_vals_list)

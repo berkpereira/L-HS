@@ -261,8 +261,6 @@ class ProjectedCommonDirections:
         else:
             print(info_str)
 
-
-
     # Optimisation loop
     def optimise(self, x0):
         x = x0
@@ -316,9 +314,10 @@ class ProjectedCommonDirections:
             # Compute upcoming update
             direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ full_grad
             step_size = self.backtrack_armijo(x, direction, f_x, full_grad)
+            x_update = step_size * direction
 
             # Compute upcoming update's info:
-            last_update_norm = np.linalg.norm(step_size * direction)
+            last_update_norm = np.linalg.norm(x_update)
             last_angle_to_full_grad = np.arccos(np.dot(direction, -full_grad) / (np.linalg.norm(direction) * np.linalg.norm(full_grad))) * 180 / np.pi
             
             # Print iteration info if applicable
@@ -328,7 +327,7 @@ class ProjectedCommonDirections:
                                      step_size=step_size)
             
             # Update iterate
-            x = x + step_size * direction
+            x = x + x_update
 
             # Compute basic quantities at new iterate
             f_x = self.func(x)

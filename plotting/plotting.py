@@ -15,7 +15,7 @@ FIGSIZE_REF = (17, 8)
 LINE_WIDTH = 1
 MARKER_SIZE = 1
 
-def plot_loss_vs_iteration(solver_outputs, labels=None):
+def plot_loss_vs_iteration(solver_outputs, deriv_evals_axis=False, labels=None):
     """
     Plot the loss (function values) vs iteration count for multiple solvers.
 
@@ -26,15 +26,26 @@ def plot_loss_vs_iteration(solver_outputs, labels=None):
     
     if labels is None:
         try: # If subspace dimension is a meaningful concept for the solver
-            labels = [f"Subspace dim = {solver_outputs[i].solver.subspace_dim}" for i in range(len(solver_outputs))]
+            labels = [
+                f"""\# sub grads = {solver_outputs[i].solver.subspace_no_grads},
+                \# sub updates = {solver_outputs[i].solver.subspace_no_updates},
+                \# sub random = {solver_outputs[i].solver.subspace_no_random}"""
+                for i in range(len(solver_outputs))
+                ]
         except: # Generic chronological numbering
             labels = [f"Solver {i}" for i in range(len(solver_outputs))]
 
     for solver_output, label in zip(solver_outputs, labels):
-        plt.plot(solver_output.f_vals, linestyle='-', label=label)
+        if deriv_evals_axis:
+            plt.plot(solver_output.deriv_evals, solver_output.f_vals, linestyle='-', label=label)
+        else:
+            plt.plot(solver_output.f_vals, linestyle='-', label=label)
     
     plt.yscale('log')
-    plt.xlabel('Iteration')
+    if deriv_evals_axis:
+        plt.xlabel('Derivatives evaluated')
+    else:
+        plt.xlabel('Iteration')
     plt.ylabel('Function value')
     plt.title('Loss vs Iteration')
     plt.legend()
@@ -54,7 +65,8 @@ def plot_scalar_vs_iteration(solver_outputs, attr_names: list, log_plot: bool, a
         for solver_output, label in zip(solver_outputs, labels):
             values = getattr(solver_output, attr_name)
             
-            plt.plot(values, linestyle='None' if use_markers else '-', alpha=alpha, linewidth=LINE_WIDTH, marker=marker_str if use_markers else 'None', markersize=MARKER_SIZE, label=f"{label} ({attr_name})")
+            if values is not None:
+                plt.plot(values, linestyle='None' if use_markers else '-', alpha=alpha, linewidth=LINE_WIDTH, marker=marker_str if use_markers else 'None', markersize=MARKER_SIZE, label=f"{label} ({attr_name})")
     
     # Construct title
     title_str = ''

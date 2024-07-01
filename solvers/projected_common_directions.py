@@ -9,6 +9,7 @@ For discussion of these ideas, see relevant docs/*.md file.
 """
 
 from dataclasses import dataclass
+import warnings
 
 import autograd.numpy as np
 from autograd import grad, hessian
@@ -34,27 +35,29 @@ class ProjectedCommonDirectionsConfig:
     
     """
     obj: any                    
-    # subspace_constr_method: str
-    # subspace_dim: int
-    # append_rand_dirs: int = 0
     reg_lambda: float
     
-    subspace_no_grads: int = 0
+    subspace_no_grads:   int = 0
     subspace_no_updates: int = 0
-    subspace_no_random: int = 0
-
-    random_proj_dim: int = 0 # Dimension of random sketches used when random_proj is True
+    subspace_no_random:  int = 0
 
     use_hess: bool = True       # Determines whether method uses Hessian information. If not, it uses in general a user-specified matrix B_k (think quasi-Newton methods). Default of True reflects Lee et al.'s reference paper's method.
     random_proj: bool = False   # Determines whether to use RANDOM matrices in projecting gradients for subspace construction.
+    random_proj_dim: int = 0 # Dimension of random sketches used when random_proj is True
     reproject_grad: bool = False
     ensemble: str = ''          # Determines the random ensemble from which to draw random matrices for gradient projections.
+
+    # Determines whether, at the heart of thealgorithm (compute
+    # direction and step size), we use full_grad or proj_grad.
+    # TODO: take a moment to consider the implications in computation budget terms!!!
+    inner_use_full_grad: bool = True
     
     alpha: float = 0.001        # The Armijo condition scaling parameter.
     t_init: float = 1
     tau: float = 0.5            # The backtracking step size reduction factor.
-    tol: float = 1e-6           # The tolerance for the stopping condition.
+    tol: float = 1e-3           # The tolerance for the stopping condition.
     max_iter: int = 1_000       # The maximum number of iterations.
+    deriv_budget: int = 1_000   # Maximum number of directional derivatives to be evaluated.
     
     iter_print_gap:int = 20     # Period for printing an iteration's info.
     verbose: bool = False
@@ -74,6 +77,9 @@ class ProjectedCommonDirections:
             self.subspace_constr_method = 'random'
         else:
             self.subspace_constr_method = None
+
+        if self.subspace_constr_method == 'random' and (not self.inner_use_full_grad):
+            raise Exception('If P_k fully randomised, must use full gradients in expression for search direction and backtracking!')
         
         # Number of P_k columns relying on problem/algorithm information
         # of some kind. 
@@ -85,14 +91,6 @@ class ProjectedCommonDirections:
         if self.no_problem_dirs <= 0 and self.subspace_constr_method != 'random':
             raise Exception('It makes no sense to have no problem information in subspace construction when not using a purely randomised subspace approach!')
         
-        # Some simple checks on allowable subspace dimension
-        # if self.subspace_constr_method == 'iterates_grads':
-        #     if self.no_problem_dirs % 2 != 0:
-        #         raise Exception('With iterates_grads method, "deterministic" subspace dimension must be multiple of 2.')
-        # if self.subspace_constr_method == 'iterates_grads_diagnewtons':
-        #     if self.no_problem_dirs % 3 != 0:
-        #         raise Exception('With iterates_grads_diagnewtons method, "deterministic" subspace dimension must be multiple of 3.')
-        
         # Checks on gradient reprojection and whether subspace dimension allows it
         if self.reproject_grad and (not self.random_proj) and self.subspace_no_grads <= 1:
             raise Exception("Gradients can only be reprojected if we're storing more than one for each subspace!")
@@ -100,6 +98,34 @@ class ProjectedCommonDirections:
         self.func = self.obj.func # callable objective func
         self.grad_func = grad(self.func)
         self.hess_func = hessian(self.func) # for now have it as a full Hessian; later may use autograd.hessian_vector_product
+
+        # Increment number of derivatives computed in each iteration depending on
+        # algorithm variant in use
+        if self.subspace_constr_method == 'random':
+            self.deriv_per_iter = self.subspace_dim + 1
+        else:
+            if self.random_proj: # random tilde grad projection
+                if self.inner_use_full_grad:
+                    self.deriv_per_iter = self.subspace_dim + self.random_proj_dim + 1
+                else:
+                    self.deriv_per_iter = self.random_proj_dim
+            else: # deterministic tilde grad projection
+                if self.reproject_grad:
+                    if self.inner_use_full_grad:
+                        self.deriv_per_iter = 2 * self.subspace_dim + 1
+                    else:
+                        self.deriv_per_iter = 2 * self.subspace_dim
+                else:
+                    if self.inner_use_full_grad:
+                        self.deriv_per_iter = 2 * self.subspace_dim + 1
+                    else:
+                        self.deriv_per_iter = self.subspace_dim
+        # NOTE: edge case of a full-space method
+        if self.subspace_dim == self.obj.input_dim:
+            self.deriv_per_iter = self.obj.input_dim
+        
+        if self.deriv_per_iter >= self.obj.input_dim:
+            warnings.warn("Using as many or more derivatives per iteration than if using full space method!", UserWarning)
 
     # Draw a TALL sketching matrix from random ensemble.
     def draw_sketch(self):
@@ -163,7 +189,7 @@ class ProjectedCommonDirections:
                                 ambient_dim=self.obj.input_dim,
                                 no_dirs=self.subspace_dim,
                                 curr_is_orth=False)
-            return Q, None, None
+            return Q, None, None, None
         else:
             G = kwargs['grads_matrix']
             X = kwargs['updates_matrix']
@@ -177,24 +203,7 @@ class ProjectedCommonDirections:
                                 ambient_dim=self.obj.input_dim,
                                 no_dirs=self.subspace_dim - P.shape[1],
                                 curr_is_orth=False)
-            return Q, np.linalg.cond(P), np.linalg.matrix_rank(P)
-
-        # if self.subspace_constr_method == 'grads':
-        #     G = kwargs['grads_matrix']
-        #     P = G
-        # elif self.subspace_constr_method == 'iterates_grads':
-        #     G = kwargs['grads_matrix']
-        #     X = kwargs['updates_matrix']
-        #     P = np.hstack((G, X))
-        # elif self.subspace_constr_method == 'iterates_grads_diagnewtons':
-        #     raise NotImplementedError('Subspace construction not yet implemented in projected case.')
-        #     G = kwargs['grads_matrix']
-        #     X = kwargs['updates_matrix']
-        #     D = kwargs['hess_diag_dirs_matrix']
-        #     P = np.hstack((G, X, D))
-        # elif self.subspace_constr_method == 'random':
-        #     # In this case no problem information is used in building the subspace basis
-        #     P = None
+            return Q, np.linalg.cond(P), np.linalg.matrix_rank(P), np.linalg.norm(P)
             
     # Initialise the vectors to be stored throughout the algorithm (if any)
     def init_stored_vectors(self, grad_vec):
@@ -209,30 +218,6 @@ class ProjectedCommonDirections:
             G = G.reshape(-1, 1)
         else:
             G = None
-
-        # if self.subspace_constr_method == 'grads':
-        #     G = np.array(grad_vec, ndmin=2) # store gradient vectors
-        #     G = G.reshape(-1, 1)
-        #     X = None
-        #     D = None
-        # elif self.subspace_constr_method == 'iterates_grads':
-        #     G = np.array(grad_vec, ndmin=2) # store gradient vectors
-        #     G = G.reshape(-1, 1)
-        #     X = np.array(x, ndmin=2) # store iterates
-        #     X = X.reshape(-1, 1)
-        #     D = None
-        # elif self.subspace_constr_method == 'iterates_grads_diagnewtons':
-        #     raise NotImplementedError('Not implemented!')
-        #     G = np.array(grad_vec, ndmin=2) # store gradient vectors
-        #     G = G.reshape(-1, 1)
-        #     X = np.array(x, ndmin=2) # store iterates
-        #     X = X.reshape(-1, 1)
-        #     D = np.linalg.solve(np.diag(np.diag(hess_f_x)), grad_vec)
-        #     D = D.reshape(-1, 1)
-        # elif self.subspace_constr_method == 'random':
-        #     G = None
-        #     X = None
-        #     D = None
         
         return G, X, D
 
@@ -260,54 +245,39 @@ class ProjectedCommonDirections:
         else:
             if self.subspace_no_updates > 0: # Initial update
                 X = np.array(x_update.reshape(-1, 1)).reshape(-1, 1)
+            else: # X is None and should stay that way
+                pass
 
         if D is not None:
             raise NotImplementedError('Not yet implemented.')
-
-        # if self.subspace_constr_method == 'grads':
-        #     if G.shape[1] == self.no_problem_dirs:
-        #         G = np.delete(G, 0, 1) # delete first (oldest) column
-        #     if (not self.random_proj) and self.reproject_grad:
-        #         reproj_grad = Q_prev @ np.transpose(Q_prev) @ full_grad_prev
-        #         G[:,-1] = reproj_grad # must re-assign the final column at this stage to be reprojected grad
-        #     G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
-        # elif self.subspace_constr_method == 'iterates_grads':
-        #     if 2 * G.shape[1] == self.no_problem_dirs:
-        #         G = np.delete(G, 0, 1) # delete first (oldest) column
-        #         X = np.delete(X, 0, 1)
-        #     if (not self.random_proj) and self.reproject_grad:
-        #         reproj_grad = Q_prev @ np.transpose(Q_prev) @ full_grad_prev
-        #         G[:,-1] = reproj_grad # must re-assign the final column at this stage to be reprojected grad
-        #     G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
-        #     X = np.hstack((X, x_update.reshape(-1,1))) # append newest iterate
-        # elif self.subspace_constr_method == 'iterates_grads_diagnewtons':
-        #     raise Exception('Implementation of "iterates_grads_diagnewtons" subspace construction in the projected case not yet thought out!')
-        #     if 3 * G.shape[1] == self.no_problem_dirs:
-        #         G = np.delete(G, 0, 1) # delete first (oldest) column
-        #         X = np.delete(X, 0, 1)
-        #         D = np.delete(D, 0, 1)
-        #     G = np.hstack((G, proj_grad.reshape(-1,1))) # append newest gradient
-        #     X = np.hstack((X, x_update.reshape(-1,1))) # append newest iterate
-        #     D = np.hstack((D, np.linalg.solve(np.diag(np.diag(hess_f_x)), proj_grad).reshape(-1, 1))) # append newest crude diagonal Newton direction approximation
         
         # Return updated matrices
         return G, X, D
 
-    def print_iter_info(self, terminal: bool, k: int, x, f_x, norm_full_grad, step_size):
+    def print_iter_info(self, last: bool, k: int, deriv_evals: int, x, f_x, norm_full_grad, step_size, terminated=None):
         x_str = ", ".join([f"{xi:7.4f}" for xi in x])
-        info_str = f"k = {k:4} || x = [{x_str}] || f(x) = {f_x:8.6e} || g_norm = {norm_full_grad:8.6e}"
+        info_str = f"k = {k:4} || deriv_evals = {deriv_evals:4.2e} || x = [{x_str}] || f(x) = {f_x:8.6e} || g_norm = {norm_full_grad:8.6e}"
         
-        if not terminal:
+        if not last:
             info_str += f" || t = {step_size:8.6f}"
 
-        if terminal:
-            print('------------------------------------------------------------------------------------------')
-            print('TERMINATED')
-            print('------------------------------------------------------------------------------------------')
-            print(info_str)
-            print('------------------------------------------------------------------------------------------')
-            print()
-            print()
+        if last:
+            if terminated:
+                print('------------------------------------------------------------------------------------------')
+                print('TERMINATED')
+                print('------------------------------------------------------------------------------------------')
+                print(info_str)
+                print('------------------------------------------------------------------------------------------')
+                print()
+                print()
+            else:
+                print('------------------------------------------------------------------------------------------')
+                print('ITER/DERIV BUDGET RUN OUT')
+                print('------------------------------------------------------------------------------------------')
+                print(info_str)
+                print('------------------------------------------------------------------------------------------')
+                print()
+                print()
         else:
             print(info_str)
 
@@ -319,7 +289,10 @@ class ProjectedCommonDirections:
         norm_full_grad = np.linalg.norm(full_grad)
 
         # The first projected gradient takes a projection from an entirely random matrix, always
-        proj_grad = self.project_gradient(full_grad, random_proj=True)
+        if self.subspace_no_grads > 0:
+            proj_grad = self.project_gradient(full_grad, random_proj=True)
+        else:
+            proj_grad = None
 
         # IN FUTURE will want to implement Hessian actions product using Hessian actions (B-vector products), see autograd.hessian_vector_products
         if self.use_hess:
@@ -328,23 +301,12 @@ class ProjectedCommonDirections:
         else:
             raise NotImplementedError('Have not (yet!) implemented methods with user-provided B approximations to the Hessian!')
 
-        # For later plotting
-        f_vals_list = [f_x]
-        update_norms_list = []
-        direction_norms_list = []
-        angles_to_full_grad_list = []
-        full_grad_norms_list = [np.linalg.norm(full_grad)]
-        proj_grad_norms_list = [np.linalg.norm(proj_grad)]
-
         G, X, D = self.init_stored_vectors(grad_vec=proj_grad)
         
-        Q, last_cond_no, last_P_rank = self.update_subspace(grads_matrix=G,
-                                                            updates_matrix=X,
-                                                            hess_diag_dirs_matrix=D)
-
-        cond_nos_list = [last_cond_no]
-        P_ranks_list = [last_P_rank]
-
+        Q, last_cond_no, last_P_rank, last_P_norm = self.update_subspace(grads_matrix=G,
+                                                                         updates_matrix=X,
+                                                                         hess_diag_dirs_matrix=D)
+        
         # Project B matrix
         # Later may want to do this using Hessian actions in the case where Hessian information is used at all.
         proj_B = np.transpose(Q) @ (full_B @ Q)
@@ -352,20 +314,41 @@ class ProjectedCommonDirections:
         # Regularise the projected/reduced Hessian approximation if needed.
         proj_B = self.regularise_hessian(proj_B)
 
-        for k in range(self.max_iter):
+        # For later plotting
+        f_vals_list = [f_x]
+        update_norms_list = []
+        direction_norms_list = []
+        angles_to_full_grad_list = []
+        full_grad_norms_list = [np.linalg.norm(full_grad)]
+        if self.subspace_no_grads > 0:
+            proj_grad_norms_list = [np.linalg.norm(proj_grad)]
+        cond_nos_list = [last_cond_no]
+        P_ranks_list = [last_P_rank]
+        P_norms_list = [last_P_norm]
+
+        # Initialise iteration count metrics
+        k = 0
+        deriv_eval_count = 0
+        deriv_evals_list = [0]
+        terminated = False
+
+        # Start loop
+        # NOTE: Not even allowing deriv evals to EVER go over self.deriv_budget.
+        while (k < self.max_iter) and (deriv_eval_count + self.deriv_per_iter < self.deriv_budget):
             # Termination
             if norm_full_grad < self.tol:
-                if self.verbose:
-                    self.print_iter_info(terminal=True, k=k, x=x, f_x=f_x,
-                                         norm_full_grad=norm_full_grad,
-                                         step_size=step_size)
+                terminated = True
                 break
             
             full_grad_prev = full_grad
 
             # Compute upcoming update
-            direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ full_grad
-            step_size = self.backtrack_armijo(x, direction, f_x, full_grad)
+            if self.inner_use_full_grad:
+                direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ full_grad
+                step_size = self.backtrack_armijo(x, direction, f_x, full_grad)
+            else: # use proj_grad here
+                direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ proj_grad
+                step_size = self.backtrack_armijo(x, direction, f_x, proj_grad)
             x_update = step_size * direction
 
             # Compute upcoming update's info:
@@ -374,7 +357,7 @@ class ProjectedCommonDirections:
             
             # Print iteration info if applicable
             if self.verbose and k % self.iter_print_gap == 0:
-                self.print_iter_info(terminal=False, k=k, x=x,
+                self.print_iter_info(last=False, k=k, x=x, deriv_evals=deriv_eval_count,
                                      f_x=f_x, norm_full_grad=norm_full_grad,
                                      step_size=step_size)
             
@@ -385,7 +368,10 @@ class ProjectedCommonDirections:
             f_x = self.func(x)
             full_grad = self.grad_func(x)
             norm_full_grad = np.linalg.norm(full_grad)
-            proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
+            
+            if self.subspace_no_grads > 0:
+                proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
+
             if self.use_hess:
                 hess_f_x = self.hess_func(x)
                 full_B = hess_f_x
@@ -401,37 +387,61 @@ class ProjectedCommonDirections:
                                                  hess_diag_dirs_matrix=D)
             
             # Update subspace basis matrix
-            Q, last_cond_no, last_P_rank = self.update_subspace(grads_matrix=G,
-                                                                updates_matrix=X,
-                                                                hess_diag_dirs_matrix=D)
+            Q, last_cond_no, last_P_rank, last_P_norm = self.update_subspace(grads_matrix=G,
+                                                                             updates_matrix=X,
+                                                                             hess_diag_dirs_matrix=D)
 
-            # Append info for later plotting
+            # Update 2nd order matrix
             proj_B = np.transpose(Q) @ (full_B @ Q)
             proj_B = self.regularise_hessian(proj_B)
+
+            # Append info for later plotting
             direction_norms_list.append(np.linalg.norm(direction))
             update_norms_list.append(last_update_norm)
             angles_to_full_grad_list.append(last_angle_to_full_grad)
             f_vals_list.append(f_x)
             full_grad_norms_list.append(np.linalg.norm(full_grad))
-            proj_grad_norms_list.append(np.linalg.norm(proj_grad))
+            if proj_grad is not None:
+                proj_grad_norms_list.append(np.linalg.norm(proj_grad))
             cond_nos_list.append(last_cond_no)
             P_ranks_list.append(last_P_rank)
+            P_norms_list.append(last_P_norm)
+
+            # Update iteration count metrics
+            k += 1
+            deriv_eval_count += self.deriv_per_iter
+            deriv_evals_list.append(deriv_eval_count)
+
+
+        if self.verbose:
+            self.print_iter_info(last=True, terminated=terminated, k=k,
+                                 deriv_evals=deriv_eval_count,
+                                 x=x, f_x=f_x, norm_full_grad=norm_full_grad,
+                                 step_size=step_size)
 
         # Convert these to arrays for later plotting
         f_vals = np.array(f_vals_list)
         update_norms = np.array(update_norms_list)
         direction_norms = np.array(direction_norms_list)
         full_grad_norms = np.array(full_grad_norms_list)
-        proj_grad_norms = np.array(proj_grad_norms_list)
+        if proj_grad is not None:
+            proj_grad_norms = np.array(proj_grad_norms_list)
+        else:
+            proj_grad_norms = None
         angles_to_full_grad = np.array(angles_to_full_grad_list)
         cond_nos = np.array(cond_nos_list) # condition numbers of P matrix at each iteration
         P_ranks = np.array(P_ranks_list)
+        P_norms = np.array(P_norms_list)
+        deriv_evals = np.array(deriv_evals_list)
 
-        return SolverOutput(solver=self, final_x=x, final_k=k, f_vals=f_vals, 
+        return SolverOutput(solver=self, final_x=x, final_k=k,
+                            deriv_evals=deriv_evals,
+                            f_vals=f_vals, 
                             update_norms=update_norms,
                             direction_norms=direction_norms,
                             full_grad_norms=full_grad_norms,
                             proj_grad_norms=proj_grad_norms,
                             angles_to_full_grad=angles_to_full_grad,
                             cond_nos=cond_nos,
-                            P_ranks=P_ranks)
+                            P_ranks=P_ranks,
+                            P_norms=P_norms)

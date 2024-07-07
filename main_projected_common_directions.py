@@ -20,7 +20,7 @@ test_problems_list = ['rosenbrock',                      # 0
 
 # SELECT PROBLEM
 PROBLEM_NAME = test_problems_list[0]
-INPUT_DIM = 20
+INPUT_DIM = 12
 x0, obj = problems.test_problems.select_problem(problem_name=PROBLEM_NAME, input_dim=INPUT_DIM)
 
 # SOLVER CONFIG
@@ -39,18 +39,18 @@ T_INIT = 1
 TAU = 0.5
 
 MAX_ITER = np.inf
-DERIV_BUDGET = 3_000
+DERIV_BUDGET = 2_000
 
-TOL = 1e-3
+TOL = 1e-4
 ITER_PRINT_GAP = 20
 
 # Run solver(s)
 output_list = []
 
-SUBSPACE_NO_LIST = [(INPUT_DIM, 0, 0),
-                    (1, 1, 2),
-                    (2, 2, 2),
-                    (3, 3, 2)]
+SUBSPACE_NO_LIST = [(3, 0, 0),
+                    (1, 2, 0),
+                    (2, 1, 0),
+                    (1, 1, 1)]
 
 for SUBSPACE_NO_GRADS, SUBSPACE_NO_UPDATES, SUBSPACE_NO_RANDOM in SUBSPACE_NO_LIST:
     SUBSPACE_DIM = SUBSPACE_NO_GRADS + SUBSPACE_NO_UPDATES + SUBSPACE_NO_RANDOM
@@ -84,22 +84,18 @@ for SUBSPACE_NO_GRADS, SUBSPACE_NO_UPDATES, SUBSPACE_NO_RANDOM in SUBSPACE_NO_LI
 plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
                                          deriv_evals_axis=True)
 
-# plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
-#                                            attr_names=['update_norms'],
-#                                            log_plot=True)
+plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
+                                           attr_names=['update_norms'],
+                                           log_plot=True)
 
 # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
 #                                            attr_names=['direction_norms'],
 #                                            log_plot=True)
 
-# plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
-#                                            attr_names=['P_norms'],
-#                                            log_plot=True)
-
-# plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
-#                                            attr_names=['full_grad_norms',
-#                                                        'proj_grad_norms'],
-#                                            log_plot=True)
+plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
+                                           attr_names=['full_grad_norms',
+                                                       'proj_grad_norms'],
+                                           log_plot=True)
 
 # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
 #                                            attr_names=['angles_to_full_grad'],
@@ -113,8 +109,28 @@ plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
 #                                            attr_names=['P_ranks'],
 #                                            log_plot=False)
 
+# plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
+#                                            attr_names=['P_norms'],
+#                                            log_plot=True)
+
+plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
+                                                attr_names=['f_vals', 'P_ranks'],
+                                                log_plots=[True, False])
+
+plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
+                                                attr_names=['proj_grad_norms', 'P_ranks'],
+                                                log_plots=[True, False])
+
 # plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
-#                                                 attr_names=['f_vals', 'P_ranks'],
+#                                                 attr_names=['f_vals', 'P_norms'],
+#                                                 log_plots=[True, True])
+
+plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
+                                                attr_names=['P_norms', 'P_ranks'],
+                                                log_plots=[True, False])
+
+# plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
+#                                                 attr_names=['update_norms', 'P_ranks'],
 #                                                 log_plots=[True, False])
 
 # plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,

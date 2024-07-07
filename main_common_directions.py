@@ -18,21 +18,21 @@ subspace_methods_list = ['grads', # 0
 
 # SELECT PROBLEM
 PROBLEM_NAME = test_problems_list[0]
-INPUT_DIM = 30
+INPUT_DIM = 20
 x0, obj = problems.test_problems.select_problem(problem_name=PROBLEM_NAME, input_dim=INPUT_DIM)
 
 # SOLVER CONFIG
 
-SUBSPACE_DIM = 30
+SUBSPACE_DIM = 4
 
-SUBSPACE_METHOD = subspace_methods_list[0]
+SUBSPACE_METHOD = subspace_methods_list[1]
 REG_LAMBDA = 0.001
 ALPHA = 0.01
 T_INIT = 1
 TAU = 0.5
 
 MAX_ITER = 3000
-TOL = 1e-12
+TOL = 1e-4
 ITER_PRINT_GAP = 20
 
 # Run solver(s)

@@ -14,11 +14,12 @@ class Objective:
         self.x_sol = x_sol
         self.f_sol = f_sol
 
-# Using standard x0, see Appendix B of Dennis and Schnabel textbook.
+# Using standard x0 as reported in Appendix B of Dennis and Schnabel textbook.
 # Note that this scipy version of an extended Rosenbrock function has
-# multiple stationary points in high-dimensions! For details, see the paper
+# multiple stationary! For details, see the paper
 # https://dl.acm.org/doi/abs/10.1162/evco.2009.17.3.437
-# The starting point seems to have a significant influence on whether the minimum is found or not.
+# The starting point seems to have a significant influence on whether the
+# minimum or some other stationary point is found.
 def rosenbrock(input_dim):
     x0 = np.ones(input_dim, dtype='float32')
     x0[::2] = -1.2 # assign -1.2 to every other entry in x0
@@ -39,6 +40,7 @@ def powell(input_dim): # NOTE: input_dim must be multiple of 4
     f_sol = 0
     return x0, Objective(input_dim, func, x_sol, f_sol)
 
+# "Perfect" convex quadratic. f(x) = squared_euclidian_norm(x)
 def well_conditioned_convex_quadratic(input_dim):
     x0 = np.ones(input_dim, dtype='float32')
     def func(x):
@@ -47,12 +49,16 @@ def well_conditioned_convex_quadratic(input_dim):
     f_sol = 0
     return x0, Objective(input_dim, func, x_sol, f_sol)
 
+# Ill-conditioned convex quadratic where eigenvalues of the Hessian are
+# logarithmically uniformly distributed from 1 to 10^4.
+# Condition number of the Hessian is clearly kappa = 10^4.
 def ill_conditioned_convex_quadratic(input_dim):
     x0 = np.ones(input_dim, dtype='float32')
     def func(x):
         out = 0
         for i in range(input_dim):
-            out += ((i + 1)**5) * x[i] ** 2
+            coefficient = 10 ** (4 * i / (input_dim - 1))
+            out += coefficient * x[i] ** 2
         return 0.5 * out
     x_sol = np.zeros(input_dim)
     f_sol = 0

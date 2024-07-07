@@ -19,7 +19,7 @@ test_problems_list = ['rosenbrock',                      # 0
                     'ill_conditioned_convex_quadratic']  # 3
 
 # SELECT PROBLEM
-PROBLEM_NAME = test_problems_list[0]
+PROBLEM_NAME = test_problems_list[3]
 INPUT_DIM = 12
 x0, obj = problems.test_problems.select_problem(problem_name=PROBLEM_NAME, input_dim=INPUT_DIM)
 
@@ -30,6 +30,8 @@ USE_HESS = True
 
 INNER_USE_FULL_GRAD = True
 REPROJECT_GRAD = False       # NOTE: makes no difference in the randomised proj variant
+
+DIRECTION_STR = 'sd' # options: {'newton', 'sd'}
 
 RANDOM_PROJ = True
 
@@ -47,20 +49,19 @@ ITER_PRINT_GAP = 20
 # Run solver(s)
 output_list = []
 
-SUBSPACE_NO_LIST = [(3, 0, 0),
-                    (1, 2, 0),
-                    (2, 1, 0),
+SUBSPACE_NO_LIST = [(0, 0, 3),
                     (1, 1, 1)]
 
 for SUBSPACE_NO_GRADS, SUBSPACE_NO_UPDATES, SUBSPACE_NO_RANDOM in SUBSPACE_NO_LIST:
     SUBSPACE_DIM = SUBSPACE_NO_GRADS + SUBSPACE_NO_UPDATES + SUBSPACE_NO_RANDOM
-    RANDOM_PROJ_DIM = SUBSPACE_DIM # Does not need to be...
-    for _ in range(2): # how many runs per solver?
+    RANDOM_PROJ_DIM = SUBSPACE_DIM # NOTE: this NEED NOT be the case...
+    for _ in range(4): # how many runs per solver?
         SOLVER_CONFIG = ProjectedCommonDirectionsConfig(obj=obj,
                                                         subspace_no_grads=SUBSPACE_NO_GRADS,
                                                         subspace_no_updates=SUBSPACE_NO_UPDATES,
                                                         subspace_no_random=SUBSPACE_NO_RANDOM,
                                                         inner_use_full_grad=INNER_USE_FULL_GRAD,
+                                                        direction_str=DIRECTION_STR,
                                                         reg_lambda=REG_LAMBDA,
                                                         use_hess=USE_HESS,
                                                         random_proj=RANDOM_PROJ,
@@ -84,18 +85,21 @@ for SUBSPACE_NO_GRADS, SUBSPACE_NO_UPDATES, SUBSPACE_NO_RANDOM in SUBSPACE_NO_LI
 plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
                                          deriv_evals_axis=True)
 
-plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
-                                           attr_names=['update_norms'],
-                                           log_plot=True)
+plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
+                                         deriv_evals_axis=False)
+
+# plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
+#                                            attr_names=['update_norms'],
+#                                            log_plot=True)
 
 # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
 #                                            attr_names=['direction_norms'],
 #                                            log_plot=True)
 
-plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
-                                           attr_names=['full_grad_norms',
-                                                       'proj_grad_norms'],
-                                           log_plot=True)
+# plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
+#                                            attr_names=['full_grad_norms',
+#                                                        'proj_grad_norms'],
+#                                            log_plot=True)
 
 # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
 #                                            attr_names=['angles_to_full_grad'],
@@ -113,21 +117,21 @@ plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
 #                                            attr_names=['P_norms'],
 #                                            log_plot=True)
 
-plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
-                                                attr_names=['f_vals', 'P_ranks'],
-                                                log_plots=[True, False])
+# plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
+#                                                 attr_names=['f_vals', 'P_ranks'],
+#                                                 log_plots=[True, False])
 
-plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
-                                                attr_names=['proj_grad_norms', 'P_ranks'],
-                                                log_plots=[True, False])
+# plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
+#                                                 attr_names=['proj_grad_norms', 'P_ranks'],
+#                                                 log_plots=[True, False])
 
 # plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
 #                                                 attr_names=['f_vals', 'P_norms'],
 #                                                 log_plots=[True, True])
 
-plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
-                                                attr_names=['P_norms', 'P_ranks'],
-                                                log_plots=[True, False])
+# plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
+#                                                 attr_names=['P_norms', 'P_ranks'],
+#                                                 log_plots=[True, False])
 
 # plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
 #                                                 attr_names=['update_norms', 'P_ranks'],

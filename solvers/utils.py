@@ -25,6 +25,7 @@ def strong_wolfe_linesearch(func, grad_func, x, direction, c1, c2, max_iter):
 
 
 # TALL(!) scaled Gaussian sketching matrix!
+# Scaling as used, e.g., in cartis2022 paper
 # Subspace dimension taken to be the number of columns, n
 def scaled_gaussian(m, n):
     return np.random.normal(scale=np.sqrt(1 / n), size=(m, n))
@@ -40,30 +41,39 @@ def haar(m, n):
     q = np.multiply(q, ph, q)
     
     # Select first n rows to return
+    # May be a bit wasteful to have gone through an m x m QR factorisation, etc...
     return q[:, :n]
 
 # The below is based on Algorithm 5 from https://doi.org/10.1007/s10107-022-01836-1
 # It returns an orthonormal matrix including the directions of curr_mat's columns
 # along with no_dirs (int) random directions.
-def append_orth_dirs(curr_mat: np.ndarray, no_dirs: int, curr_is_orth: bool):
+def append_orth_dirs(curr_mat: np.ndarray,
+                     ambient_dim: int, no_dirs: int, curr_is_orth: bool):
     # curr_is_orth: bool. Input argument which specifies whether curr_mat is
     # an orthonormal matrix.
-    if curr_is_orth:
-        curr_mat_orth = curr_mat
-    else:
-        curr_mat_orth, _ = np.linalg.qr(curr_mat)
+    if not curr_mat is None:
+        if curr_is_orth:
+            curr_mat_orth = curr_mat
+        else:
+            curr_mat_orth, _ = np.linalg.qr(curr_mat)
 
     # If 0 directions to be added, simply return the
     # orthogonalised input matrix.
     if no_dirs == 0:
         return curr_mat_orth
 
-    n = curr_mat.shape[0] # column/ambient dimension
+    n = ambient_dim # column/ambient dimension
     A = np.random.randn(n, no_dirs)
     
     # orthogonalise directions in A versus curr_mat
-    A = (np.eye(n) - curr_mat_orth @ np.transpose(curr_mat_orth)) @ A
+    if not curr_mat is None:
+        A = (np.eye(n) - curr_mat_orth @ np.transpose(curr_mat_orth)) @ A
     
     new_dirs_mat, _ = np.linalg.qr(A)
 
-    return np.hstack((curr_mat_orth, new_dirs_mat))
+    if curr_mat is None:
+        output = new_dirs_mat
+    else:
+        output = np.hstack((curr_mat_orth, new_dirs_mat))
+    
+    return output

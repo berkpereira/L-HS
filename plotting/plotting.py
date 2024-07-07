@@ -43,11 +43,12 @@ def plot_loss_vs_iteration(solver_outputs, deriv_evals_axis=False, labels=None):
     
     plt.yscale('log')
     if deriv_evals_axis:
-        plt.xlabel('Derivatives evaluated')
+        plt.xlabel('(Directional) derivatives evaluated')
+        plt.title('Loss vs (directional) derivatives evaluated')
     else:
         plt.xlabel('Iteration')
+        plt.title('Loss vs iteration')
     plt.ylabel('Function value')
-    plt.title('Loss vs Iteration')
     plt.legend()
     plt.grid(True, which="both", ls="-")
 
@@ -102,13 +103,14 @@ def twin_plot_scalar_vs_iteration(solver_outputs, attr_names: list,
     for solver_output, label in zip(solver_outputs, labels):
         values = getattr(solver_output, attr_names[0])
         
-        ax1.plot(values, linestyle='None' if use_markers else '-',
-                 alpha=alpha,
-                 linewidth=LINE_WIDTH,
-                 color='b',
-                 marker=marker_str if use_markers else 'None',
-                 markersize=MARKER_SIZE,
-                 label=f"{label} ({attr_names[0]})")
+        if values is not None:
+            ax1.plot(values, linestyle='None' if use_markers else '-',
+                    alpha=alpha,
+                    linewidth=LINE_WIDTH,
+                    color='b',
+                    marker=marker_str if use_markers else 'None',
+                    markersize=MARKER_SIZE,
+                    label=f"{label} ({attr_names[0]})")
     
     # Construct title
     title_str = ''
@@ -124,24 +126,34 @@ def twin_plot_scalar_vs_iteration(solver_outputs, attr_names: list,
     ax2 = ax1.twinx()
     
     if log_plots[0]:
-        ax1.set_yscale('log')
+        try: # if nothing plotted, this will throw exception
+            ax1.set_yscale('log')
+        except:
+            pass
     if log_plots[1]:
-        ax2.set_yscale('log')
+        try:
+            ax2.set_yscale('log')
+        except:
+            pass
     
 
     for solver_output, label in zip(solver_outputs, labels):
         values = getattr(solver_output, attr_names[1])
         
-        ax2.plot(values, linestyle='None' if use_markers else '-', alpha=alpha,
-                 linewidth=LINE_WIDTH,
-                 color='red',
-                 marker=marker_str if use_markers else 'None',
-                 markersize=MARKER_SIZE,
-                 label=f"{label} ({attr_names[1]})")
+        if values is not None:
+            ax2.plot(values, linestyle='None' if use_markers else '-', alpha=alpha,
+                    linewidth=LINE_WIDTH,
+                    color='red',
+                    marker=marker_str if use_markers else 'None',
+                    markersize=MARKER_SIZE,
+                    label=f"{label} ({attr_names[1]})")
     
     ax2.set_ylabel('Value', color='r')
     ax2.tick_params(axis='y', labelcolor='r')
 
-    fig.tight_layout()  # To ensure there's no overlap
+    try:
+        fig.tight_layout()  # To ensure there's no overlap
+    except:
+        pass
     fig.legend()
     ax1.grid(True, which="both", ls="-")

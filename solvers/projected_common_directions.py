@@ -41,6 +41,10 @@ class ProjectedCommonDirectionsConfig:
     subspace_no_updates: int = 0
     subspace_no_random:  int = 0
 
+    # If 'newton', uses Newton-like direction (may or may not have B_k = Hessian matrix).
+    # If 'sd', essentially uses B_k = identity.
+    direction_str: str = 'newton' # options are {'newton', 'sd'}
+
     use_hess: bool = True       # Determines whether method uses Hessian information. If not, it uses in general a user-specified matrix B_k (think quasi-Newton methods). Default of True reflects Lee et al.'s reference paper's method.
     random_proj: bool = False   # Determines whether to use RANDOM matrices in projecting gradients for subspace construction.
     random_proj_dim: int = 0 # Dimension of random sketches used when random_proj is True
@@ -149,8 +153,13 @@ class ProjectedCommonDirections:
         return B
 
     # This method takes in the current iterate and performs a backtracking Armijo linesearch along the specified search direction until the Armijo condition is satisfied (self attributes used where appropriate).
-    def backtrack_armijo(self, x, direction, f_x, grad_vec):
+    def backtrack_armijo(self, x, direction, f_x, full_grad, proj_grad):
         t = self.t_init
+
+        if self.inner_use_full_grad:
+            grad_vec = full_grad
+        else:
+            grad_vec = proj_grad
         
         direction = np.squeeze(direction) # turn into vector
         while self.func(x + t * direction) > f_x + self.alpha * t * np.dot(grad_vec, direction):
@@ -189,7 +198,7 @@ class ProjectedCommonDirections:
                                 ambient_dim=self.obj.input_dim,
                                 no_dirs=self.subspace_dim,
                                 curr_is_orth=False)
-            return Q, None, None, None
+            return Q, None, None, None, None
         else:
             G = kwargs['grads_matrix']
             X = kwargs['updates_matrix']
@@ -203,7 +212,7 @@ class ProjectedCommonDirections:
                                 ambient_dim=self.obj.input_dim,
                                 no_dirs=self.subspace_dim - P.shape[1],
                                 curr_is_orth=False)
-            return Q, np.linalg.cond(P), np.linalg.matrix_rank(P), np.linalg.norm(P)
+            return Q, np.linalg.cond(P), np.linalg.matrix_rank(P), np.linalg.norm(P), P
             
     # Initialise the vectors to be stored throughout the algorithm (if any)
     def init_stored_vectors(self, grad_vec):
@@ -254,6 +263,19 @@ class ProjectedCommonDirections:
         # Return updated matrices
         return G, X, D
 
+    def search_dir(self, Q, full_grad, proj_grad, proj_B):
+        if self.inner_use_full_grad:
+            grad_vec = full_grad
+        else:
+            grad_vec = proj_grad
+        
+        if self.direction_str == 'newton':
+            direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ grad_vec
+        elif self.direction_str == 'sd':
+            direction = - Q @ np.transpose(Q) @ grad_vec
+            
+        return direction
+
     def print_iter_info(self, last: bool, k: int, deriv_evals: int, x, f_x, norm_full_grad, step_size, terminated=None):
         x_str = ", ".join([f"{xi:7.4f}" for xi in x])
         info_str = f"k = {k:4} || deriv_evals = {deriv_evals:4.2e} || x = [{x_str}] || f(x) = {f_x:8.6e} || g_norm = {norm_full_grad:8.6e}"
@@ -303,7 +325,7 @@ class ProjectedCommonDirections:
 
         G, X, D = self.init_stored_vectors(grad_vec=proj_grad)
         
-        Q, last_cond_no, last_P_rank, last_P_norm = self.update_subspace(grads_matrix=G,
+        Q, last_cond_no, last_P_rank, last_P_norm, P = self.update_subspace(grads_matrix=G,
                                                                          updates_matrix=X,
                                                                          hess_diag_dirs_matrix=D)
         
@@ -332,6 +354,11 @@ class ProjectedCommonDirections:
         deriv_evals_list = [0]
         terminated = False
 
+
+        store_all_full_grads = [full_grad]
+        store_all_proj_grads = [proj_grad]
+        store_all_x = [x]
+
         # Start loop
         # NOTE: Not even allowing deriv evals to EVER go over self.deriv_budget.
         while (k < self.max_iter) and (deriv_eval_count + self.deriv_per_iter < self.deriv_budget):
@@ -343,12 +370,8 @@ class ProjectedCommonDirections:
             full_grad_prev = full_grad
 
             # Compute upcoming update
-            if self.inner_use_full_grad:
-                direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ full_grad
-                step_size = self.backtrack_armijo(x, direction, f_x, full_grad)
-            else: # use proj_grad here
-                direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ proj_grad
-                step_size = self.backtrack_armijo(x, direction, f_x, proj_grad)
+            direction = self.search_dir(Q, full_grad, proj_grad, proj_B)
+            step_size = self.backtrack_armijo(x, direction, f_x, full_grad, proj_grad)
             x_update = step_size * direction
 
             # Compute upcoming update's info:
@@ -361,16 +384,26 @@ class ProjectedCommonDirections:
                                      f_x=f_x, norm_full_grad=norm_full_grad,
                                      step_size=step_size)
             
+            # if last_update_norm > 1e-1:
+            #     print(last_P_rank)
+            #     print()
+
             # Update iterate
             x = x + x_update
+            store_all_x.append(x)
 
             # Compute basic quantities at new iterate
             f_x = self.func(x)
             full_grad = self.grad_func(x)
+
+            store_all_full_grads.append(full_grad)
+
             norm_full_grad = np.linalg.norm(full_grad)
             
             if self.subspace_no_grads > 0:
                 proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
+
+                store_all_proj_grads.append(proj_grad)
 
             if self.use_hess:
                 hess_f_x = self.hess_func(x)
@@ -387,9 +420,10 @@ class ProjectedCommonDirections:
                                                  hess_diag_dirs_matrix=D)
             
             # Update subspace basis matrix
-            Q, last_cond_no, last_P_rank, last_P_norm = self.update_subspace(grads_matrix=G,
+            Q, last_cond_no, last_P_rank, last_P_norm, P = self.update_subspace(grads_matrix=G,
                                                                              updates_matrix=X,
                                                                              hess_diag_dirs_matrix=D)
+            
 
             # Update 2nd order matrix
             proj_B = np.transpose(Q) @ (full_B @ Q)

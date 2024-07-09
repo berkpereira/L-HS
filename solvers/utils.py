@@ -2,17 +2,78 @@ import scipy, scipy.optimize, scipy.linalg
 import autograd.numpy as np
 
 class SolverOutput():
-    def __init__(self, solver, final_x, final_k, f_vals, update_norms=None, **kwargs):
+    def __init__(self, solver, final_f_val, final_x, final_k, f_vals, update_norms=None, **kwargs):
         self.solver = solver
         self.final_x = final_x
         self.final_k = final_k
         self.f_vals = f_vals
         self.update_norms = update_norms # stores the norms of all the iterate update vectors
 
-        # Any other data structures we may want to use
+        # Any other data structures we choosw to feed to __init__
         for key, value in kwargs.items():
             setattr(self, key, value)
         
+class SolverOutputAverage():
+    def __init__(self, solver, **kwargs):
+        self.solver = solver
+
+        # Some suggestions for relevant quantities to average:
+        # final k
+        # final derivs evaluated
+        # final loss value
+        # final gradient norm
+        # ...
+        
+        # Data structures we choose to feed to __init__
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+# This function takes in a problem, a list of solver objects, and an
+# integer specifying how many times each solver should be run on the problem.
+# The output argument is a list of tuples.
+# NOTE/TODO: STILL TO BE TESTED.
+def average_solver_runs(problem: tuple, solver_list: list,
+                          no_runs: int, result_attrs: list):
+    """
+    INPUT arguments:
+    problem: tuple (x0, Objective); output of one of the functions in /problems/test_problems.py
+    solver_list:  list of solver objects to be used in runs
+    no_runs:      number of solver runs to be performed per item in solver_list
+    result_attrs: list of strings. Each string should be the name of a
+    suitable SolverOutput attribute whose average should be computed. 
+
+    OUTPUT argument:
+    output_dict: a dictionary with THREE key-value pairs.
+    It is of the form
+    {
+    'problem': (x0, Objective),
+    'no_runs': no_runs,
+    'avg_results': [(Solver, SolverOutputAverage), ..., (Solver, SolverOutputAverage)]
+    }
+    """
+
+    output_dict = {'problem': problem, 'no_runs': no_runs, 'avg_results': []}
+    x0, obj = problem # unpack for ease of use
+    for solver in solver_list:
+        results_dict = {attr_name: [] for attr_name in result_attrs}
+        for i in range(no_runs):
+            solver_output = solver.optimise(x0)
+            for attr_name in results_dict:
+                results_dict[attr_name].append(getattr(solver_output, attr_name))
+        
+        # Calculate averages
+        avg_results = {f"{attr_name}_avg": np.mean(results_dict[attr_name]) for attr_name in results_dict}
+
+        # Create a SolverOutputAverage instance with the averaged results
+        solver_avg = SolverOutputAverage(solver, **avg_results)
+        
+        # Append to the output list
+        output_dict['avg_results'].append((solver, solver_avg))
+    
+    return output_dict
+
+            
+
 
 # Can use scipy's implementation of a strong-Wolfe-condition-ensuring
 # linesearch (provided direction is a descent direction, of course).

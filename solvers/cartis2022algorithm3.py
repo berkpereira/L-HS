@@ -19,8 +19,6 @@ from solvers.utils import SolverOutput
 from solvers.linesearch_general import LinesearchGeneral
 from problems.test_problems import Objective
 
-np.random.seed(42)
-
 @dataclass
 class Cartis2022Algorithm3Config:
     obj: any

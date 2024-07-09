@@ -18,8 +18,6 @@ import autograd.numpy as np
 from autograd import grad, hessian
 from solvers.utils import SolverOutput
 
-np.random.seed(42)
-
 @dataclass
 class CommonDirectionsConfig:
     obj: any # Objective class instance.
@@ -173,6 +171,8 @@ class CommonDirections:
                 break
             
             direction = - P @ np.linalg.inv(H) @ np.transpose(P) @ grad_f_x
+            raise Exception('See direction computation code here!')
+            # direction = - P @ np.eye(self.subspace_dim) @ np.transpose(P) @ grad_f_x
             step_size = self.backtrack_armijo(x, direction, f_x, grad_f_x)
             
             if self.verbose and k % self.iter_print_gap == 0:

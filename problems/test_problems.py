@@ -8,11 +8,12 @@ import autograd.numpy as np
 from scipy.optimize import rosen
 
 class Objective:
-    def __init__(self, input_dim, func, x_sol=None, f_sol=None):
-        self.input_dim = input_dim # Input dimension
+    def __init__(self, name: str, input_dim: int, func: callable, x_sol=None, f_sol=None):
+        self.name = name
+        self.input_dim = input_dim # input space dimension
         self.func = func # callable, returns objective value
-        self.x_sol = x_sol
-        self.f_sol = f_sol
+        self.x_sol = x_sol # minimiser
+        self.f_sol = f_sol # minimum loss
 
 # Using standard x0 as reported in Appendix B of Dennis and Schnabel textbook.
 # Note that this scipy version of an extended Rosenbrock function has
@@ -26,7 +27,7 @@ def rosenbrock(input_dim):
 
     x_sol = np.ones(input_dim)
     f_sol = 0
-    return x0, Objective(input_dim, rosen, x_sol, f_sol)
+    return x0, Objective('rosenbrock', input_dim, rosen, x_sol, f_sol)
 
 # See https://www.sfu.ca/~ssurjano/powell.html
 def powell(input_dim): # NOTE: input_dim must be multiple of 4
@@ -38,7 +39,7 @@ def powell(input_dim): # NOTE: input_dim must be multiple of 4
         return np.sum([(x[4*i-3 -1] + 10 * x[4*i-2 -1])**2 + 5 * (x[4*i-1 -1] - x[4*i -1])**2 + (x[4*i-2 -1] - 2 * x[4*i-1 -1])**4 + 10 * (x[4*i-3 -1] - x[4*i -1])**4 for i in range(1, input_dim // 4 + 1)])
     x_sol = np.zeros(input_dim)
     f_sol = 0
-    return x0, Objective(input_dim, func, x_sol, f_sol)
+    return x0, Objective('powell', input_dim, func, x_sol, f_sol)
 
 # "Perfect" convex quadratic. f(x) = squared_euclidian_norm(x)
 def well_conditioned_convex_quadratic(input_dim):
@@ -47,7 +48,7 @@ def well_conditioned_convex_quadratic(input_dim):
         return 0.5 * sum(x ** 2)
     x_sol = np.zeros(input_dim)
     f_sol = 0
-    return x0, Objective(input_dim, func, x_sol, f_sol)
+    return x0, Objective('well_conditioned_convex_quadratic', input_dim, func, x_sol, f_sol)
 
 # Ill-conditioned convex quadratic where eigenvalues of the Hessian are
 # logarithmically uniformly distributed from 1 to 10^4.
@@ -62,7 +63,7 @@ def ill_conditioned_convex_quadratic(input_dim):
         return 0.5 * out
     x_sol = np.zeros(input_dim)
     f_sol = 0
-    return x0, Objective(input_dim, func, x_sol, f_sol)
+    return x0, Objective('ill_conditioned_convex_quadratic', input_dim, func, x_sol, f_sol)
 
 def select_problem(problem_name: str, input_dim: int):
     match problem_name:

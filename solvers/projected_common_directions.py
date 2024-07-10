@@ -468,7 +468,7 @@ class ProjectedCommonDirections:
         P_norms = np.array(P_norms_list)
         deriv_evals = np.array(deriv_evals_list)
 
-        return SolverOutput(solver=self, final_x=x, final_k=k,
+        return SolverOutput(solver=self, final_f_val=f_vals[-1], final_x=x, final_k=k,
                             deriv_evals=deriv_evals,
                             f_vals=f_vals, 
                             update_norms=update_norms,

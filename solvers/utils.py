@@ -4,6 +4,7 @@ import autograd.numpy as np
 class SolverOutput():
     def __init__(self, solver, final_f_val, final_x, final_k, f_vals, update_norms=None, **kwargs):
         self.solver = solver
+        self.final_f_val = final_f_val
         self.final_x = final_x
         self.final_k = final_k
         self.f_vals = f_vals
@@ -55,6 +56,8 @@ def average_solver_runs(problem: tuple, solver_list: list,
     output_dict = {'problem': problem, 'no_runs': no_runs, 'avg_results': []}
     x0, obj = problem # unpack for ease of use
     for solver in solver_list:
+        if solver.obj.name != obj.name:
+            raise Exception('Problem and solvers inputs have different problems specified!')
         results_dict = {attr_name: [] for attr_name in result_attrs}
         for i in range(no_runs):
             solver_output = solver.optimise(x0)
@@ -70,9 +73,7 @@ def average_solver_runs(problem: tuple, solver_list: list,
         # Append to the output list
         output_dict['avg_results'].append((solver, solver_avg))
     
-    return output_dict
-
-            
+    return output_dict            
 
 
 # Can use scipy's implementation of a strong-Wolfe-condition-ensuring

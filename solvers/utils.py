@@ -32,7 +32,6 @@ class SolverOutputAverage():
 # This function takes in a problem, a list of solver objects, and an
 # integer specifying how many times each solver should be run on the problem.
 # The output argument is a list of tuples.
-# NOTE/TODO: STILL TO BE TESTED.
 def average_solver_runs(problem: tuple, solver_list: list,
                           no_runs: int, result_attrs: list):
     """
@@ -73,7 +72,7 @@ def average_solver_runs(problem: tuple, solver_list: list,
         # Append to the output list
         output_dict['avg_results'].append((solver, solver_avg))
     
-    return output_dict            
+    return output_dict
 
 
 # Can use scipy's implementation of a strong-Wolfe-condition-ensuring

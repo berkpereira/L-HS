@@ -209,9 +209,35 @@ def plot_solver_averages(avg_results: dict, attr_names: list):
         
         # Plotting the bar chart
         plt.bar(solver_labels, attr_values, alpha=0.75)
-        plt.title(f"{attr_name_avg.replace('_', ' ').capitalize()} comparison")
-        plt.ylabel(attr_name_avg.replace('_', ' ').capitalize())
+        plt.title(f"{attr_name_avg} comparison")
+        plt.ylabel(attr_name_avg)
         plt.xlabel("Solvers")
-        plt.grid(True)
+
+# The below function is meant for plotting histograms of important scalar
+# quantities associated with solver runs (as opposed to just their means)
+def plot_run_histograms(raw_results: list, attr_names: list):
+    """
+    Plots histograms for the specified attributes of raw solver results.
+
+    raw_results: List of tuples containing Solver and lists of SolverOutput instances for each solver.
+    attr_names: List of strings representing the attribute names to plot.
+    """
+    num_solvers = len(raw_results)
+    num_attrs = len(attr_names)
     
-    plt.tight_layout()
+    # Setting the figure size
+    plt.figure(figsize=FIGSIZE_REF)
+
+    for idx, attr_name in enumerate(attr_names):
+        plt.subplot(num_attrs, 1, idx + 1)
+        
+        for solver_idx, (solver, solver_outputs) in enumerate(raw_results):
+            values = [getattr(output, attr_name) for output in solver_outputs]
+            plt.hist(values, alpha=0.5,
+                     label=f"Solver {solver_idx}: {solver.__class__.__name__}",
+                     bins=50)
+        
+        plt.title(f"Histogram of {attr_name}")
+        plt.xlabel(attr_name)
+        plt.ylabel("Frequency")
+        plt.legend()

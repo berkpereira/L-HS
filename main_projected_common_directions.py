@@ -111,7 +111,7 @@ def main():
     for subspace_no_grads, subspace_no_updates, subspace_no_random in subspace_no_list:
         subspace_dim_total = subspace_no_grads + subspace_no_updates + subspace_no_random
         solver = configure_solver(obj, subspace_no_grads, subspace_no_updates,
-                                  subspace_no_random, 5, **fixed_solver_config_params)
+                                  subspace_no_random, subspace_dim_total, **fixed_solver_config_params)
         solvers_list.append(solver)
 
     results_attrs = ['final_f_val']

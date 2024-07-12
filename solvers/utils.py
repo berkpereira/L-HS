@@ -52,14 +52,17 @@ def average_solver_runs(problem: tuple, solver_list: list,
     }
     """
 
-    output_dict = {'problem': problem, 'no_runs': no_runs, 'avg_results': []}
+    output_dict = {'problem': problem, 'no_runs': no_runs,
+                   'avg_results': [], 'raw_results': []}
     x0, obj = problem # unpack for ease of use
     for solver in solver_list:
         if solver.obj.name != obj.name:
             raise Exception('Problem and solvers inputs have different problems specified!')
         results_dict = {attr_name: [] for attr_name in result_attrs}
+        raw_solver_outputs = []
         for i in range(no_runs):
             solver_output = solver.optimise(x0)
+            raw_solver_outputs.append(solver_output)
             for attr_name in results_dict:
                 results_dict[attr_name].append(getattr(solver_output, attr_name))
         
@@ -69,8 +72,9 @@ def average_solver_runs(problem: tuple, solver_list: list,
         # Create a SolverOutputAverage instance with the averaged results
         solver_avg = SolverOutputAverage(solver, **avg_results)
         
-        # Append to the output list
+        # Append to the output list, INCLUDING RAW results
         output_dict['avg_results'].append((solver, solver_avg))
+        output_dict['raw_results'].append((solver, raw_solver_outputs))
     
     return output_dict
 

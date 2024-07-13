@@ -51,8 +51,8 @@ def plot_run_solvers(output_dict):
     #                                            attr_names=['angles_to_full_grad'], log_plot=False)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
     #                                            attr_names=['cond_nos'], log_plot=True)
-    # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
-    #                                            attr_names=['P_ranks'], log_plot=False)
+    plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
+                                               attr_names=['P_ranks'], log_plot=False)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
     #                                            attr_names=['P_norms'], log_plot=True)
     # plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
@@ -77,6 +77,7 @@ def main():
     soft_window_clear()
     set_seed(42)
 
+    # Choose problem
     test_problems_list = ['rosenbrock',
                           'powell',
                           'well_conditioned_convex_quadratic',
@@ -86,16 +87,17 @@ def main():
     problem_tup = get_problem(problem_name, input_dim)
     x0, obj = problem_tup
 
+    # Set up solver configurations
     fixed_solver_config_params = {
         'reg_lambda': 0.01,
         'use_hess': True,
         'inner_use_full_grad': True,
         'reproject_grad': False,
-        'direction_str': 'sd',
+        'direction_str': 'sd', # in {'sd', 'newton'}
         'random_proj': True,
         'ensemble': 'haar',
         'alpha': 0.01,
-        't_init': 1,
+        't_init': 100,
         'tau': 0.5,
         'tol': 1e-4,
         'max_iter': np.inf,
@@ -104,25 +106,27 @@ def main():
         'verbose': True
     }
 
-    subspace_no_list = [(1, 1, 1)]
+    subspace_no_list = [(2, 2, 1)]
     solvers_list = []
-    output_list = []
 
     for subspace_no_grads, subspace_no_updates, subspace_no_random in subspace_no_list:
-        subspace_dim_total = subspace_no_grads + subspace_no_updates + subspace_no_random
+        SUBSPACE_DIM_TOTAL = subspace_no_grads + subspace_no_updates + subspace_no_random
+        TILDE_PROJ_DIM = 3
         solver = configure_solver(obj, subspace_no_grads, subspace_no_updates,
-                                  subspace_no_random, subspace_dim_total, **fixed_solver_config_params)
+                                  subspace_no_random, TILDE_PROJ_DIM, **fixed_solver_config_params)
         solvers_list.append(solver)
 
+    # Run and store results
     results_attrs = ['final_f_val']
-    results_dict = run_solvers(problem_tup, solvers_list, no_runs=20,
+    results_dict = run_solvers(problem_tup, solvers_list, no_runs=10,
                                result_attrs=results_attrs)
 
+    # Plot
     plotting.plotting.plot_solver_averages(results_dict, ['final_f_val'])
     plotting.plotting.plot_run_histograms(results_dict['raw_results'],
                                           attr_names=results_attrs)
 
-    # Uncomment the following line to use the detailed plotting function
+    # (detailed plots, each individual run represented)
     plot_run_solvers(results_dict)
 
     plt.show()

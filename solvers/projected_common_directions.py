@@ -15,7 +15,7 @@ import autograd.numpy as np
 from autograd import grad, hessian
 from solvers.utils import SolverOutput, scaled_gaussian, haar, append_orth_dirs
 
-@dataclass
+@dataclass(frozen=True)
 class ProjectedCommonDirectionsConfig:
     """
     obj: Objective class instance.
@@ -71,6 +71,9 @@ class ProjectedCommonDirections:
         # Set all attributes given in ProjectedCommonDirectionsConfig
         for key, value in config.__dict__.items():
             setattr(self, key, value)
+
+        # Store the config object itself as an attribute
+        self.config = config
 
         # Overall number of columns in P_k
         self.subspace_dim = self.subspace_no_grads + self.subspace_no_updates + self.subspace_no_random

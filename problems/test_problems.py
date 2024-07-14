@@ -17,17 +17,36 @@ class Objective:
 
 # Using standard x0 as reported in Appendix B of Dennis and Schnabel textbook.
 # Note that this scipy version of an extended Rosenbrock function has
-# multiple stationary! For details, see the paper
+# multiple stationary points! For details, see 'Variant B' in the paper
 # https://dl.acm.org/doi/abs/10.1162/evco.2009.17.3.437
 # The starting point seems to have a significant influence on whether the
 # minimum or some other stationary point is found.
-def rosenbrock(input_dim):
+def rosenbrock_multiple(input_dim):
     x0 = np.ones(input_dim, dtype='float32')
     x0[::2] = -1.2 # assign -1.2 to every other entry in x0
 
     x_sol = np.ones(input_dim)
     f_sol = 0
-    return x0, Objective('rosenbrock', input_dim, rosen, x_sol, f_sol)
+    return x0, Objective('rosenbrock_multiple', input_dim, rosen, x_sol, f_sol)
+
+# Using standard x0 as reported in Appendix B of Dennis and Schnabel textbook.
+# This Rosebrock variant is only defined for even input space dimension.
+# There is a single stationary point, the global minimiser, at x = ones.
+# For details, see 'Variant A' in the paper
+# https://dl.acm.org/doi/abs/10.1162/evco.2009.17.3.437.
+def rosenbrock_single(input_dim):
+    if input_dim % 2 != 0:
+        raise Exception('This extended Rosenbrock variant is only defined for EVEN input space dimension!')
+    x0 = np.ones(input_dim, dtype='float32')
+    x0[::2] = -1.2
+    
+    x_sol = np.ones(input_dim)
+    f_sol = 0
+
+    def func(x: np.ndarray):
+        return np.sum(100.0 * (x[::2]**2.0 - x[1::2])**2.0 + (x[::2] - 1)**2.0)
+    return x0, Objective('rosenbrock_single', input_dim, func, x_sol, f_sol)
+
 
 # See https://www.sfu.ca/~ssurjano/powell.html
 def powell(input_dim): # NOTE: input_dim must be multiple of 4

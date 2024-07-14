@@ -169,11 +169,20 @@ class ProjectedCommonDirections:
     
     # The below method is new compared to the common_directions.py module.
     # It plays the role of determining how "projected gradients" are defined.
+    # This refers to what I usually denote by $\tilde{\nabla}f(x_k)$.
     def project_gradient(self, full_grad, random_proj, **kwargs):
         if random_proj:
-            W = self.draw_sketch()
-        else:
-            W = kwargs['Q_prev']
+            # Test for edge case where we recover full gradient information:
+            if self.random_proj_dim == self.obj.input_dim:
+                W = np.eye(self.obj.input_dim)
+            else:
+                W = self.draw_sketch()
+        else: # 'Deterministic' projection of gradients for subspace construction.
+            # Test for edge case where we recover full gradient information:
+            if self.subspace_dim == self.obj.input_dim:
+                W = np.eye(self.obj.input_dim)
+            else:
+                W = kwargs['Q_prev']
         proj_grad = W @ np.transpose(W) @ full_grad
         return proj_grad
 

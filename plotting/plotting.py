@@ -36,17 +36,42 @@ def plot_loss_vs_iteration(solver_outputs: list,
             labels = [
                 f"""\# sub grads = {solver_outputs[i].solver.subspace_no_grads},
                 \# sub updates = {solver_outputs[i].solver.subspace_no_updates},
-                \# sub random = {solver_outputs[i].solver.subspace_no_random}"""
+                \# sub random = {solver_outputs[i].solver.subspace_no_random},
+                direction = {solver_outputs[i].solver.direction_str},
+                $S_k$ ``dimension'' = {solver_outputs[i].solver.random_proj_dim}"""
                 for i in range(len(solver_outputs))
                 ]
         except: # Generic chronological numbering
             labels = [f"Solver {i}" for i in range(len(solver_outputs))]
 
+    # Initialise line plot colouring scheme
+    previous_config = None
+    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    color_index = 0
+
+    # Track labelled solver configurations
+    labelled_configs = set()
+
     for solver_output, label in zip(solver_outputs, labels):
-        if deriv_evals_axis:
-            plt.plot(solver_output.deriv_evals, solver_output.f_vals, linestyle='-', label=label)
+        current_config = solver_output.solver.config
+        
+        # Change color only if the current configuration is different from the previous one
+        if previous_config is None or current_config != previous_config:
+            color = color_cycle[color_index % len(color_cycle)]
+            color_index += 1
+            previous_config = current_config
+
+        # Add label only if the configuration hasn't been labelled yet
+        if current_config not in labelled_configs:
+            labelled_configs.add(current_config)
+            plot_label = label
         else:
-            plt.plot(solver_output.f_vals, linestyle='-', label=label)
+            plot_label = None
+        
+        if deriv_evals_axis:
+            plt.plot(solver_output.deriv_evals, solver_output.f_vals, linestyle='-', color=color, label=plot_label)
+        else:
+            plt.plot(solver_output.f_vals, linestyle='-', color=color, label=plot_label)
     
     plt.yscale('log')
     if deriv_evals_axis:

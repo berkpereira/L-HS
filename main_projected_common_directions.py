@@ -51,8 +51,8 @@ def plot_run_solvers(output_dict):
     #                                            attr_names=['angles_to_full_grad'], log_plot=False)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
     #                                            attr_names=['cond_nos'], log_plot=True)
-    plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
-                                               attr_names=['P_ranks'], log_plot=False)
+    # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
+    #                                            attr_names=['P_ranks'], log_plot=False)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
     #                                            attr_names=['P_norms'], log_plot=True)
     # plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
@@ -78,12 +78,13 @@ def main():
     set_seed(42)
 
     # Choose problem
-    test_problems_list = ['rosenbrock',
-                          'powell',
-                          'well_conditioned_convex_quadratic',
-                          'ill_conditioned_convex_quadratic']
-    problem_name = test_problems_list[3]
-    input_dim = 12
+    test_problems_list = ['rosenbrock_single',                 # 0
+                          'rosenbrock_multiple',               # 1
+                          'powell',                            # 2
+                          'well_conditioned_convex_quadratic', # 3
+                          'ill_conditioned_convex_quadratic']  # 4
+    problem_name = test_problems_list[0]
+    input_dim = 30
     problem_tup = get_problem(problem_name, input_dim)
     x0, obj = problem_tup
 
@@ -93,7 +94,7 @@ def main():
         'use_hess': True,
         'inner_use_full_grad': True,
         'reproject_grad': False,
-        'direction_str': 'sd', # in {'sd', 'newton'}
+        'direction_str': 'newton', # in {'sd', 'newton'}
         'random_proj': True,
         'ensemble': 'haar',
         'alpha': 0.01,
@@ -101,24 +102,26 @@ def main():
         'tau': 0.5,
         'tol': 1e-4,
         'max_iter': np.inf,
-        'deriv_budget': 1_000,
-        'iter_print_gap': 20,
+        'deriv_budget': 10_000,
+        'iter_print_gap': 50,
         'verbose': True
     }
 
-    subspace_no_list = [(2, 2, 1)]
+    subspace_no_list = [(3, 3, 2)]
     solvers_list = []
 
     for subspace_no_grads, subspace_no_updates, subspace_no_random in subspace_no_list:
         SUBSPACE_DIM_TOTAL = subspace_no_grads + subspace_no_updates + subspace_no_random
-        TILDE_PROJ_DIM = 3
-        solver = configure_solver(obj, subspace_no_grads, subspace_no_updates,
-                                  subspace_no_random, TILDE_PROJ_DIM, **fixed_solver_config_params)
-        solvers_list.append(solver)
+        # TILDE_PROJ_DIM = 5
+        for TILDE_PROJ_DIM in range(3, 22, 7):
+            solver = configure_solver(obj, subspace_no_grads, subspace_no_updates,
+                                    subspace_no_random, TILDE_PROJ_DIM, **fixed_solver_config_params)
+            solvers_list.append(solver)
+
 
     # Run and store results
     results_attrs = ['final_f_val']
-    results_dict = run_solvers(problem_tup, solvers_list, no_runs=10,
+    results_dict = run_solvers(problem_tup, solvers_list, no_runs=20,
                                result_attrs=results_attrs)
 
     # Plot

@@ -86,8 +86,10 @@ def ill_conditioned_convex_quadratic(input_dim):
 
 def select_problem(problem_name: str, input_dim: int):
     match problem_name:
-        case 'rosenbrock':
-            return rosenbrock(input_dim)
+        case 'rosenbrock_single':
+            return rosenbrock_single(input_dim)
+        case 'rosenbrock_multiple':
+            return rosenbrock_multiple(input_dim)
         case 'powell':
             return powell(input_dim)
         case 'well_conditioned_convex_quadratic':

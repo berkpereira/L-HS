@@ -36,9 +36,13 @@ def run_solvers(problem_tup, solvers_list, no_runs, result_attrs):
 def plot_run_solvers(output_dict):
     # Extract all SolverOutput objects from a results dictionary.
     output_list = [solver_output for _, solver_outputs in output_dict['raw_results'] for solver_output in solver_outputs]
+    
     # Uncomment the following lines to 'select' plotting functions
     plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
-                                             deriv_evals_axis=True)
+                                             deriv_evals_axis=True,
+                                             normalise_deriv_evals_vs_dimension=True,
+                                             normalise_P_k_dirs_vs_dimension=True,
+                                             normalise_S_k_dirs_vs_dimension=True)
     plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
                                              deriv_evals_axis=False)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
@@ -107,21 +111,24 @@ def main():
         'verbose': True
     }
 
-    subspace_no_list = [(3, 3, 2)]
+    subspace_no_list = [(1, 1, 2),
+                        (2, 1, 2),
+                        (0, 0, 5)]
     solvers_list = []
 
     for subspace_no_grads, subspace_no_updates, subspace_no_random in subspace_no_list:
         SUBSPACE_DIM_TOTAL = subspace_no_grads + subspace_no_updates + subspace_no_random
-        # TILDE_PROJ_DIM = 5
-        for TILDE_PROJ_DIM in range(3, 22, 7):
-            solver = configure_solver(obj, subspace_no_grads, subspace_no_updates,
-                                    subspace_no_random, TILDE_PROJ_DIM, **fixed_solver_config_params)
-            solvers_list.append(solver)
+        TILDE_PROJ_DIM = 5
+        solver = configure_solver(obj, subspace_no_grads, subspace_no_updates,
+                                subspace_no_random, TILDE_PROJ_DIM, **fixed_solver_config_params)
+        solvers_list.append(solver)
+
+    print(str(solvers_list[0].config))
 
 
     # Run and store results
     results_attrs = ['final_f_val']
-    results_dict = run_solvers(problem_tup, solvers_list, no_runs=20,
+    results_dict = run_solvers(problem_tup, solvers_list, no_runs=3,
                                result_attrs=results_attrs)
 
     # Plot

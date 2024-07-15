@@ -8,7 +8,7 @@ The common thread to all of these methods is that THE FULL GRADIENT IS NEVER USE
 For discussion of these ideas, see relevant docs/*.md file.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 import warnings
 
 import autograd.numpy as np
@@ -65,6 +65,27 @@ class ProjectedCommonDirectionsConfig:
     
     iter_print_gap:int = 20     # Period for printing an iteration's info.
     verbose: bool = False
+
+    def __str__(self):
+        passable_attrs = ['obj',
+                          'verbose',
+                          'deriv_budget',
+                          'iter_print_gap',
+                          'max_iter',
+                          'tol']
+        attributes = []
+        for field in fields(self):
+            name = field.name
+            if name in passable_attrs: # These should play no role for our purposes.
+                continue
+            else:
+                value = getattr(self, name)
+            if isinstance(value, float):
+                value = format(value, '.8g')  # Format float with a consistent representation
+            elif isinstance(value, int):
+                value = str(value)  # Convert int to string
+            attributes.append(f"{name}={value}")
+        return f"{self.__class__.__name__}({', '.join(attributes)})"
 
 class ProjectedCommonDirections:
     def __init__(self, config: ProjectedCommonDirectionsConfig):

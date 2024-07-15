@@ -67,6 +67,7 @@ class ProjectedCommonDirectionsConfig:
     verbose: bool = False
 
     def __str__(self):
+        # These attributes should play no role for our purposes (consistent line plot colouring)
         passable_attrs = ['obj',
                           'verbose',
                           'deriv_budget',
@@ -76,7 +77,7 @@ class ProjectedCommonDirectionsConfig:
         attributes = []
         for field in fields(self):
             name = field.name
-            if name in passable_attrs: # These should play no role for our purposes.
+            if name in passable_attrs:
                 continue
             else:
                 value = getattr(self, name)

@@ -36,7 +36,9 @@ def config_to_color(config):
 # evaluated) for a number of solver output objects.
 def plot_loss_vs_iteration(solver_outputs: list,
                            deriv_evals_axis: bool=False,
-                           normalise_vs_dimension: bool=False,
+                           normalise_deriv_evals_vs_dimension: bool=False,
+                           normalise_P_k_dirs_vs_dimension: bool=False,
+                           normalise_S_k_dirs_vs_dimension: bool=False,
                            labels=None):
     """
     Plot the loss (function values) vs iteration count for multiple solvers.
@@ -45,23 +47,60 @@ def plot_loss_vs_iteration(solver_outputs: list,
     solver_outputs: List of SolverOutput instances.
     deriv_evals_axis: Determines whether the horizontal axis is given in terms 
     directional derivative evaluations. If False, it is given in iterations instead.
-    normalise_vs_dimension: Determines whether, if deriv_evals_axis == True, the
+    normalise_deriv_evals_vs_dimension: Determines whether, if deriv_evals_axis == True, the
     numbers of derivative evaluations are actually displayed as multiples of
     the problem ambient dimension.
+    normalise_P_k_dirs_vs_dimension: Determines whether, in the plot labels, 
+    the numbers of directions in P_k (from grads, steps, and random) are
+    displayed as fractions of the ambient dimension, denoted by n.
+    normalise_S_k_dirs_vs_dimension: Similar to normalise_P_k_dirs_vs_dimension,
+    but referring to the 'dimension' of S_k instead
     labels: List of labels for each solver output.
     """
     plt.figure(figsize=FIGSIZE_REF)
     
     if labels is None:
         try: # If subspace dimension is a meaningful concept for the solver
-            labels = [
-                f"""\# sub grads = {solver_outputs[i].solver.subspace_no_grads},
-                \# sub updates = {solver_outputs[i].solver.subspace_no_updates},
-                \# sub random = {solver_outputs[i].solver.subspace_no_random},
-                direction: {solver_outputs[i].solver.direction_str},
-                $S_k$ ``dimension'' = {solver_outputs[i].solver.random_proj_dim}"""
-                for i in range(len(solver_outputs))
-                ]
+            labels = []
+            for i in range(len(solver_outputs)):
+                ambient_dim = solver_outputs[i].solver.obj.input_dim
+
+                no_sub_grads   = solver_outputs[i].solver.subspace_no_grads
+                no_sub_updates = solver_outputs[i].solver.subspace_no_updates
+                no_sub_random  = solver_outputs[i].solver.subspace_no_random
+
+                if normalise_P_k_dirs_vs_dimension:
+                    no_sub_grads   /= ambient_dim
+                    no_sub_updates /= ambient_dim
+                    no_sub_random  /= ambient_dim
+                    no_sub_grads_str   = f'${no_sub_grads:.2f} n$'
+                    no_sub_updates_str = f'${no_sub_updates:.2f} n$'
+                    no_sub_random_str  = f'${no_sub_random:.2f} n$'
+                else:
+                    no_sub_grads_str   = f'${no_sub_grads}$'
+                    no_sub_updates_str = f'${no_sub_updates}$'
+                    no_sub_random_str  = f'${no_sub_random}$'
+
+                if solver_outputs[i].solver.direction_str == 'newton':
+                    direction_str_formatted = solver_outputs[i].solver.direction_str.capitalize()
+                elif solver_outputs[i].solver.direction_str == 'sd':
+                    direction_str_formatted = solver_outputs[i].solver.direction_str.upper()
+
+                if normalise_S_k_dirs_vs_dimension:
+                    S_k_dim = solver_outputs[i].solver.random_proj_dim / ambient_dim
+                    S_k_dim_str = f'${S_k_dim:.2f} n$'
+                else:
+                    S_k_dim = solver_outputs[i].solver.random_proj_dim
+                    S_k_dim_str = f'${S_k_dim}$'
+                
+                new_label = f"""\# sub grads = {no_sub_grads_str},
+                            \# sub updates = {no_sub_updates_str},
+                            \# sub random = {no_sub_random_str},
+                            $S_k$ ``dimension'' = {S_k_dim_str},
+                            direction: {direction_str_formatted}
+                            """
+                
+                labels.append(new_label)
         except: # Generic chronological numbering
             labels = [f"Solver {i}" for i in range(len(solver_outputs))]
 
@@ -82,7 +121,7 @@ def plot_loss_vs_iteration(solver_outputs: list,
             plot_label = None
         
         if deriv_evals_axis:
-            if normalise_vs_dimension:
+            if normalise_deriv_evals_vs_dimension:
                 ambient_dim = solver_output.solver.obj.input_dim
                 equiv_grad_evals = solver_output.deriv_evals / ambient_dim
                 plt.plot(equiv_grad_evals, solver_output.f_vals, linestyle='-', color=color, label=plot_label)
@@ -93,7 +132,7 @@ def plot_loss_vs_iteration(solver_outputs: list,
     
     plt.yscale('log')
     if deriv_evals_axis:
-        if normalise_vs_dimension:
+        if normalise_deriv_evals_vs_dimension:
             plt.xlabel('Equivalent gradient evaluations')
             plt.title('Objective vs equivalent gradient evaluations')
         else:

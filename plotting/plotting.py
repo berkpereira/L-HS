@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import hashlib
 
 # Enable LaTeX rendering
 plt.rcParams.update({
@@ -14,6 +15,21 @@ plt.rcParams.update({
 FIGSIZE_REF = (17, 8)
 LINE_WIDTH = 1
 MARKER_SIZE = 1
+
+# This function returns a hex number colour code from a hash (e.g., of a 
+# solver's configuration (config) object)
+def config_to_color(config):
+    # Create a SHA-256 hash of the string representation of the configuration
+    config_str = str(config)
+    
+    print(config_str)
+    print()
+    
+    hash_object = hashlib.sha256(config_str.encode())
+    hex_dig = hash_object.hexdigest()
+    # Use the first 6 characters of the hash for the color
+    color = f'#{hex_dig[:6]}'
+    return color
 
 # This function plots the loss vs iteration (or vs directional derivatives
 # evaluated) for a number of solver output objects.
@@ -44,22 +60,18 @@ def plot_loss_vs_iteration(solver_outputs: list,
         except: # Generic chronological numbering
             labels = [f"Solver {i}" for i in range(len(solver_outputs))]
 
-    # Initialise line plot colouring scheme
-    previous_config = None
+    # Get the color cycle from matplotlib
     color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    color_index = 0
+    num_colors = len(color_cycle)
 
     # Track labelled solver configurations
     labelled_configs = set()
 
     for solver_output, label in zip(solver_outputs, labels):
         current_config = solver_output.solver.config
-        
-        # Change color only if the current configuration is different from the previous one
-        if previous_config is None or current_config != previous_config:
-            color = color_cycle[color_index % len(color_cycle)]
-            color_index += 1
-            previous_config = current_config
+
+        # Use the hash of the configuration to determine the color
+        color = config_to_color(current_config)
 
         # Add label only if the configuration hasn't been labelled yet
         if current_config not in labelled_configs:

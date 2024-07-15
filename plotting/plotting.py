@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import hashlib
 
-# Enable LaTeX rendering
+# Enable LaTeX rendering, etc.
 plt.rcParams.update({
     'font.size': 11,
     "text.usetex": True,
@@ -12,6 +12,7 @@ plt.rcParams.update({
     'savefig.pad_inches': 0.1
 })
 
+# "Default" graphic parameters
 FIGSIZE_REF = (17, 8)
 LINE_WIDTH = 1
 MARKER_SIZE = 1
@@ -35,6 +36,7 @@ def config_to_color(config):
 # evaluated) for a number of solver output objects.
 def plot_loss_vs_iteration(solver_outputs: list,
                            deriv_evals_axis: bool=False,
+                           normalise_vs_dimension: bool=False,
                            labels=None):
     """
     Plot the loss (function values) vs iteration count for multiple solvers.
@@ -43,6 +45,9 @@ def plot_loss_vs_iteration(solver_outputs: list,
     solver_outputs: List of SolverOutput instances.
     deriv_evals_axis: Determines whether the horizontal axis is given in terms 
     directional derivative evaluations. If False, it is given in iterations instead.
+    normalise_vs_dimension: Determines whether, if deriv_evals_axis == True, the
+    numbers of derivative evaluations are actually displayed as multiples of
+    the problem ambient dimension.
     labels: List of labels for each solver output.
     """
     plt.figure(figsize=FIGSIZE_REF)
@@ -53,16 +58,12 @@ def plot_loss_vs_iteration(solver_outputs: list,
                 f"""\# sub grads = {solver_outputs[i].solver.subspace_no_grads},
                 \# sub updates = {solver_outputs[i].solver.subspace_no_updates},
                 \# sub random = {solver_outputs[i].solver.subspace_no_random},
-                direction = {solver_outputs[i].solver.direction_str},
+                direction: {solver_outputs[i].solver.direction_str},
                 $S_k$ ``dimension'' = {solver_outputs[i].solver.random_proj_dim}"""
                 for i in range(len(solver_outputs))
                 ]
         except: # Generic chronological numbering
             labels = [f"Solver {i}" for i in range(len(solver_outputs))]
-
-    # Get the color cycle from matplotlib
-    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    num_colors = len(color_cycle)
 
     # Track labelled solver configurations
     labelled_configs = set()
@@ -81,18 +82,27 @@ def plot_loss_vs_iteration(solver_outputs: list,
             plot_label = None
         
         if deriv_evals_axis:
-            plt.plot(solver_output.deriv_evals, solver_output.f_vals, linestyle='-', color=color, label=plot_label)
+            if normalise_vs_dimension:
+                ambient_dim = solver_output.solver.obj.input_dim
+                equiv_grad_evals = solver_output.deriv_evals / ambient_dim
+                plt.plot(equiv_grad_evals, solver_output.f_vals, linestyle='-', color=color, label=plot_label)
+            else:
+                plt.plot(solver_output.deriv_evals, solver_output.f_vals, linestyle='-', color=color, label=plot_label)
         else:
             plt.plot(solver_output.f_vals, linestyle='-', color=color, label=plot_label)
     
     plt.yscale('log')
     if deriv_evals_axis:
-        plt.xlabel('(Directional) derivatives evaluated')
-        plt.title('Loss vs (directional) derivatives evaluated')
+        if normalise_vs_dimension:
+            plt.xlabel('Equivalent gradient evaluations')
+            plt.title('Objective vs equivalent gradient evaluations')
+        else:
+            plt.xlabel('(Directional) derivative evaluations')
+            plt.title('Objective vs (directional) derivative evaluations')
     else:
         plt.xlabel('Iteration')
-        plt.title('Loss vs iteration')
-    plt.ylabel('Function value')
+        plt.title('Objective vs iteration')
+    plt.ylabel('$f(x_k)$')
     plt.legend()
     plt.grid(True, which="both", ls="-")
 

@@ -18,14 +18,9 @@ LINE_WIDTH = 1
 MARKER_SIZE = 1
 
 # This function returns a hex number colour code from a hash (e.g., of a 
-# solver's configuration (config) object)
-def config_to_color(config):
+# solver's configuration's string representation)
+def config_str_to_color(config_str: str):
     # Create a SHA-256 hash of the string representation of the configuration
-    config_str = str(config)
-    
-    print(config_str)
-    print()
-    
     hash_object = hashlib.sha256(config_str.encode())
     hex_dig = hash_object.hexdigest()
     # Use the first 6 characters of the hash for the color
@@ -97,8 +92,7 @@ def plot_loss_vs_iteration(solver_outputs: list,
                             \# sub updates = {no_sub_updates_str},
                             \# sub random = {no_sub_random_str},
                             $S_k$ ``dimension'' = {S_k_dim_str},
-                            direction: {direction_str_formatted}
-                            """
+                            direction: {direction_str_formatted}"""
                 
                 labels.append(new_label)
         except: # Generic chronological numbering
@@ -108,14 +102,14 @@ def plot_loss_vs_iteration(solver_outputs: list,
     labelled_configs = set()
 
     for solver_output, label in zip(solver_outputs, labels):
-        current_config = solver_output.solver.config
+        current_config_str = str(solver_output.solver.config)
 
         # Use the hash of the configuration to determine the color
-        color = config_to_color(current_config)
+        color = config_str_to_color(current_config_str)
 
         # Add label only if the configuration hasn't been labelled yet
-        if current_config not in labelled_configs:
-            labelled_configs.add(current_config)
+        if current_config_str not in labelled_configs:
+            labelled_configs.add(current_config_str)
             plot_label = label
         else:
             plot_label = None
@@ -297,6 +291,7 @@ def plot_solver_averages(avg_results: dict, attr_names: list):
         plt.bar(solver_labels, attr_values, alpha=0.75)
         plt.title(f"{attr_name_avg} comparison")
         plt.ylabel(attr_name_avg)
+        plt.yscale('log')
         plt.xlabel("Solvers")
 
 # The below function is meant for plotting histograms of important scalar
@@ -305,7 +300,8 @@ def plot_run_histograms(raw_results: list, attr_names: list):
     """
     Plots histograms for the specified attributes of raw solver results.
 
-    raw_results: List of tuples containing Solver and lists of SolverOutput instances for each solver.
+    raw_results: List of two-tuples, one per solver, each containing Solver
+    object and list of SolverOutput instances.
     attr_names: List of strings representing the attribute names to plot.
     """
     num_solvers = len(raw_results)
@@ -318,10 +314,10 @@ def plot_run_histograms(raw_results: list, attr_names: list):
         plt.subplot(num_attrs, 1, idx + 1)
         
         for solver_idx, (solver, solver_outputs) in enumerate(raw_results):
+            color = config_str_to_color(str(solver.config))
             values = [getattr(output, attr_name) for output in solver_outputs]
-            plt.hist(values, alpha=0.5,
-                     label=f"Solver {solver_idx}: {solver.__class__.__name__}",
-                     bins=50)
+            plt.hist(values, alpha=1, color=color,
+                     label=f"Solver {solver_idx}: {solver.__class__.__name__}")
         
         plt.title(f"Histogram of {attr_name}")
         plt.xlabel(attr_name)

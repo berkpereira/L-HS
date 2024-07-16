@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import autograd.numpy as np
 import hashlib
 
 # Enable LaTeX rendering, etc.
@@ -13,7 +14,7 @@ plt.rcParams.update({
 })
 
 # "Default" graphic parameters
-FIGSIZE_REF = (17, 8)
+FIGSIZE_REF = (17, 8.5)
 LINE_WIDTH = 1
 MARKER_SIZE = 1
 
@@ -65,16 +66,22 @@ def plot_loss_vs_iteration(solver_outputs: list,
                 no_sub_random  = solver_outputs[i].solver.subspace_no_random
 
                 if normalise_P_k_dirs_vs_dimension:
-                    no_sub_grads   /= ambient_dim
-                    no_sub_updates /= ambient_dim
-                    no_sub_random  /= ambient_dim
+                    no_sub_grads      /= ambient_dim
+                    no_sub_updates    /= ambient_dim
+                    no_sub_random     /= ambient_dim
                     no_sub_grads_str   = f'${no_sub_grads:.2f} n$'
+                    no_sub_grads_eq    = '$=$' if no_sub_grads == np.round(no_sub_grads, 2) else r'$\approx$'
                     no_sub_updates_str = f'${no_sub_updates:.2f} n$'
+                    no_sub_updates_eq  = '$=$' if no_sub_updates == np.round(no_sub_updates, 2) else r'$\approx$'
                     no_sub_random_str  = f'${no_sub_random:.2f} n$'
+                    no_sub_random_eq   = '$=$' if no_sub_random == np.round(no_sub_random, 2) else r'$\approx$'
                 else:
                     no_sub_grads_str   = f'${no_sub_grads}$'
                     no_sub_updates_str = f'${no_sub_updates}$'
                     no_sub_random_str  = f'${no_sub_random}$'
+                    no_sub_grads_eq    = '$=$'
+                    no_sub_updates_eq  = '$=$'
+                    no_sub_random_eq   = '$=$'
 
                 if solver_outputs[i].solver.direction_str == 'newton':
                     direction_str_formatted = solver_outputs[i].solver.direction_str.capitalize()
@@ -84,15 +91,33 @@ def plot_loss_vs_iteration(solver_outputs: list,
                 if normalise_S_k_dirs_vs_dimension:
                     S_k_dim = solver_outputs[i].solver.random_proj_dim / ambient_dim
                     S_k_dim_str = f'${S_k_dim:.2f} n$'
+                    S_k_eq = '$=$'if S_k_dim == np.round(S_k_dim, 2) else r'$\approx$'
                 else:
                     S_k_dim = solver_outputs[i].solver.random_proj_dim
                     S_k_dim_str = f'${S_k_dim}$'
+                    S_k_eq = '$=$'
                 
-                new_label = f"""\# sub grads = {no_sub_grads_str},
-                            \# sub updates = {no_sub_updates_str},
-                            \# sub random = {no_sub_random_str},
-                            $S_k$ ``dimension'' = {S_k_dim_str},
-                            direction: {direction_str_formatted}"""
+                tilde_dirs_str  = r'$\tilde{\nabla}f(x_k)$'
+                update_dirs_str = r'$s_k$'
+                new_label_template = r"""\# {tilde_dirs_str} dirs.\ {no_sub_grads_eq} {no_sub_grads_str},
+                \# {update_dirs_str} dirs.\ {no_sub_updates_eq} {no_sub_updates_str},
+                \# random dirs.\ {no_sub_random_eq} {no_sub_random_str},
+                $S_k$ ``dimension'' {S_k_eq} {S_k_dim_str},
+                direction: {direction_str_formatted}"""
+
+                new_label = new_label_template.format(
+                    tilde_dirs_str=tilde_dirs_str,
+                    no_sub_grads_eq=no_sub_grads_eq,
+                    no_sub_grads_str=no_sub_grads_str,
+                    update_dirs_str=update_dirs_str,
+                    no_sub_updates_eq=no_sub_updates_eq,
+                    no_sub_updates_str=no_sub_updates_str,
+                    no_sub_random_eq=no_sub_random_eq,
+                    no_sub_random_str=no_sub_random_str,
+                    S_k_eq=S_k_eq,
+                    S_k_dim_str=S_k_dim_str,
+                    direction_str_formatted=direction_str_formatted
+                )
                 
                 labels.append(new_label)
         except: # Generic chronological numbering

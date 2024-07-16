@@ -36,9 +36,9 @@ class ProjectedCommonDirectionsConfig:
     obj: Any                    
     reg_lambda: float
     
-    subspace_no_grads: int = 0
-    subspace_no_updates: int = 0
-    subspace_no_random: int = 0
+    subspace_no_grads: int = None
+    subspace_no_updates: int = None
+    subspace_no_random: int = None
 
     subspace_frac_grads: float = None
     subspace_frac_updates: float = None
@@ -56,20 +56,42 @@ class ProjectedCommonDirectionsConfig:
     t_init: float = 1
     tau: float = 0.5
     
+    # Passable attributes
     tol: float = 1e-3
     max_iter: int = 1000
-    deriv_budget: int = 1000
+    deriv_budget: int = None
+    equiv_grad_budget: float = None
     iter_print_gap: int = 50
     verbose: bool = False
 
     def __post_init__(self):
+        if ((self.subspace_frac_grads is not None and self.subspace_no_grads is not None) or
+            (self.subspace_frac_updates is not None and self.subspace_no_updates is not None) or
+            (self.subspace_frac_random is not None and self.subspace_no_random is not None)):
+            raise Exception('Cannot specify numbers of directions directly and as fractions of ambient dimension simultaneously!')
+        
         # If fractions are specified, use them to set the integer attributes
         if self.subspace_frac_grads is not None:
-            self.subspace_no_grads = int(self.subspace_frac_grads * self.obj.input_dim)
+            prospective_subspace_no_grads = self.subspace_frac_grads * self.obj.input_dim
+            if int(prospective_subspace_no_grads) == prospective_subspace_no_grads:
+                self.subspace_no_grads = int(prospective_subspace_no_grads)
+            else:
+                raise Exception(f"""Specified fraction of gradient directions does NOT give integer number of directions!
+                                Gradients fraction: {self.subspace_frac_grads}. Ambient dimension: {self.obj.input_dim}""")
         if self.subspace_frac_updates is not None:
-            self.subspace_no_updates = int(self.subspace_frac_updates * self.obj.input_dim)
+            prospective_subspace_no_updates = self.subspace_frac_updates * self.obj.input_dim
+            if int(prospective_subspace_no_updates) == prospective_subspace_no_updates:
+                self.subspace_no_updates = int(prospective_subspace_no_updates)
+            else:
+                raise Exception(f"""Specified fraction of update directions does NOT give integer number of directions!
+                                Updates fraction: {self.subspace_frac_updates}. Ambient dimension: {self.obj.input_dim}""")
         if self.subspace_frac_random is not None:
-            self.subspace_no_random = int(self.subspace_frac_random * self.obj.input_dim)
+            prospective_subspace_no_random = self.subspace_frac_random * self.obj.input_dim
+            if int(prospective_subspace_no_random) == prospective_subspace_no_random:
+                self.subspace_no_random = int(prospective_subspace_no_random)
+            else:
+                raise Exception(f"""Specified fraction of random directions does NOT give integer number of directions!
+                                Random fraction: {self.subspace_frac_random}. Ambient dimension: {self.obj.input_dim}""")
         
         # If integer attributes are specified, set the fractional attributes accordingly
         if self.subspace_frac_grads is None:
@@ -79,9 +101,19 @@ class ProjectedCommonDirectionsConfig:
         if self.subspace_frac_random is None:
             self.subspace_frac_random = self.subspace_no_random / self.obj.input_dim
 
+        # Handle the relationship between deriv_budget and equiv_grad_budget
+        if self.equiv_grad_budget is not None and self.deriv_budget is not None:
+            raise Exception('Cannot specify derivative budget and equivalent gradient budget simultaneously!')
+        if self.equiv_grad_budget is not None:
+            self.deriv_budget = int(self.equiv_grad_budget * self.obj.input_dim)
+        elif self.deriv_budget is not None:
+            self.equiv_grad_budget = self.deriv_budget / self.obj.input_dim
+        else:
+            raise Exception("Either deriv_budget or equiv_grad_budget must be specified.")
+
     def __str__(self):
         # These attributes should play no role for our purposes (consistent line plot colouring)
-        passable_attrs = ['obj', 'verbose', 'deriv_budget', 'iter_print_gap',
+        passable_attrs = ['obj', 'verbose', 'deriv_budget', 'equiv_grad_budget', 'iter_print_gap',
                           'max_iter', 'tol', 'subspace_no_grads',
                           'subspace_no_updates', 'subspace_no_random']
         attributes = []
@@ -116,15 +148,15 @@ class ProjectedCommonDirections:
         else:
             self.subspace_constr_method = None
 
+        if self.subspace_no_grads == 0 and self.subspace_constr_method != 'random':
+            raise Exception('Not good to NOT have fully randomised P_k yet have no directions based on gradient information!')
+
         if self.subspace_constr_method == 'random' and (not self.inner_use_full_grad):
             raise Exception('If P_k fully randomised, must use full gradients in expression for search direction and backtracking!')
         
         # Number of P_k columns relying on problem/algorithm information
         # of some kind. 
         self.no_problem_dirs = self.subspace_no_grads + self.subspace_no_updates
-
-        # if self.subspace_constr_method == 'random' and self.append_rand_dirs > 0:
-        #     raise Exception('It makes no sense to append random directions when the entire subspace construction is random anyway!')
 
         if self.no_problem_dirs <= 0 and self.subspace_constr_method != 'random':
             raise Exception('It makes no sense to have no problem information in subspace construction when not using a purely randomised subspace approach!')
@@ -163,6 +195,7 @@ class ProjectedCommonDirections:
             self.deriv_per_iter = self.obj.input_dim
         
         if self.deriv_per_iter >= self.obj.input_dim:
+            raise Exception("Method uses as many or more derivatives per iteration than if using full space method!")
             warnings.warn("Using as many or more derivatives per iteration than if using full space method!", UserWarning)
 
     # Draw a TALL sketching matrix from random ensemble.

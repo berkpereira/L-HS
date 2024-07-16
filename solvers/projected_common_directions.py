@@ -47,7 +47,8 @@ class ProjectedCommonDirectionsConfig:
     direction_str: str = 'newton' # options are {'newton', 'sd'}
     use_hess: bool = True
     random_proj: bool = False
-    random_proj_dim: int = 0
+    random_proj_dim: int = None
+    random_proj_dim_frac: float = None
     reproject_grad: bool = False
     ensemble: str = ''
     inner_use_full_grad: bool = True
@@ -67,7 +68,8 @@ class ProjectedCommonDirectionsConfig:
     def __post_init__(self):
         if ((self.subspace_frac_grads is not None and self.subspace_no_grads is not None) or
             (self.subspace_frac_updates is not None and self.subspace_no_updates is not None) or
-            (self.subspace_frac_random is not None and self.subspace_no_random is not None)):
+            (self.subspace_frac_random is not None and self.subspace_no_random is not None) or
+            (self.random_proj_dim_frac is not None and self.random_proj_dim is not None)):
             raise Exception('Cannot specify numbers of directions directly and as fractions of ambient dimension simultaneously!')
         
         # If fractions are specified, use them to set the integer attributes
@@ -92,6 +94,13 @@ class ProjectedCommonDirectionsConfig:
             else:
                 raise Exception(f"""Specified fraction of random directions does NOT give integer number of directions!
                                 Random fraction: {self.subspace_frac_random}. Ambient dimension: {self.obj.input_dim}""")
+        if self.random_proj_dim_frac is not None:
+            prospective_random_proj_dim = self.random_proj_dim_frac * self.obj.input_dim
+            if int(prospective_random_proj_dim) == prospective_random_proj_dim:
+                self.random_proj_dim = int(prospective_random_proj_dim)
+            else:
+                raise Exception(f"""Specified fraction of random projection dimension does NOT give integer number of dimensions!
+                                Random proj dim fraction: {self.random_proj_dim_frac}. Ambient dimension: {self.obj.input_dim}""")
         
         # If integer attributes are specified, set the fractional attributes accordingly
         if self.subspace_frac_grads is None:
@@ -100,6 +109,8 @@ class ProjectedCommonDirectionsConfig:
             self.subspace_frac_updates = self.subspace_no_updates / self.obj.input_dim
         if self.subspace_frac_random is None:
             self.subspace_frac_random = self.subspace_no_random / self.obj.input_dim
+        if self.random_proj_dim_frac is None:
+            self.random_proj_dim_frac = self.random_proj_dim / self.obj.input_dim
 
         # Handle the relationship between deriv_budget and equiv_grad_budget
         if self.equiv_grad_budget is not None and self.deriv_budget is not None:
@@ -114,7 +125,7 @@ class ProjectedCommonDirectionsConfig:
     def __str__(self):
         # These attributes should play no role for our purposes (consistent line plot colouring)
         passable_attrs = ['obj', 'verbose', 'deriv_budget', 'equiv_grad_budget', 'iter_print_gap',
-                          'max_iter', 'tol', 'subspace_no_grads',
+                          'random_proj_dim', 'max_iter', 'tol', 'subspace_no_grads',
                           'subspace_no_updates', 'subspace_no_random']
         attributes = []
         for field in fields(self):

@@ -9,28 +9,6 @@ import plotting
 import matplotlib.pyplot as plt
 import os
 
-"""
-
-
-
-TODO:
-TODO:
-TODO:
-TODO:
-TEST specification of solver P_k directions using fractions.
-ALso consistent colouring in those cases.
-
-TODO:
-TODO:
-TODO:
-TODO:
-IMPLEMENT specification also of the derivative budget in normalised terms vs
-the ambient dimension (ie, in number of 'equiv. grad evaluations')
-
-
-"""
-
-
 def set_seed(seed):
     np.random.seed(42)
 
@@ -127,25 +105,6 @@ def main():
     problem_tup = get_problem(problem_name, input_dim)
     x0, obj = problem_tup
 
-    # Set up solver configurations
-    # fixed_solver_config_params = {
-    #     'reg_lambda': 0.01,
-    #     'use_hess': True,
-    #     'inner_use_full_grad': True,
-    #     'reproject_grad': False,
-    #     'direction_str': 'sd', # in {'sd', 'newton'}
-    #     'random_proj': True,
-    #     'ensemble': 'haar',
-    #     'alpha': 0.01,
-    #     't_init': 100,
-    #     'tau': 0.5,
-    #     'tol': 1e-4,
-    #     'max_iter': np.inf,
-    #     'deriv_budget': 5_000,
-    #     'iter_print_gap': 50,
-    #     'verbose': True
-    # }
-
     # subspace_no_list = [(1, 1, 2),
     #                     (2, 2, 3),
     #                     (3, 3, 2),
@@ -162,8 +121,10 @@ def main():
     #                             subspace_no_random, TILDE_PROJ_DIM, **fixed_solver_config_params)
     #     solvers_list.append(solver)
 
-    configs_list = [combine_configs(problem_name, input_dim, 'solver0', 'passable0'),
-                    combine_configs(problem_name, input_dim, 'solver1', 'passable1')]
+    passable_name = 'passable1' # NOTE: this should probably be the same for all solvers
+    configs_list = [combine_configs(problem_name, input_dim, 'solver0', passable_name),
+                    combine_configs(problem_name, input_dim, 'solver2', passable_name),
+                    combine_configs(problem_name, input_dim, 'solver3', passable_name)]
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 
     # Run and store results

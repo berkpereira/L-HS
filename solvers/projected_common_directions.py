@@ -15,7 +15,7 @@ import autograd.numpy as np
 from autograd import grad, hessian
 from solvers.utils import SolverOutput, scaled_gaussian, haar, append_orth_dirs
 
-@dataclass(frozen=True)
+@dataclass
 class ProjectedCommonDirectionsConfig:
     """
     obj: Objective class instance.
@@ -63,7 +63,7 @@ class ProjectedCommonDirectionsConfig:
     max_iter: int = 1_000       # The maximum number of iterations.
     deriv_budget: int = 1_000   # Maximum number of directional derivatives to be evaluated.
     
-    iter_print_gap:int = 20     # Period for printing an iteration's info.
+    iter_print_gap:int = 50     # Period for printing an iteration's info.
     verbose: bool = False
 
     def __str__(self):

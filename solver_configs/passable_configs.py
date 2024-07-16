@@ -23,5 +23,12 @@ passable_variants_dict = {
         "iter_print_gap": 50,
         "verbose": True
     },
+    "passable2": {
+        "tol": 1e-4,
+        "max_iter": np.inf,
+        "equiv_grad_budget": 200,
+        "iter_print_gap": 50,
+        "verbose": True
+    },
     # Add more variants as needed
 }

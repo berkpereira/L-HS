@@ -9,6 +9,7 @@ For discussion of these ideas, see relevant docs/*.md file.
 """
 
 from dataclasses import dataclass, fields
+from typing import Any
 import warnings
 
 import autograd.numpy as np
@@ -22,7 +23,6 @@ class ProjectedCommonDirectionsConfig:
     subspace_constr_method: Determines method for updating subspace.
     subspace_dim: Dimension of subproblem subspace.
     reg_lambda: Minimum allowable (POSITIVE) eigenvalue of projected Hessian.
-    ...
     
     reproject_grad: NOTE: relevant only to DETERMINISTIC variant. If False, each
     gradient is projected only once, using the Q matrix from the previous iter.
@@ -32,57 +32,66 @@ class ProjectedCommonDirectionsConfig:
     append_rand_dirs: NOTE: Determines how many random directions to append
     to the (otherwise deterministic) subspace matrix at each iteration.
     Uses solvers.utils.append_orth_dirs.
-    
     """
-    obj: any                    
+    obj: Any                    
     reg_lambda: float
     
-    subspace_no_grads:   int = 0
+    subspace_no_grads: int = 0
     subspace_no_updates: int = 0
-    subspace_no_random:  int = 0
+    subspace_no_random: int = 0
 
-    # If 'newton', uses Newton-like direction (may or may not have B_k = Hessian matrix).
-    # If 'sd', essentially uses B_k = identity.
+    subspace_frac_grads: float = None
+    subspace_frac_updates: float = None
+    subspace_frac_random: float = None
+
     direction_str: str = 'newton' # options are {'newton', 'sd'}
-
-    use_hess: bool = True       # Determines whether method uses Hessian information. If not, it uses in general a user-specified matrix B_k (think quasi-Newton methods). Default of True reflects Lee et al.'s reference paper's method.
-    random_proj: bool = False   # Determines whether to use RANDOM matrices in projecting gradients for subspace construction.
-    random_proj_dim: int = 0 # Dimension of random sketches used when random_proj is True
+    use_hess: bool = True
+    random_proj: bool = False
+    random_proj_dim: int = 0
     reproject_grad: bool = False
-    ensemble: str = ''          # Determines the random ensemble from which to draw random matrices for gradient projections.
-
-    # Determines whether, at the heart of thealgorithm (compute
-    # direction and step size), we use full_grad or proj_grad.
-    # TODO: take a moment to consider the implications in computation budget terms!!!
+    ensemble: str = ''
     inner_use_full_grad: bool = True
     
-    alpha: float = 0.001        # The Armijo condition scaling parameter.
+    alpha: float = 0.001
     t_init: float = 1
-    tau: float = 0.5            # The backtracking step size reduction factor.
-    tol: float = 1e-3           # The tolerance for the stopping condition.
-    max_iter: int = 1_000       # The maximum number of iterations.
-    deriv_budget: int = 1_000   # Maximum number of directional derivatives to be evaluated.
+    tau: float = 0.5
     
-    iter_print_gap:int = 50     # Period for printing an iteration's info.
+    tol: float = 1e-3
+    max_iter: int = 1000
+    deriv_budget: int = 1000
+    iter_print_gap: int = 50
     verbose: bool = False
+
+    def __post_init__(self):
+        # If fractions are specified, use them to set the integer attributes
+        if self.subspace_frac_grads is not None:
+            self.subspace_no_grads = int(self.subspace_frac_grads * self.obj.input_dim)
+        if self.subspace_frac_updates is not None:
+            self.subspace_no_updates = int(self.subspace_frac_updates * self.obj.input_dim)
+        if self.subspace_frac_random is not None:
+            self.subspace_no_random = int(self.subspace_frac_random * self.obj.input_dim)
+        
+        # If integer attributes are specified, set the fractional attributes accordingly
+        if self.subspace_frac_grads is None:
+            self.subspace_frac_grads = self.subspace_no_grads / self.obj.input_dim
+        if self.subspace_frac_updates is None:
+            self.subspace_frac_updates = self.subspace_no_updates / self.obj.input_dim
+        if self.subspace_frac_random is None:
+            self.subspace_frac_random = self.subspace_no_random / self.obj.input_dim
 
     def __str__(self):
         # These attributes should play no role for our purposes (consistent line plot colouring)
-        passable_attrs = ['obj',
-                          'verbose',
-                          'deriv_budget',
-                          'iter_print_gap',
-                          'max_iter',
-                          'tol']
+        passable_attrs = ['obj', 'verbose', 'deriv_budget', 'iter_print_gap',
+                          'max_iter', 'tol', 'subspace_no_grads',
+                          'subspace_no_updates', 'subspace_no_random']
         attributes = []
         for field in fields(self):
             name = field.name
             if name in passable_attrs:
                 continue
-            else:
-                value = getattr(self, name)
+            value = getattr(self, name)
             if isinstance(value, float):
-                value = format(value, '.8g')  # Format float with a consistent representation
+                value = format(value, '.4g')  # Format float with a consistent representation
             elif isinstance(value, int):
                 value = str(value)  # Convert int to string
             attributes.append(f"{name}={value}")

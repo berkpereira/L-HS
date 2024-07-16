@@ -1,10 +1,35 @@
 import problems.test_problems
 import autograd.numpy as np
 from solvers.projected_common_directions import ProjectedCommonDirections, ProjectedCommonDirectionsConfig
+from solver_configs.projected_common_directions_configs import solver_variants_dict
+from solver_configs.passable_configs import passable_variants_dict
+
 from solvers.utils import average_solver_runs
 import plotting
 import matplotlib.pyplot as plt
 import os
+
+"""
+
+
+
+TODO:
+TODO:
+TODO:
+TODO:
+TEST specification of solver P_k directions using fractions.
+ALso consistent colouring in those cases.
+
+TODO:
+TODO:
+TODO:
+TODO:
+IMPLEMENT specification also of the derivative budget in normalised terms vs
+the ambient dimension (ie, in number of 'equiv. grad evaluations')
+
+
+"""
+
 
 def set_seed(seed):
     np.random.seed(42)
@@ -12,6 +37,14 @@ def set_seed(seed):
 def soft_window_clear():
     for _ in range(40):
         print()
+
+# This function combines the solver and passable configurations into a proper
+# configuration object (ProjectedCommonDirectionsConfig) to be subsequently used.
+def combine_configs(problem_name: str, input_dim: int, solver_name: str, passable_name: str):
+    config_dict = {'obj': problems.test_problems.select_problem(problem_name, input_dim)[1],
+                   **solver_variants_dict[solver_name],
+                   **passable_variants_dict[passable_name]}
+    return ProjectedCommonDirectionsConfig(**config_dict)
 
 def get_problem(problem_name, input_dim):
     return problems.test_problems.select_problem(problem_name=problem_name, input_dim=input_dim)
@@ -41,10 +74,12 @@ def plot_run_solvers(output_dict):
     plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
                                              deriv_evals_axis=True,
                                              normalise_deriv_evals_vs_dimension=True,
+                                             normalise_P_k_dirs_vs_dimension=False,
+                                             normalise_S_k_dirs_vs_dimension=False)
+    plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
+                                             deriv_evals_axis=False,
                                              normalise_P_k_dirs_vs_dimension=True,
                                              normalise_S_k_dirs_vs_dimension=True)
-    plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
-                                             deriv_evals_axis=False)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
     #                                            attr_names=['update_norms'], log_plot=True)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
@@ -93,38 +128,43 @@ def main():
     x0, obj = problem_tup
 
     # Set up solver configurations
-    fixed_solver_config_params = {
-        'reg_lambda': 0.01,
-        'use_hess': True,
-        'inner_use_full_grad': True,
-        'reproject_grad': False,
-        'direction_str': 'newton', # in {'sd', 'newton'}
-        'random_proj': True,
-        'ensemble': 'haar',
-        'alpha': 0.01,
-        't_init': 100,
-        'tau': 0.5,
-        'tol': 1e-4,
-        'max_iter': np.inf,
-        'deriv_budget': 10_000,
-        'iter_print_gap': 50,
-        'verbose': True
-    }
+    # fixed_solver_config_params = {
+    #     'reg_lambda': 0.01,
+    #     'use_hess': True,
+    #     'inner_use_full_grad': True,
+    #     'reproject_grad': False,
+    #     'direction_str': 'sd', # in {'sd', 'newton'}
+    #     'random_proj': True,
+    #     'ensemble': 'haar',
+    #     'alpha': 0.01,
+    #     't_init': 100,
+    #     'tau': 0.5,
+    #     'tol': 1e-4,
+    #     'max_iter': np.inf,
+    #     'deriv_budget': 5_000,
+    #     'iter_print_gap': 50,
+    #     'verbose': True
+    # }
 
-    subspace_no_list = [(1, 1, 2),
-                        (2, 1, 2),
-                        (0, 0, 5)]
-    solvers_list = []
+    # subspace_no_list = [(1, 1, 2),
+    #                     (2, 2, 3),
+    #                     (3, 3, 2),
+    #                     (3, 3, 1),
+    #                     (4, 4, 2),
+    #                     (4, 4, 0),
+    #                     (0, 0, 5)]
+    # solvers_list = []
 
-    for subspace_no_grads, subspace_no_updates, subspace_no_random in subspace_no_list:
-        SUBSPACE_DIM_TOTAL = subspace_no_grads + subspace_no_updates + subspace_no_random
-        TILDE_PROJ_DIM = 5
-        solver = configure_solver(obj, subspace_no_grads, subspace_no_updates,
-                                subspace_no_random, TILDE_PROJ_DIM, **fixed_solver_config_params)
-        solvers_list.append(solver)
+    # for subspace_no_grads, subspace_no_updates, subspace_no_random in subspace_no_list:
+    #     SUBSPACE_DIM_TOTAL = subspace_no_grads + subspace_no_updates + subspace_no_random
+    #     TILDE_PROJ_DIM = 5
+    #     solver = configure_solver(obj, subspace_no_grads, subspace_no_updates,
+    #                             subspace_no_random, TILDE_PROJ_DIM, **fixed_solver_config_params)
+    #     solvers_list.append(solver)
 
-    print(str(solvers_list[0].config))
-
+    configs_list = [combine_configs(problem_name, input_dim, 'solver0', 'passable0'),
+                    combine_configs(problem_name, input_dim, 'solver1', 'passable1')]
+    solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 
     # Run and store results
     results_attrs = ['final_f_val']

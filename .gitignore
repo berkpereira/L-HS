@@ -8,6 +8,7 @@ __pycache__/
 
 # PyCUTEst problem cache
 pycutest_cache_holder
+time_autograd.ipynb
 
 # Some try-files
 try_pycutest.py

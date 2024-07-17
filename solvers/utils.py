@@ -29,6 +29,16 @@ class SolverOutputAverage():
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+def normalise_loss(loss_data: list, f_sol: float, f0: float):
+    """
+    Input arguments:
+    loss_data: list containing loss values.
+    f_sol: Minimimum of the problem.
+    f0: Function value at the starting point x0 of the algorithm run.
+    """
+    out = [((loss - f_sol) / (f0 - f_sol)) for loss in loss_data]
+    return out
+
 # This function takes in a problem, a list of solver objects, and an
 # integer specifying how many times each solver should be run on the problem.
 # The output argument is a list of tuples.

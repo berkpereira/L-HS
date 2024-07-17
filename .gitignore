@@ -9,6 +9,9 @@ __pycache__/
 # PyCUTEst problem cache
 pycutest_cache_holder
 
+# Some try-files
+try_pycutest.py
+
 # Profiler results files
 profiler_results.txt
 

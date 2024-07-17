@@ -3,11 +3,12 @@ This script is largely based on the work from https://doi.org/10.1007/s12532-022
 
 Namely, here we implement a version of that algorithm that never uses full gradient information.
 We also seek to make this version of the algorithm more general, including variants that do/do not use Hessian information, etc.
-The common thread to all of these methods is that THE FULL GRADIENT IS NEVER USED IN ITSELF IN THE ALGORITHM.
+The common thread to all of these methods is that THE FULL GRADIENT IS NEVER USED IN ITSELF IN THE ALGORITHM,
+except when using edge case algorithm parameters (namely 'dimension' of S_k
+being equal to the ambient dimension).
 
 For discussion of these ideas, see relevant docs/*.md file.
 """
-
 from dataclasses import dataclass, fields
 from typing import Any
 import warnings
@@ -124,9 +125,10 @@ class ProjectedCommonDirectionsConfig:
 
     def __str__(self):
         # These attributes should play no role for our purposes (consistent line plot colouring)
-        passable_attrs = ['obj', 'verbose', 'deriv_budget', 'equiv_grad_budget', 'iter_print_gap',
-                          'random_proj_dim', 'max_iter', 'tol', 'subspace_no_grads',
-                          'subspace_no_updates', 'subspace_no_random']
+        passable_attrs = ['obj', 'verbose', 'deriv_budget', 'equiv_grad_budget',
+                          'iter_print_gap', 'random_proj_dim', 'max_iter',
+                          'tol', 'subspace_no_grads','subspace_no_updates',
+                          'subspace_no_random']
         attributes = []
         for field in fields(self):
             name = field.name
@@ -176,9 +178,10 @@ class ProjectedCommonDirections:
         if self.reproject_grad and (not self.random_proj) and self.subspace_no_grads <= 1:
             raise Exception("Gradients can only be reprojected if we're storing more than one for each subspace!")
         
+        # Set up relevant problem callables
         self.func = self.obj.func # callable objective func
-        self.grad_func = grad(self.func)
-        self.hess_func = hessian(self.func) # for now have it as a full Hessian; later may use autograd.hessian_vector_product
+        self.grad_func = self.obj.grad_func
+        self.hess_func = self.obj.hess_func # for now have it as a full Hessian; later may use autograd.hessian_vector_product
 
         # Increment number of derivatives computed in each iteration depending on
         # algorithm variant in use
@@ -404,11 +407,12 @@ class ProjectedCommonDirections:
             proj_grad = None
 
         # IN FUTURE will want to implement Hessian actions product using Hessian actions (B-vector products), see autograd.hessian_vector_products
-        if self.use_hess:
-            hess_f_x = self.hess_func(x)
-            full_B = hess_f_x
-        else:
-            raise NotImplementedError('Have not (yet!) implemented methods with user-provided B approximations to the Hessian!')
+        if self.direction_str == 'newton':
+            if self.use_hess:
+                hess_f_x = self.hess_func(x)
+                full_B = hess_f_x
+            else:
+                raise NotImplementedError('Have not (yet!) implemented methods with user-provided B approximations to the Hessian!')
 
         G, X, D = self.init_stored_vectors(grad_vec=proj_grad)
         
@@ -418,10 +422,13 @@ class ProjectedCommonDirections:
         
         # Project B matrix
         # Later may want to do this using Hessian actions in the case where Hessian information is used at all.
-        proj_B = np.transpose(Q) @ (full_B @ Q)
+        if self.direction_str == 'newton':
+            proj_B = np.transpose(Q) @ (full_B @ Q)
 
-        # Regularise the projected/reduced Hessian approximation if needed.
-        proj_B = self.regularise_hessian(proj_B)
+            # Regularise the projected/reduced Hessian approximation if needed.
+            proj_B = self.regularise_hessian(proj_B)
+        else:
+            proj_B = None
 
         # For later plotting
         f_vals_list = [f_x]
@@ -470,10 +477,6 @@ class ProjectedCommonDirections:
                 self.print_iter_info(last=False, k=k, x=x, deriv_evals=deriv_eval_count,
                                      f_x=f_x, norm_full_grad=norm_full_grad,
                                      step_size=step_size)
-            
-            # if last_update_norm > 1e-1:
-            #     print(last_P_rank)
-            #     print()
 
             # Update iterate
             x = x + x_update
@@ -492,11 +495,12 @@ class ProjectedCommonDirections:
 
                 store_all_proj_grads.append(proj_grad)
 
-            if self.use_hess:
-                hess_f_x = self.hess_func(x)
-                full_B = hess_f_x
-            else:
-                raise NotImplementedError('Quasi-Newton stuff not yet implemented!')
+            if self.direction_str == 'newton':
+                if self.use_hess:
+                    hess_f_x = self.hess_func(x)
+                    full_B = hess_f_x
+                else:
+                    raise NotImplementedError('Quasi-Newton stuff not yet implemented!')
 
             # Update stored vectors required for subspace constructions.
             G, X, D = self.update_stored_vectors(x_update=x_update,
@@ -513,8 +517,9 @@ class ProjectedCommonDirections:
             
 
             # Update 2nd order matrix
-            proj_B = np.transpose(Q) @ (full_B @ Q)
-            proj_B = self.regularise_hessian(proj_B)
+            if self.direction_str == 'newton':
+                proj_B = np.transpose(Q) @ (full_B @ Q)
+                proj_B = self.regularise_hessian(proj_B)
 
             # Append info for later plotting
             direction_norms_list.append(np.linalg.norm(direction))

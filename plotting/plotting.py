@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import autograd.numpy as np
 import hashlib
+from solvers.utils import normalise_loss
 
 # Enable LaTeX rendering, etc.
 plt.rcParams.update({
@@ -24,9 +25,22 @@ def config_str_to_color(config_str: str):
     # Create a SHA-256 hash of the string representation of the configuration
     hash_object = hashlib.sha256(config_str.encode())
     hex_dig = hash_object.hexdigest()
+
     # Use the first 6 characters of the hash for the color
     color = f'#{hex_dig[:6]}'
     return color
+
+# Function to convert a config string to a linestyle
+def config_str_to_linestyle(config_str: str):
+    # List of available linestyles
+    LINESTYLES = ['-', '--', '-.', ':']
+    # Create a SHA-256 hash of the string representation of the configuration
+    hash_object = hashlib.sha256(config_str.encode())
+    hex_dig = hash_object.hexdigest()
+
+    # Use the first character of the hash to determine the linestyle
+    linestyle_index = int(hex_dig[0], 16) % len(LINESTYLES)
+    return LINESTYLES[linestyle_index]
 
 # This function plots the loss vs iteration (or vs directional derivatives
 # evaluated) for a number of solver output objects.
@@ -35,6 +49,7 @@ def plot_loss_vs_iteration(solver_outputs: list,
                            normalise_deriv_evals_vs_dimension: bool=False,
                            normalise_P_k_dirs_vs_dimension: bool=False,
                            normalise_S_k_dirs_vs_dimension: bool=False,
+                           normalise_loss_data: bool=False,
                            labels=None):
     """
     Plot the loss (function values) vs iteration count for multiple solvers.
@@ -131,6 +146,7 @@ def plot_loss_vs_iteration(solver_outputs: list,
 
         # Use the hash of the configuration to determine the color
         color = config_str_to_color(current_config_str)
+        linestyle = config_str_to_linestyle(current_config_str)
 
         # Add label only if the configuration hasn't been labelled yet
         if current_config_str not in labelled_configs:
@@ -139,15 +155,27 @@ def plot_loss_vs_iteration(solver_outputs: list,
         else:
             plot_label = None
         
+        if normalise_loss_data:
+            f0 = solver_output.f_vals[0]
+            f_sol = solver_output.solver.obj.f_sol
+            if f_sol is not None:
+                y_data = normalise_loss(solver_output.f_vals, f_sol=f_sol, f0=f0)
+            else:
+                raise Exception('Trying to normalise loss but actual solution was not provided!')
+        else:
+            y_data = solver_output.f_vals
+
         if deriv_evals_axis:
             if normalise_deriv_evals_vs_dimension:
                 ambient_dim = solver_output.solver.obj.input_dim
                 equiv_grad_evals = solver_output.deriv_evals / ambient_dim
-                plt.plot(equiv_grad_evals, solver_output.f_vals, linestyle='-', color=color, label=plot_label)
+                plt.plot(equiv_grad_evals, y_data, linestyle=linestyle,
+                         color=color, label=plot_label)
             else:
-                plt.plot(solver_output.deriv_evals, solver_output.f_vals, linestyle='-', color=color, label=plot_label)
+                plt.plot(solver_output.deriv_evals, y_data,
+                         linestyle=linestyle, color=color, label=plot_label)
         else:
-            plt.plot(solver_output.f_vals, linestyle='-', color=color, label=plot_label)
+            plt.plot(y_data, linestyle=linestyle, color=color, label=plot_label)
     
     plt.yscale('log')
     if deriv_evals_axis:

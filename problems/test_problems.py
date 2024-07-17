@@ -110,9 +110,9 @@ def ill_conditioned_convex_quadratic(input_dim):
 ################################################################################
 
 def nondia(input_dim: int):
-    valid_dims = [100, 500]
+    valid_dims = [10, 20, 30, 90, 100, 500, 1000, 5000, 10000]
     if input_dim not in valid_dims:
-        raise Exception('input/ambient dimension must be from valid list!')
+        raise Exception(f'input/ambient dimension must be from valid list!\nThat is {valid_dims}.')
     # prob_names = [f'ARGTRIG_N{dim}' for dim in [10, 50, 100, 200]]
     # for name in prob_names:
     #     pycutest.clear_cache(name)

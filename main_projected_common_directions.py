@@ -9,6 +9,26 @@ import plotting
 import matplotlib.pyplot as plt
 import os
 
+"""
+
+TODO:
+TODO:
+TODO:
+TODO:
+Make a suite of configuration sets in well-organised folders/files, perhaps
+organised by numerical study. E.G., one such file could be dedicated to solver
+configurations used in a numerical study assessing the effect of changing
+the random_proj_dim (the 'dimension' of S_k).
+
+TODO:
+TODO:
+TODO:
+ADD IN 1 OR 2 TEST PROBLEMS FROM CUTEst
+See the timed out problems from the Cartis and Roberts 2023 paper on scalable DFO.
+
+
+"""
+
 def set_seed(seed):
     np.random.seed(42)
 
@@ -99,9 +119,10 @@ def main():
                           'rosenbrock_multiple',               # 1
                           'powell',                            # 2
                           'well_conditioned_convex_quadratic', # 3
-                          'ill_conditioned_convex_quadratic']  # 4
-    problem_name = test_problems_list[0]
-    input_dim = 30
+                          'ill_conditioned_convex_quadratic',  # 4
+                          'nondia']                            # 5
+    problem_name = test_problems_list[5]
+    input_dim = 100
     problem_tup = get_problem(problem_name, input_dim)
     x0, obj = problem_tup
 
@@ -121,15 +142,14 @@ def main():
     #                             subspace_no_random, TILDE_PROJ_DIM, **fixed_solver_config_params)
     #     solvers_list.append(solver)
 
-    passable_name = 'passable1' # NOTE: this should probably be the same for all solvers
-    configs_list = [combine_configs(problem_name, input_dim, 'solver0', passable_name),
-                    combine_configs(problem_name, input_dim, 'solver2', passable_name),
+    passable_name = 'passable2' # NOTE: this should probably be the same for all solvers
+    configs_list = [combine_configs(problem_name, input_dim, 'solver2', passable_name),
                     combine_configs(problem_name, input_dim, 'solver3', passable_name)]
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 
     # Run and store results
     results_attrs = ['final_f_val']
-    results_dict = run_solvers(problem_tup, solvers_list, no_runs=3,
+    results_dict = run_solvers(problem_tup, solvers_list, no_runs=2,
                                result_attrs=results_attrs)
 
     # Plot

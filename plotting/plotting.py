@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import autograd.numpy as np
 import hashlib
 from solvers.utils import normalise_loss
+from results.results_utils import get_hashed_filename
 
 # Enable LaTeX rendering, etc.
 plt.rcParams.update({
@@ -22,12 +23,10 @@ MARKER_SIZE = 1
 # This function returns a hex number colour code from a hash (e.g., of a 
 # solver's configuration's string representation)
 def config_str_to_color(config_str: str):
-    # Create a SHA-256 hash of the string representation of the configuration
-    hash_object = hashlib.sha256(config_str.encode())
-    hex_dig = hash_object.hexdigest()
+    long_hash = get_hashed_filename(config_str)
 
     # Use the first 6 characters of the hash for the color
-    color = f'#{hex_dig[:6]}'
+    color = f'#{long_hash[:6]}'
     return color
 
 # Function to convert a config string to a linestyle
@@ -35,11 +34,10 @@ def config_str_to_linestyle(config_str: str):
     # List of available linestyles
     LINESTYLES = ['-', '--', '-.', ':']
     # Create a SHA-256 hash of the string representation of the configuration
-    hash_object = hashlib.sha256(config_str.encode())
-    hex_dig = hash_object.hexdigest()
+    long_hash = get_hashed_filename(config_str)
 
     # Use the first character of the hash to determine the linestyle
-    linestyle_index = int(hex_dig[0], 16) % len(LINESTYLES)
+    linestyle_index = int(long_hash[0], 16) % len(LINESTYLES)
     return LINESTYLES[linestyle_index]
 
 # This function plots the loss vs iteration (or vs directional derivatives

@@ -42,31 +42,64 @@ def save_solver_output(problem_name: str, solver_config_str: str,
     data = {
         'run_id': get_run_id(),
         'deriv_evals': solver_output.deriv_evals,
-        'grad_evals': (solver_output.deriv_evals / solver_output.solver.obj.input_dim),
+        'equiv_grad_evals': (solver_output.deriv_evals / solver_output.solver.obj.input_dim),
+        'equiv_grad_budget': solver_output.solver.config.equiv_grad_budget,
         'f_vals': solver_output.f_vals,
         'update_norms': solver_output.update_norms,
         'full_grad_norms': solver_output.full_grad_norms,
         'proj_grad_norms': solver_output.proj_grad_norms
     }
     
-    # If the file does not exist, create it and write the header
-    file_exists = os.path.isfile(file_path)
-    with open(file_path, mode='a', newline='') as file:
-        fieldnames = ['run_id', 'iter', 'deriv_evals', 'grad_evals', 'f_vals', 'update_norms', 'full_grad_norms', 'proj_grad_norms']
+    # Load existing data if the file exists
+    existing_data = []
+    if os.path.isfile(file_path):
+        with open(file_path, mode='r', newline='') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                for key in ['equiv_grad_budget', 'iter',
+                            'deriv_evals', 'equiv_grad_evals', 'f_vals',
+                            'update_norms', 'full_grad_norms', 'proj_grad_norms']:
+                    if row[key] != '':
+                        row[key] = eval(row[key])
+                    else:
+                        row[key] = ''
+                existing_data.append(row)
+
+    # Group data by run_id and get the maximum equiv_grad_budget for each run
+    grouped_data = {}
+    for row in existing_data:
+        run_id = row['run_id']
+        if run_id not in grouped_data:
+            grouped_data[run_id] = []
+        grouped_data[run_id].append(row)
+    
+    # Add new run data to grouped data
+    run_data = []
+    for iter in range(len(solver_output.f_vals)):
+        run_data.append({
+            'run_id': data['run_id'],
+            'equiv_grad_budget': data['equiv_grad_budget'],
+            'iter': iter,
+            'deriv_evals': data['deriv_evals'][iter] if data['deriv_evals'].size > iter else None,
+            'equiv_grad_evals':  data['equiv_grad_evals'][iter] if data['equiv_grad_evals'].size > iter else None,
+            'f_vals': data['f_vals'][iter],
+            'update_norms': data['update_norms'][iter] if data['update_norms'].size > iter else None,
+            'full_grad_norms': data['full_grad_norms'][iter] if data['full_grad_norms'].size > iter else None,                
+            'proj_grad_norms': data['proj_grad_norms'][iter] if data['proj_grad_norms'].size > iter else None,
+        })
+    grouped_data[data['run_id']] = run_data
+    
+    # Sort runs by equiv_grad_budget and keep only the top 10
+    sorted_runs = sorted(grouped_data.values(), key=lambda x: float(x[0]['equiv_grad_budget']), reverse=True)[:10]
+
+    # Write the selected runs back to the file
+    with open(file_path, mode='w', newline='') as file:
+        fieldnames = ['run_id', 'equiv_grad_budget', 'iter', 'deriv_evals', 'equiv_grad_evals', 'f_vals', 'update_norms', 'full_grad_norms', 'proj_grad_norms']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
-        if not file_exists:
-            writer.writeheader()
-        for iter in range(len(solver_output.f_vals)):
-            row = {
-                'run_id': data['run_id'],
-                'iter': iter,
-                'deriv_evals': data['deriv_evals'][iter] if data['deriv_evals'].size > iter else None,
-                'grad_evals':  data['grad_evals'][iter] if data['grad_evals'].size > iter else None,
-                'f_vals': data['f_vals'][iter],
-                'update_norms': data['update_norms'][iter] if data['update_norms'].size > iter else None,
-                'full_grad_norms': data['full_grad_norms'][iter] if data['full_grad_norms'].size > iter else None,                'proj_grad_norms': data['proj_grad_norms'][iter] if data['proj_grad_norms'].size > iter else None,
-            }
-            writer.writerow(row)
+        writer.writeheader()
+        for run in sorted_runs:
+            for row in run:
+                writer.writerow(row)
 
 def load_solver_results(problem_name: str, solver_config, output_dir='results'):
     # Load the mapping file

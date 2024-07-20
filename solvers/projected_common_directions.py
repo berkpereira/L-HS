@@ -15,7 +15,7 @@ import warnings
 
 import autograd.numpy as np
 from autograd import grad, hessian
-from solvers.utils import SolverOutput, scaled_gaussian, haar, append_orth_dirs
+from solvers.utils import SolverOutput, scaled_gaussian, haar, append_dirs
 
 @dataclass
 class ProjectedCommonDirectionsConfig:
@@ -32,7 +32,7 @@ class ProjectedCommonDirectionsConfig:
 
     append_rand_dirs: NOTE: Determines how many random directions to append
     to the (otherwise deterministic) subspace matrix at each iteration.
-    Uses solvers.utils.append_orth_dirs.
+    Uses solvers.utils.append_dirs.
     """
     obj: Any                    
     reg_lambda: float
@@ -40,19 +40,22 @@ class ProjectedCommonDirectionsConfig:
     subspace_no_grads: int = None
     subspace_no_updates: int = None
     subspace_no_random: int = None
-
     subspace_frac_grads: float = None
     subspace_frac_updates: float = None
     subspace_frac_random: float = None
 
     direction_str: str = 'sd' # options are {'newton', 'sd'}
     use_hess: bool = True
-    random_proj: bool = False
+    random_proj: bool = True
     random_proj_dim: int = None
     random_proj_dim_frac: float = None
     reproject_grad: bool = False
     ensemble: str = ''
     inner_use_full_grad: bool = True
+
+    # Determines whether to orthogonalise (QR) P_k, the subspace matrix
+    # NOTE: LOGIC FOR THIS BEING FALSE NOT YET IMPLEMENTED
+    orth_P_k: bool = True
     
     alpha: float = 0.001
     t_init: float = 1
@@ -129,10 +132,10 @@ class ProjectedCommonDirectionsConfig:
                           'iter_print_gap', 'random_proj_dim', 'max_iter',
                           'tol', 'subspace_no_grads','subspace_no_updates',
                           'subspace_no_random']
-        if self.subspace_no_grads == 0 and self.subspace_no_updates == 0: # subspace is entirely randomised
+        if self.subspace_no_grads == 0: # 'tilde projections' do not come up
             passable_attrs.extend(['random_proj_dim_frac', 'ensemble'])
-        if self.direction_str == 'sd':
-            passable_attrs.append('reg_lambda') # only comes in for Newton-like searches
+        if self.direction_str != 'newton':
+            passable_attrs.extend(['reg_lambda', 'use_hess']) # only comes in for Newton-like searches
 
         if self.subspace_frac_grads > 0: # projections 'make sense'
             if self.random_proj:
@@ -283,7 +286,7 @@ class ProjectedCommonDirections:
     # Which basis of subspace to use in the method
     def update_subspace(self, **kwargs):
         # method: str. Options:
-        # method == 'grads', retain m past gradient vectors 
+        # method == 'grads', retain m past gradient vectors
         # method == 'iterates_grads', (34) from Lee et al., 2022
         # method == 'iterates_grads_diagnewtons', (35) from Lee et al., 2022
 
@@ -294,13 +297,12 @@ class ProjectedCommonDirections:
         # diagonal of Hessian diagonal by the gradient).
 
         if self.subspace_constr_method == 'random':
-            P = None
-            
             # Add orthogonal random directions as necessary
-            Q = append_orth_dirs(curr_mat=P,
+            Q = append_dirs(curr_mat=None,
                                 ambient_dim=self.obj.input_dim,
                                 no_dirs=self.subspace_dim,
-                                curr_is_orth=False)
+                                curr_is_orth=False,
+                                orthogonalise=self.orth_P_k)
             return Q, None, None, None, None
         else:
             G = kwargs['grads_matrix']
@@ -311,11 +313,12 @@ class ProjectedCommonDirections:
             P = np.hstack(arrays)
             
             # Add orthogonal random directions as necessary
-            Q = append_orth_dirs(curr_mat=P,
+            Q = append_dirs(curr_mat=P,
                                 ambient_dim=self.obj.input_dim,
                                 no_dirs=self.subspace_dim - P.shape[1],
-                                curr_is_orth=False)
-            return Q, np.linalg.cond(P), np.linalg.matrix_rank(P), np.linalg.norm(P), P
+                                curr_is_orth=False,
+                                orthogonalise=self.orth_P_k)
+            return Q, None, None, None, None
             
     # Initialise the vectors to be stored throughout the algorithm (if any)
     def init_stored_vectors(self, grad_vec):
@@ -430,8 +433,8 @@ class ProjectedCommonDirections:
         G, X, D = self.init_stored_vectors(grad_vec=proj_grad)
         
         Q, last_cond_no, last_P_rank, last_P_norm, P = self.update_subspace(grads_matrix=G,
-                                                                         updates_matrix=X,
-                                                                         hess_diag_dirs_matrix=D)
+                                                                            updates_matrix=X,
+                                                                            hess_diag_dirs_matrix=D)
         
         # Project B matrix
         # Later may want to do this using Hessian actions in the case where Hessian information is used at all.

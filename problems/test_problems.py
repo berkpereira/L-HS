@@ -38,13 +38,37 @@ class Objective:
             best_known_results = json.load(f)
         return best_known_results.get(self.name, None)
 
+def import_cutest_problem(problem_name: str, input_dim: int=None):
+    """
+    Import a CUTEst problem by name using pycutest.
+
+    :param problem_name: Name of the CUTEst problem.
+    :return: Tuple (x0, Objective instance)
+    """
+    if input_dim is None:
+        p = pycutest.import_problem(problem_name)
+        input_dim = p.n
+    else:
+        p = pycutest.import_problem(problem_name, sifParams={'N': input_dim})
+    func = p.obj
+    grad_func = p.grad
+    hess_func = p.hess
+
+    x0 = p.x0
+
+    f_sol = None
+    
+    full_name = f'{problem_name}_n{input_dim}'
+    return x0, Objective(name=full_name, input_dim=input_dim, func=func,
+                         grad_func=grad_func, hess_func=hess_func, f_sol=f_sol)
+
 # Using standard x0 as reported in Appendix B of Dennis and Schnabel textbook.
 # Note that this scipy version of an extended Rosenbrock function has
 # multiple stationary points! For details, see 'Variant B' in the paper
 # https://dl.acm.org/doi/abs/10.1162/evco.2009.17.3.437
 # The starting point seems to have a significant influence on whether the
 # minimum or some other stationary point is found.
-def rosenbrock_multiple(input_dim):
+def rosenbrock_multiple(input_dim: int):
     x0 = np.ones(input_dim, dtype='float32')
     x0[::2] = -1.2 # assign -1.2 to every other entry in x0
 
@@ -58,7 +82,7 @@ def rosenbrock_multiple(input_dim):
 # There is a single stationary point, the global minimiser, at x = ones.
 # For details, see 'Variant A' in the paper
 # https://dl.acm.org/doi/abs/10.1162/evco.2009.17.3.437.
-def rosenbrock_single(input_dim):
+def rosenbrock_single(input_dim: int):
     if input_dim % 2 != 0:
         raise Exception('This extended Rosenbrock variant is only defined for EVEN input space dimension!')
     x0 = np.ones(input_dim, dtype='float32')
@@ -157,7 +181,15 @@ def genhumps(input_dim: int):
 ################################################################################
 ################################################################################
 
-def select_problem(problem_name: str, input_dim: int):
+def select_problem(problem_name: str, input_dim: int=None):
+    # Load CUTEst problem names from JSON file
+    with open('problems/cutest_unconstrained.json', 'r') as f:
+        cutest_unconstrained_names = json.load(f)
+
+    if problem_name in cutest_unconstrained_names:
+        return import_cutest_problem(problem_name, input_dim)
+
+    # Non-CUTEst problems:
     match problem_name:
         case 'rosenbrock_single':
             return rosenbrock_single(input_dim)
@@ -169,11 +201,6 @@ def select_problem(problem_name: str, input_dim: int):
             return well_conditioned_convex_quadratic(input_dim)
         case 'ill_conditioned_convex_quadratic':
             return ill_conditioned_convex_quadratic(input_dim)
-        
-        ##############################  CUTEst  ################################
-        
-        case 'nondia':
-            return nondia(input_dim)
-        case 'genhumps':
-            return genhumps(input_dim)
+        case _:
+            raise ValueError(f"Problem {problem_name} is not defined.")
             

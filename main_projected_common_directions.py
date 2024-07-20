@@ -3,8 +3,10 @@ import autograd.numpy as np
 from solvers.projected_common_directions import ProjectedCommonDirections, ProjectedCommonDirectionsConfig
 from solver_configs.projected_common_directions_configs import solver_variants_dict
 from solver_configs.passable_configs import passable_variants_dict
+import results.results_utils
 
-from solvers.utils import average_solver_runs
+
+from solvers.utils import average_solver_runs, update_best_known_result
 import plotting
 import matplotlib.pyplot as plt
 import os
@@ -19,22 +21,13 @@ Make a suite of configuration sets in well-organised folders/files, perhaps
 organised by numerical study. E.G., one such file could be dedicated to solver
 configurations used in a numerical study assessing the effect of changing
 the random_proj_dim (the 'dimension' of S_k).
-
-TODO:
-TODO:
-TODO:
-ADD IN 1 OR 2 TEST PROBLEMS FROM CUTEst
-See the timed out problems from the Cartis and Roberts 2023 paper on scalable DFO.
-
-
 """
 
 def set_seed(seed):
     np.random.seed(42)
 
 def soft_window_clear():
-    for _ in range(40):
-        print()
+    os.system('clear')
 
 # This function combines the solver and passable configurations into a proper
 # configuration object (ProjectedCommonDirectionsConfig) to be subsequently used.
@@ -60,8 +53,20 @@ def configure_solver(obj, subspace_no_grads, subspace_no_updates,
     )
     return ProjectedCommonDirections(config=config)
 
-def run_solvers(problem_tup, solvers_list, no_runs, result_attrs):
+def run_solvers(problem_tup, solvers_list, no_runs, result_attrs,
+                save_results=False):
     results_dict = average_solver_runs(problem_tup, solvers_list, no_runs, result_attrs)
+    
+    # Update best-known results if a new best value is found
+    for solver, solver_outputs in results_dict['raw_results']:
+        for output in solver_outputs:
+            if solver.obj.f_sol is None or output.final_f_val < solver.obj.f_sol:
+                update_best_known_result(solver.obj.name, output.final_f_val)
+            
+            # Save results if required
+            if save_results:
+                results.results_utils.save_solver_output(solver.obj.name, str(solver.config), output)
+    
     return results_dict
 
 def plot_run_solvers(output_dict):
@@ -72,12 +77,12 @@ def plot_run_solvers(output_dict):
     plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
                                              deriv_evals_axis=True,
                                              normalise_deriv_evals_vs_dimension=True,
-                                             normalise_P_k_dirs_vs_dimension=False,
-                                             normalise_S_k_dirs_vs_dimension=False)
-    plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
-                                             deriv_evals_axis=False,
                                              normalise_P_k_dirs_vs_dimension=True,
                                              normalise_S_k_dirs_vs_dimension=True)
+    plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
+                                             deriv_evals_axis=False,
+                                             normalise_P_k_dirs_vs_dimension=False,
+                                             normalise_S_k_dirs_vs_dimension=False)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
     #                                            attr_names=['update_norms'], log_plot=True)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
@@ -120,37 +125,22 @@ def main():
                           'powell',                            # 2
                           'well_conditioned_convex_quadratic', # 3
                           'ill_conditioned_convex_quadratic',  # 4
-                          'nondia']                            # 5
-    problem_name = test_problems_list[5]
+                          'nondia',                            # 5
+                          'genhumps']                          # 6
+    problem_name = test_problems_list[6]
     input_dim = 100
     problem_tup = get_problem(problem_name, input_dim)
-    x0, obj = problem_tup
 
-    # subspace_no_list = [(1, 1, 2),
-    #                     (2, 2, 3),
-    #                     (3, 3, 2),
-    #                     (3, 3, 1),
-    #                     (4, 4, 2),
-    #                     (4, 4, 0),
-    #                     (0, 0, 5)]
-    # solvers_list = []
-
-    # for subspace_no_grads, subspace_no_updates, subspace_no_random in subspace_no_list:
-    #     SUBSPACE_DIM_TOTAL = subspace_no_grads + subspace_no_updates + subspace_no_random
-    #     TILDE_PROJ_DIM = 5
-    #     solver = configure_solver(obj, subspace_no_grads, subspace_no_updates,
-    #                             subspace_no_random, TILDE_PROJ_DIM, **fixed_solver_config_params)
-    #     solvers_list.append(solver)
-
-    passable_name = 'passable2' # NOTE: this should probably be the same for all solvers
-    configs_list = [combine_configs(problem_name, input_dim, 'solver2', passable_name),
-                    combine_configs(problem_name, input_dim, 'solver3', passable_name)]
+    passable_name = 'passable2'
+    configs_list = [combine_configs(problem_name, input_dim, 'solver0', passable_name),
+                    combine_configs(problem_name, input_dim, 'solver3', passable_name),
+                    combine_configs(problem_name, input_dim, 'solver4', passable_name)]
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 
     # Run and store results
     results_attrs = ['final_f_val']
-    results_dict = run_solvers(problem_tup, solvers_list, no_runs=2,
-                               result_attrs=results_attrs)
+    results_dict = run_solvers(problem_tup, solvers_list, no_runs=1,
+                               result_attrs=results_attrs, save_results=True)
 
     # Plot
     plotting.plotting.plot_solver_averages(results_dict, ['final_f_val'])

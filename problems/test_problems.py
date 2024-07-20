@@ -5,6 +5,7 @@ Can also include solutions, if known.
 """
 
 import autograd.numpy as np
+import json
 import pycutest
 from autograd import grad, hessian
 from scipy.optimize import rosen
@@ -29,8 +30,13 @@ class Objective:
             self.hess_func = hess_func
         
         # Known solution
-        self.x_sol = x_sol # minimiser
-        self.f_sol = f_sol # minimum loss
+        self.x_sol = x_sol
+        self.f_sol = f_sol if f_sol is not None else self.get_best_known_f_sol()
+    
+    def get_best_known_f_sol(self):
+        with open('results/best_known_results.json', 'r') as f:
+            best_known_results = json.load(f)
+        return best_known_results.get(self.name, None)
 
 # Using standard x0 as reported in Appendix B of Dennis and Schnabel textbook.
 # Note that this scipy version of an extended Rosenbrock function has
@@ -44,7 +50,7 @@ def rosenbrock_multiple(input_dim):
 
     x_sol = np.ones(input_dim)
     f_sol = 0
-    return x0, Objective('rosenbrock_multiple', input_dim, rosen,
+    return x0, Objective(f'rosenbrock_multiple_n{input_dim}', input_dim, rosen,
                          x_sol=x_sol, f_sol=f_sol)
 
 # Using standard x0 as reported in Appendix B of Dennis and Schnabel textbook.
@@ -63,11 +69,11 @@ def rosenbrock_single(input_dim):
 
     def func(x: np.ndarray):
         return np.sum(100.0 * (x[::2]**2.0 - x[1::2])**2.0 + (x[::2] - 1)**2.0)
-    return x0, Objective('rosenbrock_single', input_dim, func,
+    return x0, Objective(f'rosenbrock_single_n{input_dim}', input_dim, func,
                          x_sol=x_sol, f_sol=f_sol)
 
 # See https://www.sfu.ca/~ssurjano/powell.html
-def powell(input_dim): # NOTE: input_dim must be multiple of 4
+def powell(input_dim: int): # NOTE: input_dim must be multiple of 4
     if input_dim % 4 != 0:
         raise Exception('input_dim must be multiple of 4.')
     input_dim = int(input_dim)
@@ -76,23 +82,23 @@ def powell(input_dim): # NOTE: input_dim must be multiple of 4
         return np.sum([(x[4*i-3 -1] + 10 * x[4*i-2 -1])**2 + 5 * (x[4*i-1 -1] - x[4*i -1])**2 + (x[4*i-2 -1] - 2 * x[4*i-1 -1])**4 + 10 * (x[4*i-3 -1] - x[4*i -1])**4 for i in range(1, input_dim // 4 + 1)])
     x_sol = np.zeros(input_dim)
     f_sol = 0
-    return x0, Objective('powell', input_dim, func,
+    return x0, Objective(f'powell_n{input_dim}', input_dim, func,
                          x_sol=x_sol, f_sol=f_sol)
 
 # "Perfect" convex quadratic. f(x) = squared_euclidian_norm(x)
-def well_conditioned_convex_quadratic(input_dim):
+def well_conditioned_convex_quadratic(input_dim: int):
     x0 = np.ones(input_dim, dtype='float32')
     def func(x):
         return 0.5 * sum(x ** 2)
     x_sol = np.zeros(input_dim)
     f_sol = 0
-    return x0, Objective('well_conditioned_convex_quadratic', input_dim, func,
+    return x0, Objective(f'well_conditioned_convex_quadratic_n{input_dim}', input_dim, func,
                          x_sol=x_sol, f_sol=f_sol)
 
 # Ill-conditioned convex quadratic where eigenvalues of the Hessian are
 # logarithmically uniformly distributed from 1 to 10^4.
 # Condition number of the Hessian is clearly kappa = 10^4.
-def ill_conditioned_convex_quadratic(input_dim):
+def ill_conditioned_convex_quadratic(input_dim: int):
     x0 = np.ones(input_dim, dtype='float32')
     def func(x):
         out = 0
@@ -102,38 +108,54 @@ def ill_conditioned_convex_quadratic(input_dim):
         return 0.5 * out
     x_sol = np.zeros(input_dim)
     f_sol = 0
-    return x0, Objective('ill_conditioned_convex_quadratic', input_dim, func,
+    return x0, Objective(f'ill_conditioned_convex_quadratic_n{input_dim}', input_dim, func,
                          x_sol=x_sol, f_sol=f_sol)
 
 ################################################################################
 #################################  CUTEst  #####################################
 ################################################################################
 
+# NOTE: NONDIA IS a sum-of-squares objective!
 def nondia(input_dim: int):
     valid_dims = [10, 20, 30, 90, 100, 500, 1000, 5000, 10000]
     if input_dim not in valid_dims:
         raise Exception(f'input/ambient dimension must be from valid list!\nThat is {valid_dims}.')
-    # prob_names = [f'ARGTRIG_N{dim}' for dim in [10, 50, 100, 200]]
-    # for name in prob_names:
-    #     pycutest.clear_cache(name)
 
     p = pycutest.import_problem('NONDIA', sifParams={'N': input_dim})
-    # p = pycutest.import_problem('ARGTRIG')
     func = p.obj
     grad_func = p.grad
     hess_func = p.hess
     
     x0 = p.x0
-    f_sol = None
-    # if input_dim == 100:
-    #     f_sol = 0
-    # else:
-    #     f_sol = None # not sure about other input dimensions
     
-    return x0, Objective('nondia', input_dim, func, grad_func, hess_func,
+    f_sol = None # not sure about other input dimensions
+    
+    return x0, Objective(f'nondia_n{input_dim}', input_dim, func, grad_func, hess_func,
                          f_sol=f_sol)
+
+# NOTE: GENHUMPS is NOT a sum-of-squares objective!
+def genhumps(input_dim: int):
+    valid_dims = [5, 10, 100, 500, 1000, 5000]
+    if input_dim not in valid_dims:
+        raise Exception(f'input/ambient dimension must be from valid list!\nThat is {valid_dims}.')
+
+    p = pycutest.import_problem('GENHUMPS', sifParams={'N': input_dim})
+    func = p.obj
+    grad_func = p.grad
+    hess_func = p.hess
     
+    x0 = p.x0
     
+    # Provisional f_sol
+    f_sol = None
+    
+    return x0, Objective(f'genhumps_n{input_dim}', input_dim, func, grad_func,
+                         hess_func, f_sol=f_sol)
+
+
+################################################################################
+################################################################################
+################################################################################
 
 def select_problem(problem_name: str, input_dim: int):
     match problem_name:
@@ -152,4 +174,6 @@ def select_problem(problem_name: str, input_dim: int):
         
         case 'nondia':
             return nondia(input_dim)
+        case 'genhumps':
+            return genhumps(input_dim)
             

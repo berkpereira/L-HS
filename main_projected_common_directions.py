@@ -11,17 +11,6 @@ import plotting
 import matplotlib.pyplot as plt
 import os
 
-"""
-
-TODO:
-TODO:
-TODO:
-TODO:
-Make a suite of configuration sets in well-organised folders/files, perhaps
-organised by numerical study. E.G., one such file could be dedicated to solver
-configurations used in a numerical study assessing the effect of changing
-the random_proj_dim (the 'dimension' of S_k).
-"""
 
 def set_seed(seed):
     np.random.seed(42)
@@ -125,22 +114,23 @@ def main():
                           'powell',                            # 2
                           'well_conditioned_convex_quadratic', # 3
                           'ill_conditioned_convex_quadratic',  # 4
-                          'nondia',                            # 5
-                          'genhumps']                          # 6
+                          'NONDIA',                            # 5
+                          'GENHUMPS']                          # 6
     problem_name = test_problems_list[6]
     input_dim = 100
     problem_tup = get_problem(problem_name, input_dim)
+    SAVE_RESULTS = True
 
     passable_name = 'passable2'
-    configs_list = [combine_configs(problem_name, input_dim, 'solver0', passable_name),
-                    combine_configs(problem_name, input_dim, 'solver3', passable_name),
+    configs_list = [combine_configs(problem_name, input_dim, 'solver3', passable_name),
+                    combine_configs(problem_name, input_dim, 'solver0', passable_name),
                     combine_configs(problem_name, input_dim, 'solver4', passable_name)]
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 
     # Run and store results
     results_attrs = ['final_f_val']
-    results_dict = run_solvers(problem_tup, solvers_list, no_runs=1,
-                               result_attrs=results_attrs, save_results=True)
+    results_dict = run_solvers(problem_tup, solvers_list, no_runs=5,
+                               result_attrs=results_attrs, save_results=SAVE_RESULTS)
 
     # Plot
     plotting.plotting.plot_solver_averages(results_dict, ['final_f_val'])

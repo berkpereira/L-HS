@@ -369,7 +369,7 @@ def plot_run_histograms(raw_results: list, attr_names: list):
         for solver_idx, (solver, solver_outputs) in enumerate(raw_results):
             color = config_str_to_color(str(solver.config))
             values = [getattr(output, attr_name) for output in solver_outputs]
-            plt.hist(values, alpha=1, color=color,
+            plt.hist(values, alpha=0.75, color=color,
                      label=f"Solver {solver_idx}: {solver.__class__.__name__}")
         
         plt.title(f"Histogram of {attr_name}")

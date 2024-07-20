@@ -88,7 +88,7 @@ def save_solver_output(problem_name: str, solver_config_str: str,
             'update_norms': data['update_norms'][iter] if data['update_norms'].size > iter else None,
             'full_grad_norms': data['full_grad_norms'][iter] if data['full_grad_norms'].size > iter else None,                
             'proj_grad_norms': data['proj_grad_norms'][iter] if data['proj_grad_norms'].size > iter else None,
-            'config_str': data['config_str']
+            'config_str': data['config_str'] if iter == 0 else None  # Only store config_str in the first row
         })
     grouped_data[data['run_id']] = run_data
     
@@ -102,6 +102,8 @@ def save_solver_output(problem_name: str, solver_config_str: str,
         writer.writeheader()
         for run in sorted_runs:
             for row in run:
+                if row['config_str'] is None:
+                    del row['config_str']  # Remove the key to avoid writing None
                 writer.writerow(row)
 
 def load_solver_results(problem_name: str, solver_config, output_dir='results'):

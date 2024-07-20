@@ -27,8 +27,16 @@ def save_mapping(solver_config_str, hashed_filename):
     with open(MAPPING_FILE, 'w') as file:
         json.dump(mapping, file, indent=4)
 
+# NOTE: this functions keeps only KEEP_NO solver runs' data.
+# These are prioritised vs any incoming data by the equivalent gradient
+# evaluations budget of the run. The larger the budget, the higher the priority.
+# NOTE: KEEP_NO is hard-coded here! For instance, Cartis' and Roberts' 2023
+# paper uses KEEP_NO equal to 10.
 def save_solver_output(problem_name: str, solver_config_str: str,
                        solver_output: SolverOutput, output_dir='results'):
+    
+    KEEP_NO = 10
+    
     # Create the directory for the problem if it does not exist
     problem_dir = os.path.join(output_dir, problem_name)
     os.makedirs(problem_dir, exist_ok=True)
@@ -89,8 +97,8 @@ def save_solver_output(problem_name: str, solver_config_str: str,
         })
     grouped_data[data['run_id']] = run_data
     
-    # Sort runs by equiv_grad_budget and keep only the top 10
-    sorted_runs = sorted(grouped_data.values(), key=lambda x: float(x[0]['equiv_grad_budget']), reverse=True)[:10]
+    # Sort runs by equiv_grad_budget and keep only the top KEEP_NO
+    sorted_runs = sorted(grouped_data.values(), key=lambda x: float(x[0]['equiv_grad_budget']), reverse=True)[:KEEP_NO]
 
     # Write the selected runs back to the file
     with open(file_path, mode='w', newline='') as file:

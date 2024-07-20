@@ -10,23 +10,23 @@ import autograd.numpy as np
 
 passable_variants_dict = {
     "passable0": {
-        "tol": 1e-6,
+        "tol": 0,
         "max_iter": np.inf,
         "deriv_budget": 5_000,
         "iter_print_gap": 50,
         "verbose": True
     },
     "passable1": {
-        "tol": 1e-4,
+        "tol": 0,
         "max_iter": np.inf,
         "deriv_budget": 10_000,
         "iter_print_gap": 50,
         "verbose": True
     },
     "passable2": {
-        "tol": 1e-4,
+        "tol": 0,
         "max_iter": np.inf,
-        "equiv_grad_budget": 500,
+        "equiv_grad_budget": 50,
         "iter_print_gap": 50,
         "verbose": True
     },

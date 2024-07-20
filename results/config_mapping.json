@@ -1,0 +1,5 @@
+{
+    "ProjectedCommonDirectionsConfig(reg_lambda=0.01, subspace_frac_grads=0, subspace_frac_updates=0, subspace_frac_random=1, direction_str=newton, use_hess=True, inner_use_full_grad=True, alpha=0.01, t_init=1, tau=0.5)": "e32cebf2e8",
+    "ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=sd, use_hess=True, random_proj=True, random_proj_dim_frac=0.2, ensemble=haar, inner_use_full_grad=True, alpha=0.01, t_init=100, tau=0.5)": "cd207487cd",
+    "ProjectedCommonDirectionsConfig(reg_lambda=0.01, subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=0.2, ensemble=haar, inner_use_full_grad=True, alpha=0.01, t_init=100, tau=0.5)": "1e262714da"
+}

@@ -45,7 +45,7 @@ class ProjectedCommonDirectionsConfig:
     subspace_frac_updates: float = None
     subspace_frac_random: float = None
 
-    direction_str: str = 'newton' # options are {'newton', 'sd'}
+    direction_str: str = 'sd' # options are {'newton', 'sd'}
     use_hess: bool = True
     random_proj: bool = False
     random_proj_dim: int = None
@@ -59,7 +59,7 @@ class ProjectedCommonDirectionsConfig:
     tau: float = 0.5
     
     # Passable attributes
-    tol: float = 1e-3
+    tol: float = 1e-6
     max_iter: int = 1000
     deriv_budget: int = None
     equiv_grad_budget: float = None
@@ -129,6 +129,19 @@ class ProjectedCommonDirectionsConfig:
                           'iter_print_gap', 'random_proj_dim', 'max_iter',
                           'tol', 'subspace_no_grads','subspace_no_updates',
                           'subspace_no_random']
+        if self.subspace_no_grads == 0 and self.subspace_no_updates == 0: # subspace is entirely randomised
+            passable_attrs.extend(['random_proj_dim_frac', 'ensemble'])
+        if self.direction_str == 'sd':
+            passable_attrs.append('reg_lambda') # only comes in for Newton-like searches
+
+        if self.subspace_frac_grads > 0: # projections 'make sense'
+            if self.random_proj:
+                passable_attrs.append('reproject_grad')
+            else:
+                passable_attrs.append('ensemble')
+        else: # no tilde projections are ever computed
+            passable_attrs.extend(['ensemble', 'reproject_grad', 'random_proj'])
+        
         attributes = []
         for field in fields(self):
             name = field.name
@@ -208,7 +221,7 @@ class ProjectedCommonDirections:
         if self.subspace_dim == self.obj.input_dim:
             self.deriv_per_iter = self.obj.input_dim
         
-        if self.deriv_per_iter >= self.obj.input_dim:
+        if self.deriv_per_iter > self.obj.input_dim:
             raise Exception("Method uses as many or more derivatives per iteration than if using full space method!")
             warnings.warn("Using as many or more derivatives per iteration than if using full space method!", UserWarning)
 
@@ -553,7 +566,7 @@ class ProjectedCommonDirections:
         if proj_grad is not None:
             proj_grad_norms = np.array(proj_grad_norms_list)
         else:
-            proj_grad_norms = None
+            proj_grad_norms = full_grad_norms
         angles_to_full_grad = np.array(angles_to_full_grad_list)
         cond_nos = np.array(cond_nos_list) # condition numbers of P matrix at each iteration
         P_ranks = np.array(P_ranks_list)

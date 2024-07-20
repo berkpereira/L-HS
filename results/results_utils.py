@@ -55,7 +55,8 @@ def save_solver_output(problem_name: str, solver_config_str: str,
         'f_vals': solver_output.f_vals,
         'update_norms': solver_output.update_norms,
         'full_grad_norms': solver_output.full_grad_norms,
-        'proj_grad_norms': solver_output.proj_grad_norms
+        'proj_grad_norms': solver_output.proj_grad_norms,
+        'config_str': str(solver_output.solver.config)
     }
     
     # Load existing data if the file exists
@@ -64,16 +65,9 @@ def save_solver_output(problem_name: str, solver_config_str: str,
         with open(file_path, mode='r', newline='') as file:
             reader = csv.DictReader(file)
             for row in reader:
-                for key in ['equiv_grad_budget', 'iter',
-                            'deriv_evals', 'equiv_grad_evals', 'f_vals',
-                            'update_norms', 'full_grad_norms', 'proj_grad_norms']:
-                    if row[key] != '':
-                        row[key] = eval(row[key])
-                    else:
-                        row[key] = ''
                 existing_data.append(row)
 
-    # Group data by run_id and get the maximum equiv_grad_budget for each run
+    # Group data by run_id
     grouped_data = {}
     for row in existing_data:
         run_id = row['run_id']
@@ -94,6 +88,7 @@ def save_solver_output(problem_name: str, solver_config_str: str,
             'update_norms': data['update_norms'][iter] if data['update_norms'].size > iter else None,
             'full_grad_norms': data['full_grad_norms'][iter] if data['full_grad_norms'].size > iter else None,                
             'proj_grad_norms': data['proj_grad_norms'][iter] if data['proj_grad_norms'].size > iter else None,
+            'config_str': data['config_str']
         })
     grouped_data[data['run_id']] = run_data
     
@@ -102,7 +97,7 @@ def save_solver_output(problem_name: str, solver_config_str: str,
 
     # Write the selected runs back to the file
     with open(file_path, mode='w', newline='') as file:
-        fieldnames = ['run_id', 'equiv_grad_budget', 'iter', 'deriv_evals', 'equiv_grad_evals', 'f_vals', 'update_norms', 'full_grad_norms', 'proj_grad_norms']
+        fieldnames = ['run_id', 'equiv_grad_budget', 'iter', 'deriv_evals', 'equiv_grad_evals', 'f_vals', 'update_norms', 'full_grad_norms', 'proj_grad_norms', 'config_str']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         for run in sorted_runs:

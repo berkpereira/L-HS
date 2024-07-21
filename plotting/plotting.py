@@ -91,11 +91,11 @@ def solver_loss_label(solver_out: SolverOutput,
         no_sub_grads      /= ambient_dim
         no_sub_updates    /= ambient_dim
         no_sub_random     /= ambient_dim
-        no_sub_grads_str   = f'${no_sub_grads:.2f} n$'
+        no_sub_grads_str   = f'${no_sub_grads*100:.0f}\% (n)$'
         no_sub_grads_eq    = '$=$' if no_sub_grads == np.round(no_sub_grads, 2) else r'$\approx$'
-        no_sub_updates_str = f'${no_sub_updates:.2f} n$'
+        no_sub_updates_str = f'${no_sub_updates*100:.0f}\% (n)$'
         no_sub_updates_eq  = '$=$' if no_sub_updates == np.round(no_sub_updates, 2) else r'$\approx$'
-        no_sub_random_str  = f'${no_sub_random:.2f} n$'
+        no_sub_random_str  = f'${no_sub_random*100:.0f}\% (n)$'
         no_sub_random_eq   = '$=$' if no_sub_random == np.round(no_sub_random, 2) else r'$\approx$'
     else:
         no_sub_grads_str   = f'${no_sub_grads}$'
@@ -107,7 +107,7 @@ def solver_loss_label(solver_out: SolverOutput,
 
     if normalise_S_k_dirs_vs_dimension:
         S_k_dim = solver_out.solver.random_proj_dim / ambient_dim
-        S_k_dim_str = f'${S_k_dim:.2f} n$'
+        S_k_dim_str = f'${S_k_dim*100:.0f}\% (n)$'
         S_k_eq = '$=$'if S_k_dim == np.round(S_k_dim, 2) else r'$\approx$'
     else:
         S_k_dim = solver_out.solver.random_proj_dim

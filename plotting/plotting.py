@@ -9,6 +9,7 @@ from results.results_utils import get_hashed_filename
 plt.rcParams.update({
     'font.size': 11,
     "text.usetex": True,
+    "text.latex.preamble": r"\usepackage{amsmath}",
     "font.family": "serif",
     "axes.grid": True,
     'grid.alpha': 0.5,
@@ -44,8 +45,43 @@ def config_str_to_linestyle(config_str: str):
 # This function generates an appropriate label string given a SolverOutput object.
 def solver_loss_label(solver_out: SolverOutput,
                       normalise_P_k_dirs_vs_dimension: bool,
-                      normalise_S_k_dirs_vs_dimension: bool):
+                      normalise_S_k_dirs_vs_dimension: bool,
+                      suppress_dir: bool=False,
+                      suppress_sketch_size: bool=False):
     ambient_dim = solver_out.solver.obj.input_dim
+
+    # NOTE: edge case --- full-space method
+    if solver_out.solver.subspace_dim == ambient_dim:
+        full_space_method = True
+    else:
+        full_space_method = False
+    
+    # NOTE: edge case --- Lee2022's CommonDirections
+    if (solver_out.solver.random_proj and (solver_out.solver.random_proj_dim == ambient_dim)):
+        lee_common_method = True
+    else:
+        lee_common_method = False
+    
+    # NOTE: edge case --- randomised subspace method
+    if solver_out.solver.subspace_frac_random == 1:
+        random_subspace_method = True
+    else:
+        random_subspace_method = False
+
+    if solver_out.solver.direction_str == 'newton':
+        direction_str_formatted = solver_out.solver.direction_str.capitalize()
+    elif solver_out.solver.direction_str == 'sd':
+        direction_str_formatted = solver_out.solver.direction_str.upper()
+
+    if full_space_method:
+        new_label_template = """Full-space method
+        Search: {direction_str_formatted}"""
+
+        new_label = new_label_template.format(
+            direction_str_formatted=direction_str_formatted
+        )
+        
+        return new_label
 
     no_sub_grads   = solver_out.solver.subspace_no_grads
     no_sub_updates = solver_out.solver.subspace_no_updates
@@ -69,11 +105,6 @@ def solver_loss_label(solver_out: SolverOutput,
         no_sub_updates_eq  = '$=$'
         no_sub_random_eq   = '$=$'
 
-    if solver_out.solver.direction_str == 'newton':
-        direction_str_formatted = solver_out.solver.direction_str.capitalize()
-    elif solver_out.solver.direction_str == 'sd':
-        direction_str_formatted = solver_out.solver.direction_str.upper()
-
     if normalise_S_k_dirs_vs_dimension:
         S_k_dim = solver_out.solver.random_proj_dim / ambient_dim
         S_k_dim_str = f'${S_k_dim:.2f} n$'
@@ -83,30 +114,48 @@ def solver_loss_label(solver_out: SolverOutput,
         S_k_dim_str = f'${S_k_dim}$'
         S_k_eq = '$=$'
     
-    tilde_dirs_str  = r'$\tilde{\nabla}f(x_k)$'
-    update_dirs_str = r'$s_k$'
-    new_label_template = r"""\# {tilde_dirs_str} dirs.\ {no_sub_grads_eq} {no_sub_grads_str}
-    \# {update_dirs_str} dirs.\ {no_sub_updates_eq} {no_sub_updates_str}
-    \# Random dirs.\ {no_sub_random_eq} {no_sub_random_str}
-    Sketch size {S_k_eq} {S_k_dim_str}
-    Search: {direction_str_formatted}"""
 
-    new_label = new_label_template.format(
-        tilde_dirs_str=tilde_dirs_str,
-        no_sub_grads_eq=no_sub_grads_eq,
-        no_sub_grads_str=no_sub_grads_str,
-        update_dirs_str=update_dirs_str,
-        no_sub_updates_eq=no_sub_updates_eq,
-        no_sub_updates_str=no_sub_updates_str,
-        no_sub_random_eq=no_sub_random_eq,
-        no_sub_random_str=no_sub_random_str,
-        S_k_eq=S_k_eq,
-        S_k_dim_str=S_k_dim_str,
-        direction_str_formatted=direction_str_formatted
-    )
+    if lee_common_method:
+        grad_dirs_str  = r'$\nabla{f}(x_k)$'
+        label_lines = [r"""L-CommDir"""]
+    elif random_subspace_method:
+        grad_dirs_str  = None
+        label_lines = [r"""Random subspace method"""]
+    else:
+        grad_dirs_str  = r'$\tilde{\nabla}f(x_k)$'
+        label_lines = [r"""L-ProjCommDir"""]
+    update_dirs_str = r'$s_k$'
+
+    format_args = {}
+
+    if solver_out.solver.subspace_frac_grads > 0:
+        label_lines.append(r"""\# {grad_dirs_str} dirs.\ {no_sub_grads_eq} {no_sub_grads_str}""")
+        format_args.update({'grad_dirs_str': grad_dirs_str,
+                            'no_sub_grads_eq': no_sub_grads_eq,
+                            'no_sub_grads_str': no_sub_grads_str})
+    if solver_out.solver.subspace_frac_updates > 0:
+        label_lines.append(r"""\# {update_dirs_str} dirs.\ {no_sub_updates_eq} {no_sub_updates_str}""")
+        format_args.update({'update_dirs_str': update_dirs_str,
+                            'no_sub_updates_eq': no_sub_updates_eq,
+                            'no_sub_updates_str': no_sub_updates_str})
+    if solver_out.solver.subspace_frac_random > 0:
+        label_lines.append(r"""\# Random dirs.\ {no_sub_random_eq} {no_sub_random_str}""")
+        format_args.update({'no_sub_random_eq': no_sub_random_eq,
+                            'no_sub_random_str': no_sub_random_str})
+
+    if not suppress_sketch_size:
+        label_lines.append(r"""Sketch size {S_k_eq} {S_k_dim_str}""")
+        format_args.update({'S_k_eq': S_k_eq,
+                            'S_k_dim_str': S_k_dim_str})
+    if not suppress_dir:
+        label_lines.append(r"""Search: {direction_str_formatted}""")
+        format_args.update({'direction_str_formatted': direction_str_formatted})
+    
+    new_label_template = "\n".join(label_lines)
+
+    new_label = new_label_template.format(**format_args)
 
     return new_label
-
 
 # This function plots the loss vs iteration (or vs directional derivatives
 # evaluated) for a number of solver output objects.

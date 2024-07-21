@@ -129,7 +129,7 @@ def haar(m, n):
     return q
 
 # The below is *inspired by* Algorithm 5 from https://doi.org/10.1007/s10107-022-01836-1
-# It returns an orthonormal matrix including the directions of curr_mat's columns
+# It returns a (potentially orthonormal) matrix including the directions of curr_mat's columns
 # along with no_dirs (int) random directions.
 def append_dirs(curr_mat: np.ndarray, ambient_dim: int,
                 no_dirs: int, curr_is_orth: bool, orthogonalise: bool):

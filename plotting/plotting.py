@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import autograd.numpy as np
+from solvers.utils import SolverOutput
 import hashlib
 from solvers.utils import normalise_loss
 from results.results_utils import get_hashed_filename
@@ -40,6 +41,73 @@ def config_str_to_linestyle(config_str: str):
     linestyle_index = int(long_hash[0], 16) % len(LINESTYLES)
     return LINESTYLES[linestyle_index]
 
+# This function generates an appropriate label string given a SolverOutput object.
+def solver_loss_label(solver_out: SolverOutput,
+                      normalise_P_k_dirs_vs_dimension: bool,
+                      normalise_S_k_dirs_vs_dimension: bool):
+    ambient_dim = solver_out.solver.obj.input_dim
+
+    no_sub_grads   = solver_out.solver.subspace_no_grads
+    no_sub_updates = solver_out.solver.subspace_no_updates
+    no_sub_random  = solver_out.solver.subspace_no_random
+
+    if normalise_P_k_dirs_vs_dimension:
+        no_sub_grads      /= ambient_dim
+        no_sub_updates    /= ambient_dim
+        no_sub_random     /= ambient_dim
+        no_sub_grads_str   = f'${no_sub_grads:.2f} n$'
+        no_sub_grads_eq    = '$=$' if no_sub_grads == np.round(no_sub_grads, 2) else r'$\approx$'
+        no_sub_updates_str = f'${no_sub_updates:.2f} n$'
+        no_sub_updates_eq  = '$=$' if no_sub_updates == np.round(no_sub_updates, 2) else r'$\approx$'
+        no_sub_random_str  = f'${no_sub_random:.2f} n$'
+        no_sub_random_eq   = '$=$' if no_sub_random == np.round(no_sub_random, 2) else r'$\approx$'
+    else:
+        no_sub_grads_str   = f'${no_sub_grads}$'
+        no_sub_updates_str = f'${no_sub_updates}$'
+        no_sub_random_str  = f'${no_sub_random}$'
+        no_sub_grads_eq    = '$=$'
+        no_sub_updates_eq  = '$=$'
+        no_sub_random_eq   = '$=$'
+
+    if solver_out.solver.direction_str == 'newton':
+        direction_str_formatted = solver_out.solver.direction_str.capitalize()
+    elif solver_out.solver.direction_str == 'sd':
+        direction_str_formatted = solver_out.solver.direction_str.upper()
+
+    if normalise_S_k_dirs_vs_dimension:
+        S_k_dim = solver_out.solver.random_proj_dim / ambient_dim
+        S_k_dim_str = f'${S_k_dim:.2f} n$'
+        S_k_eq = '$=$'if S_k_dim == np.round(S_k_dim, 2) else r'$\approx$'
+    else:
+        S_k_dim = solver_out.solver.random_proj_dim
+        S_k_dim_str = f'${S_k_dim}$'
+        S_k_eq = '$=$'
+    
+    tilde_dirs_str  = r'$\tilde{\nabla}f(x_k)$'
+    update_dirs_str = r'$s_k$'
+    new_label_template = r"""\# {tilde_dirs_str} dirs.\ {no_sub_grads_eq} {no_sub_grads_str}
+    \# {update_dirs_str} dirs.\ {no_sub_updates_eq} {no_sub_updates_str}
+    \# Random dirs.\ {no_sub_random_eq} {no_sub_random_str}
+    Sketch size {S_k_eq} {S_k_dim_str}
+    Search: {direction_str_formatted}"""
+
+    new_label = new_label_template.format(
+        tilde_dirs_str=tilde_dirs_str,
+        no_sub_grads_eq=no_sub_grads_eq,
+        no_sub_grads_str=no_sub_grads_str,
+        update_dirs_str=update_dirs_str,
+        no_sub_updates_eq=no_sub_updates_eq,
+        no_sub_updates_str=no_sub_updates_str,
+        no_sub_random_eq=no_sub_random_eq,
+        no_sub_random_str=no_sub_random_str,
+        S_k_eq=S_k_eq,
+        S_k_dim_str=S_k_dim_str,
+        direction_str_formatted=direction_str_formatted
+    )
+
+    return new_label
+
+
 # This function plots the loss vs iteration (or vs directional derivatives
 # evaluated) for a number of solver output objects.
 def plot_loss_vs_iteration(solver_outputs: list,
@@ -71,67 +139,10 @@ def plot_loss_vs_iteration(solver_outputs: list,
     if labels is None:
         try: # If subspace dimension is a meaningful concept for the solver
             labels = []
-            for i in range(len(solver_outputs)):
-                ambient_dim = solver_outputs[i].solver.obj.input_dim
-
-                no_sub_grads   = solver_outputs[i].solver.subspace_no_grads
-                no_sub_updates = solver_outputs[i].solver.subspace_no_updates
-                no_sub_random  = solver_outputs[i].solver.subspace_no_random
-
-                if normalise_P_k_dirs_vs_dimension:
-                    no_sub_grads      /= ambient_dim
-                    no_sub_updates    /= ambient_dim
-                    no_sub_random     /= ambient_dim
-                    no_sub_grads_str   = f'${no_sub_grads:.2f} n$'
-                    no_sub_grads_eq    = '$=$' if no_sub_grads == np.round(no_sub_grads, 2) else r'$\approx$'
-                    no_sub_updates_str = f'${no_sub_updates:.2f} n$'
-                    no_sub_updates_eq  = '$=$' if no_sub_updates == np.round(no_sub_updates, 2) else r'$\approx$'
-                    no_sub_random_str  = f'${no_sub_random:.2f} n$'
-                    no_sub_random_eq   = '$=$' if no_sub_random == np.round(no_sub_random, 2) else r'$\approx$'
-                else:
-                    no_sub_grads_str   = f'${no_sub_grads}$'
-                    no_sub_updates_str = f'${no_sub_updates}$'
-                    no_sub_random_str  = f'${no_sub_random}$'
-                    no_sub_grads_eq    = '$=$'
-                    no_sub_updates_eq  = '$=$'
-                    no_sub_random_eq   = '$=$'
-
-                if solver_outputs[i].solver.direction_str == 'newton':
-                    direction_str_formatted = solver_outputs[i].solver.direction_str.capitalize()
-                elif solver_outputs[i].solver.direction_str == 'sd':
-                    direction_str_formatted = solver_outputs[i].solver.direction_str.upper()
-
-                if normalise_S_k_dirs_vs_dimension:
-                    S_k_dim = solver_outputs[i].solver.random_proj_dim / ambient_dim
-                    S_k_dim_str = f'${S_k_dim:.2f} n$'
-                    S_k_eq = '$=$'if S_k_dim == np.round(S_k_dim, 2) else r'$\approx$'
-                else:
-                    S_k_dim = solver_outputs[i].solver.random_proj_dim
-                    S_k_dim_str = f'${S_k_dim}$'
-                    S_k_eq = '$=$'
-                
-                tilde_dirs_str  = r'$\tilde{\nabla}f(x_k)$'
-                update_dirs_str = r'$s_k$'
-                new_label_template = r"""\# {tilde_dirs_str} dirs.\ {no_sub_grads_eq} {no_sub_grads_str},
-                \# {update_dirs_str} dirs.\ {no_sub_updates_eq} {no_sub_updates_str},
-                \# random dirs.\ {no_sub_random_eq} {no_sub_random_str},
-                $S_k$ ``dimension'' {S_k_eq} {S_k_dim_str},
-                direction: {direction_str_formatted}"""
-
-                new_label = new_label_template.format(
-                    tilde_dirs_str=tilde_dirs_str,
-                    no_sub_grads_eq=no_sub_grads_eq,
-                    no_sub_grads_str=no_sub_grads_str,
-                    update_dirs_str=update_dirs_str,
-                    no_sub_updates_eq=no_sub_updates_eq,
-                    no_sub_updates_str=no_sub_updates_str,
-                    no_sub_random_eq=no_sub_random_eq,
-                    no_sub_random_str=no_sub_random_str,
-                    S_k_eq=S_k_eq,
-                    S_k_dim_str=S_k_dim_str,
-                    direction_str_formatted=direction_str_formatted
-                )
-                
+            for solver_out in solver_outputs:
+                new_label = solver_loss_label(solver_out,
+                                              normalise_P_k_dirs_vs_dimension,
+                                              normalise_S_k_dirs_vs_dimension)
                 labels.append(new_label)
         except: # Generic chronological numbering
             labels = [f"Solver {i}" for i in range(len(solver_outputs))]

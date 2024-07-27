@@ -63,7 +63,7 @@ def solver_loss_label(solver_out: SolverOutput,
         lee_common_method = False
     
     # NOTE: edge case --- randomised subspace method
-    if solver_out.solver.subspace_frac_random == 1:
+    if solver_out.solver.subspace_frac_grads == 0 and solver_out.solver.subspace_frac_updates == 0:
         random_subspace_method = True
     else:
         random_subspace_method = False
@@ -143,7 +143,7 @@ def solver_loss_label(solver_out: SolverOutput,
         format_args.update({'no_sub_random_eq': no_sub_random_eq,
                             'no_sub_random_str': no_sub_random_str})
 
-    if not suppress_sketch_size:
+    if not (suppress_sketch_size or (solver_out.solver.subspace_frac_grads == 0)):
         label_lines.append(r"""Sketch size {S_k_eq} {S_k_dim_str}""")
         format_args.update({'S_k_eq': S_k_eq,
                             'S_k_dim_str': S_k_dim_str})

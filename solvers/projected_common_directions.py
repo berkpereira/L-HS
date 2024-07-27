@@ -75,7 +75,7 @@ class ProjectedCommonDirectionsConfig:
             (self.subspace_frac_random is not None and self.subspace_no_random is not None) or
             (self.random_proj_dim_frac is not None and self.random_proj_dim is not None)):
             raise Exception('Cannot specify numbers of directions directly and as fractions of ambient dimension simultaneously!')
-        
+
         # If fractions are specified, use them to set the integer attributes
         if self.subspace_frac_grads is not None:
             prospective_subspace_no_grads = self.subspace_frac_grads * self.obj.input_dim
@@ -116,6 +116,9 @@ class ProjectedCommonDirectionsConfig:
         if self.random_proj_dim_frac is None:
             self.random_proj_dim_frac = self.random_proj_dim / self.obj.input_dim
 
+        # Overall dimension of subspace
+        self.subspace_dim = self.subspace_no_grads + self.subspace_no_updates + self.subspace_no_random
+
         # Handle the relationship between deriv_budget and equiv_grad_budget
         if self.equiv_grad_budget is not None and self.deriv_budget is not None:
             raise Exception('Cannot specify derivative budget and equivalent gradient budget simultaneously!')
@@ -136,6 +139,17 @@ class ProjectedCommonDirectionsConfig:
             passable_attrs.extend(['random_proj_dim_frac', 'ensemble'])
         if self.direction_str != 'newton':
             passable_attrs.extend(['reg_lambda', 'use_hess']) # only comes in for Newton-like searches
+
+        # NOTE: edge case --- Lee2022's CommonDirections
+        if self.random_proj_dim == self.obj.input_dim: # recover Lee2022's CommonDirections
+            passable_attrs.append('ensemble') # ensemble plays no role
+
+        # NOTE: edge case --- full-space/classical linesearch method
+        if self.subspace_dim == self.obj.input_dim:
+            passable_attrs.extend(['random_proj_dim_frac', 'subspace_frac_grads',
+                                   'subspace_frac_updates', 'subspace_frac_random',
+                                   'random_proj', 'ensemble', 'inner_use_full_grad',
+                                   'orth_P_k'])
 
         if self.subspace_frac_grads > 0: # projections 'make sense'
             if self.random_proj:
@@ -166,9 +180,6 @@ class ProjectedCommonDirections:
 
         # Store the config object itself as an attribute
         self.config = config
-
-        # Overall number of columns in P_k
-        self.subspace_dim = self.subspace_no_grads + self.subspace_no_updates + self.subspace_no_random
 
         # Distinguish case when no problem information is used in P_k, i.e.,
         # where P_k is fully random.
@@ -230,8 +241,8 @@ class ProjectedCommonDirections:
 
     # Draw a TALL sketching matrix from random ensemble.
     def draw_sketch(self):
-        if self.random_proj_dim == self.obj.input_dim: # Recovering full-dimensional method
-            return np.identity(self.obj.input_dim)
+        if self.random_proj_dim == self.obj.input_dim: # Recover Lee2022's CommonDirections
+            return np.identity(self.obj.input_dim) # ensemble should play no role here.
         elif self.ensemble == 'scaled_gaussian':
             return scaled_gaussian(self.obj.input_dim, self.random_proj_dim)
         elif self.ensemble == 'haar':
@@ -244,7 +255,7 @@ class ProjectedCommonDirections:
     def regularise_hessian(self, B):
         lambda_min = np.min(np.linalg.eigh(B)[0])
         if lambda_min < self.reg_lambda: # Regularise
-            print('USING HESSIAN REGULARISATION!') # Notify
+            # print('USING HESSIAN REGULARISATION!') # Notify
             B = B + (self.reg_lambda - lambda_min) * np.identity(self.subspace_dim)
             
         return B

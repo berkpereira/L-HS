@@ -13,21 +13,21 @@ passable_variants_dict = {
         "tol": 0,
         "max_iter": np.inf,
         "deriv_budget": 5_000,
-        "iter_print_gap": 50,
+        "iter_print_gap": 1000,
         "verbose": True
     },
     "passable1": {
         "tol": 0,
         "max_iter": np.inf,
         "deriv_budget": 10_000,
-        "iter_print_gap": 50,
+        "iter_print_gap": 1000,
         "verbose": True
     },
     "passable2": {
         "tol": 0,
         "max_iter": np.inf,
-        "equiv_grad_budget": 100,
-        "iter_print_gap": 50,
+        "equiv_grad_budget": 300,
+        "iter_print_gap": 1000,
         "verbose": True
     },
     # Add more variants as needed

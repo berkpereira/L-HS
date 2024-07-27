@@ -8,15 +8,15 @@ from solvers.projected_common_directions import ProjectedCommonDirectionsConfig
 # Dictionary to hold configuration parameters for all solver variants
 solver_variants_dict = {
     "solver0": {
-        "subspace_no_grads": 0,
-        "subspace_no_updates": 0,
-        "subspace_no_random": 3,
+        "subspace_frac_grads": 0,
+        "subspace_frac_updates": 0,
+        "subspace_frac_random": 0.2,
         "random_proj_dim": 5,
         "direction_str": 'sd',
         "reg_lambda": 0.01,
         "ensemble": 'haar',
         "orth_P_k": True,
-        "t_init": 1,
+        "alpha_max": 100,
         "tau": 0.5
     },
     "solver1": {
@@ -28,7 +28,7 @@ solver_variants_dict = {
         "reg_lambda": 0.01,
         "ensemble": 'haar',
         "orth_P_k": True,
-        "t_init": 100,
+        "alpha_max": 100,
         "tau": 0.5
     },
     "solver2": {
@@ -40,7 +40,7 @@ solver_variants_dict = {
         "reg_lambda": 0.01,
         "ensemble": 'haar',
         "orth_P_k": True,
-        "t_init": 100,
+        "alpha_max": 100,
         "tau": 0.5
     },
     "solver3": {
@@ -52,7 +52,7 @@ solver_variants_dict = {
         "reg_lambda": 0.01,
         "ensemble": 'haar',
         "orth_P_k": True,
-        "t_init": 100,
+        "alpha_max": 100,
         "tau": 0.5
     },
     "solver4": {
@@ -64,7 +64,7 @@ solver_variants_dict = {
         "reg_lambda": 0.01,
         "ensemble": 'scaled_gaussian',
         "orth_P_k": True,
-        "t_init": 100,
+        "alpha_max": 100,
         "tau": 0.5
     },
     # Add more variants as needed

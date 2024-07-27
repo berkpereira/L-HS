@@ -57,7 +57,7 @@ class ProjectedCommonDirectionsConfig:
     # NOTE: LOGIC FOR THIS BEING FALSE NOT YET IMPLEMENTED
     orth_P_k: bool = True
     
-    alpha: float = 0.001
+    beta: float = 0.001
     t_init: float = 1
     tau: float = 0.5
     
@@ -270,7 +270,7 @@ class ProjectedCommonDirections:
             grad_vec = proj_grad
         
         direction = np.squeeze(direction) # turn into vector
-        while self.func(x + t * direction) > f_x + self.alpha * t * np.dot(grad_vec, direction):
+        while self.func(x + t * direction) > f_x + self.beta * t * np.dot(grad_vec, direction):
             t *= self.tau
         
         return t

@@ -8,15 +8,14 @@ from solvers.projected_common_directions import ProjectedCommonDirectionsConfig
 # Dictionary to hold configuration parameters for all solver variants
 solver_variants_dict = {
     "solver0": {
-        "subspace_frac_grads": 0,
-        "subspace_frac_updates": 0,
-        "subspace_frac_random": 1,
+        "subspace_no_grads": 0,
+        "subspace_no_updates": 0,
+        "subspace_no_random": 3,
         "random_proj_dim": 5,
-        "direction_str": 'newton',
+        "direction_str": 'sd',
         "reg_lambda": 0.01,
         "ensemble": 'haar',
         "orth_P_k": True,
-        "alpha": 0.01,
         "t_init": 1,
         "tau": 0.5
     },
@@ -29,7 +28,6 @@ solver_variants_dict = {
         "reg_lambda": 0.01,
         "ensemble": 'haar',
         "orth_P_k": True,
-        "alpha": 0.01,
         "t_init": 100,
         "tau": 0.5
     },
@@ -42,7 +40,6 @@ solver_variants_dict = {
         "reg_lambda": 0.01,
         "ensemble": 'haar',
         "orth_P_k": True,
-        "alpha": 0.01,
         "t_init": 100,
         "tau": 0.5
     },
@@ -55,7 +52,6 @@ solver_variants_dict = {
         "reg_lambda": 0.01,
         "ensemble": 'haar',
         "orth_P_k": True,
-        "alpha": 0.01,
         "t_init": 100,
         "tau": 0.5
     },
@@ -64,11 +60,10 @@ solver_variants_dict = {
         "subspace_frac_updates": 0.1,
         "subspace_frac_random": 0.1,
         "random_proj_dim_frac": 0.2,
-        "direction_str": 'newton',
+        "direction_str": 'sd',
         "reg_lambda": 0.01,
-        "ensemble": 'haar',
+        "ensemble": 'scaled_gaussian',
         "orth_P_k": True,
-        "alpha": 0.01,
         "t_init": 100,
         "tau": 0.5
     },

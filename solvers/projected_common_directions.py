@@ -60,9 +60,9 @@ class ProjectedCommonDirectionsConfig:
     # Constants --- CFS framework and others
     beta: float = 0.001
     tau: float = 0.5
-    c_const: int = np.inf # Positive integer. May also be set to np.inf to recover usual backtracking process
+    c_const: int = 10 # Positive integer. May also be set to np.inf to recover usual backtracking process
     alpha_max: float = 100 # Ceiling on step size parameter
-    N_try: int = np.inf # Number of allowable step retries for each subspace until success
+    N_try: int = 100 # Number of allowable step retries for each subspace until success
     p_const: int = 1 # Positive integer, used in setting initial alpha
 
     
@@ -595,7 +595,6 @@ class ProjectedCommonDirections:
                 # Decrease step size parameter alpha (backtracking)
                 alpha = self.tau * alpha
                 if j_try == self.N_try:
-                    raise Exception('Should not happen...')
                     # Must reproject the current gradient
                     if self.subspace_no_grads > 0:
                         proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)

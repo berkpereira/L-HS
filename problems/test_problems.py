@@ -38,7 +38,7 @@ class Objective:
             best_known_results = json.load(f)
         return best_known_results.get(self.name, None)
 
-def import_cutest_problem(problem_name: str, input_dim: int=None):
+def import_cutest_problem(problem_name: str, input_dim=None):
     """
     Import a CUTEst problem by name using pycutest.
 

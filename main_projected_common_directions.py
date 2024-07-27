@@ -11,7 +11,6 @@ import plotting
 import matplotlib.pyplot as plt
 import os
 
-
 def set_seed(seed):
     np.random.seed(42)
 
@@ -115,21 +114,22 @@ def main():
                           'well_conditioned_convex_quadratic', # 3
                           'ill_conditioned_convex_quadratic',  # 4
                           'NONDIA',                            # 5
-                          'GENHUMPS']                          # 6
+                          'GENHUMPS',                          # 6
+                          'ARGLINA']                           # 7
     problem_name = test_problems_list[6]
     input_dim = 100
     problem_tup = get_problem(problem_name, input_dim)
-    SAVE_RESULTS = True
+    SAVE_RESULTS = False
 
     passable_name = 'passable2'
-    configs_list = [combine_configs(problem_name, input_dim, 'solver3', passable_name),
-                    combine_configs(problem_name, input_dim, 'solver0', passable_name),
+    configs_list = [combine_configs(problem_name, input_dim, 'solver0', passable_name),
+                    combine_configs(problem_name, input_dim, 'solver3', passable_name),
                     combine_configs(problem_name, input_dim, 'solver4', passable_name)]
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 
     # Run and store results
     results_attrs = ['final_f_val']
-    results_dict = run_solvers(problem_tup, solvers_list, no_runs=5,
+    results_dict = run_solvers(problem_tup, solvers_list, no_runs=3,
                                result_attrs=results_attrs, save_results=SAVE_RESULTS)
 
     # Plot

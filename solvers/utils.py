@@ -157,3 +157,19 @@ def append_dirs(curr_mat: np.ndarray, ambient_dim: int,
         output = stack
     
     return output
+
+# This matrix, in line with our proposed "unified" definition of a true iteration,
+# returns a copy of the input matrix where each of its columns are normalised to
+# have unit Euclidian norm.
+def normalise_matrix_columns(mat: np.ndarray) -> np.ndarray:
+    # Copy the input matrix
+    mat_copy = mat.copy()
+    
+    # Iterate over each column to normalise
+    for i in range(mat_copy.shape[1]):
+        col_norm = np.linalg.norm(mat_copy[:, i])
+        if col_norm == 0:
+            raise ValueError(f"Column {i} is a zero vector, cannot normalise.")
+        mat_copy[:, i] /= col_norm
+    
+    return mat_copy

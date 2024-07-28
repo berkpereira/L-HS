@@ -60,11 +60,11 @@ class ProjectedCommonDirectionsConfig:
     
     # Constants --- CFS framework and others
     beta: float = 0.001
-    tau: float = 0.5
-    c_const: int = 0 # Positive integer. May also be set to np.inf to recover usual backtracking process
+    tau: float = 0.5       # Float in (0, 1)
+    c_const: int = 1       # POSITIVE integer. May also be set to np.inf to recover usual backtracking process
+    N_try: int = 1         # Number of allowable step retries for each subspace until success
     alpha_max: float = 100 # Ceiling on step size parameter
-    N_try: int = 1 # Number of allowable step retries for each subspace until success
-    p_const: int = 1 # Positive integer, used in setting initial alpha
+    p_const: int = 1       # POSITIVE integer, used in setting initial alpha
 
     
     # Passable attributes
@@ -76,6 +76,10 @@ class ProjectedCommonDirectionsConfig:
     verbose: bool = False
 
     def __post_init__(self):
+
+        if self.p_const < 1 or self.c_const < 1:
+            raise ValueError('p and c constants must be POSITIVE integers!')
+
         if not self.inner_use_full_grad:
             raise Exception('This feature (self.inner_use_full_grad == False) is no longer in use!')
         if not self.random_proj:
@@ -515,9 +519,6 @@ class ProjectedCommonDirections:
         full_grad_norms_list = [np.linalg.norm(full_grad)]
         if self.subspace_no_grads > 0:
             proj_grad_norms_list = [np.linalg.norm(proj_grad)]
-        cond_nos_list = [last_cond_no]
-        P_ranks_list = [last_P_rank]
-        P_norms_list = [last_P_norm]
 
         # Initialise iteration count metrics
         k = 0
@@ -648,9 +649,6 @@ class ProjectedCommonDirections:
             full_grad_norms_list.append(np.linalg.norm(full_grad))
             if proj_grad is not None:
                 proj_grad_norms_list.append(np.linalg.norm(proj_grad))
-            cond_nos_list.append(last_cond_no)
-            P_ranks_list.append(last_P_rank)
-            P_norms_list.append(last_P_norm)
 
             # Update iteration count metrics
             k += 1
@@ -673,9 +671,6 @@ class ProjectedCommonDirections:
         else:
             proj_grad_norms = full_grad_norms
         angles_to_full_grad = np.array(angles_to_full_grad_list)
-        cond_nos = np.array(cond_nos_list) # condition numbers of P matrix at each iteration
-        P_ranks = np.array(P_ranks_list)
-        P_norms = np.array(P_norms_list)
         deriv_evals = np.array(deriv_evals_list)
 
         return SolverOutput(solver=self, final_f_val=f_vals[-1], final_x=x, final_k=k,
@@ -685,7 +680,4 @@ class ProjectedCommonDirections:
                             direction_norms=direction_norms,
                             full_grad_norms=full_grad_norms,
                             proj_grad_norms=proj_grad_norms,
-                            angles_to_full_grad=angles_to_full_grad,
-                            cond_nos=cond_nos,
-                            P_ranks=P_ranks,
-                            P_norms=P_norms)
+                            angles_to_full_grad=angles_to_full_grad)

@@ -132,7 +132,9 @@ def haar(m, n):
 # It returns a (potentially orthonormal) matrix including the directions of curr_mat's columns
 # along with no_dirs (int) random directions.
 def append_dirs(curr_mat: np.ndarray, ambient_dim: int,
-                no_dirs: int, curr_is_orth: bool, orthogonalise: bool):
+                no_dirs: int, curr_is_orth: bool,
+                orthogonalise: bool,
+                normalise_cols: bool):
     # If 0 directions to be added, simply return the
     # (maybe orthogonalised) input matrix.
     if no_dirs == 0:
@@ -154,7 +156,10 @@ def append_dirs(curr_mat: np.ndarray, ambient_dim: int,
     if orthogonalise:
         output, _ = np.linalg.qr(stack)
     else:
-        output = stack
+        if normalise_cols: # only relevant if not orthogonalising already
+            output = normalise_matrix_columns(stack)
+        else: # raw
+            output = stack
     
     return output
 

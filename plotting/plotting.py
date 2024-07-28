@@ -47,7 +47,10 @@ def solver_loss_label(solver_out: SolverOutput,
                       normalise_P_k_dirs_vs_dimension: bool,
                       normalise_S_k_dirs_vs_dimension: bool,
                       suppress_dir: bool=False,
-                      suppress_sketch_size: bool=False):
+                      suppress_sketch_size: bool=False,
+                      suppress_c_const: bool=False,
+                      suppress_N_try: bool=False):
+    
     ambient_dim = solver_out.solver.obj.input_dim
 
     # NOTE: edge case --- full-space method
@@ -91,11 +94,11 @@ def solver_loss_label(solver_out: SolverOutput,
         no_sub_grads      /= ambient_dim
         no_sub_updates    /= ambient_dim
         no_sub_random     /= ambient_dim
-        no_sub_grads_str   = f'${no_sub_grads*100:.0f}\% (n)$'
+        no_sub_grads_str   = f'${no_sub_grads*100:.0f}\%$'
         no_sub_grads_eq    = '$=$' if no_sub_grads == np.round(no_sub_grads, 2) else r'$\approx$'
-        no_sub_updates_str = f'${no_sub_updates*100:.0f}\% (n)$'
+        no_sub_updates_str = f'${no_sub_updates*100:.0f}\%$'
         no_sub_updates_eq  = '$=$' if no_sub_updates == np.round(no_sub_updates, 2) else r'$\approx$'
-        no_sub_random_str  = f'${no_sub_random*100:.0f}\% (n)$'
+        no_sub_random_str  = f'${no_sub_random*100:.0f}\%$'
         no_sub_random_eq   = '$=$' if no_sub_random == np.round(no_sub_random, 2) else r'$\approx$'
     else:
         no_sub_grads_str   = f'${no_sub_grads}$'
@@ -107,7 +110,7 @@ def solver_loss_label(solver_out: SolverOutput,
 
     if normalise_S_k_dirs_vs_dimension:
         S_k_dim = solver_out.solver.random_proj_dim / ambient_dim
-        S_k_dim_str = f'${S_k_dim*100:.0f}\% (n)$'
+        S_k_dim_str = f'${S_k_dim*100:.0f}\%$'
         S_k_eq = '$=$'if S_k_dim == np.round(S_k_dim, 2) else r'$\approx$'
     else:
         S_k_dim = solver_out.solver.random_proj_dim
@@ -151,6 +154,22 @@ def solver_loss_label(solver_out: SolverOutput,
         label_lines.append(r"""Search: {direction_str_formatted}""")
         format_args.update({'direction_str_formatted': direction_str_formatted})
     
+    if not suppress_c_const:
+        if solver_out.solver.c_const == np.inf:
+            c_const_str = r'$\infty$'
+        else:
+            c_const_str = f'${solver_out.solver.c_const}$'
+        label_lines.append(r"""$c =$ {c_const_str}""")
+        format_args.update({'c_const_str': c_const_str})
+
+    if not suppress_N_try:
+        if solver_out.solver.N_try == np.inf:
+            N_try_str = r'$\infty$'
+        else:
+            N_try_str = f'${solver_out.solver.N_try}$'
+        label_lines.append(r"""$\#_{N_try_subscript} =$ {N_try_str}""")
+        format_args.update({'N_try_subscript': r'{\text{try}}', 'N_try_str': N_try_str})
+
     new_label_template = "\n".join(label_lines)
 
     new_label = new_label_template.format(**format_args)
@@ -219,7 +238,7 @@ def plot_loss_vs_iteration(solver_outputs: list,
             if f_sol is not None:
                 y_data = normalise_loss(solver_output.f_vals, f_sol=f_sol, f0=f0)
             else:
-                raise Exception('Trying to normalise loss but actual solution was not provided!')
+                raise Exception('Trying to normalise loss but no best known solution was provided!')
         else:
             y_data = solver_output.f_vals
 
@@ -239,14 +258,17 @@ def plot_loss_vs_iteration(solver_outputs: list,
     if deriv_evals_axis:
         if normalise_deriv_evals_vs_dimension:
             plt.xlabel('Equivalent gradient evaluations')
-            plt.title('Objective vs equivalent gradient evaluations')
+            plt.title(f'Objective vs equivalent gradient evaluations. {solver_output.solver.obj.name}')
         else:
             plt.xlabel('(Directional) derivative evaluations')
-            plt.title('Objective vs (directional) derivative evaluations')
+            plt.title(f'Objective vs (directional) derivative evaluations. {solver_output.solver.obj.name}')
     else:
         plt.xlabel('Iteration')
-        plt.title('Objective vs iteration')
-    plt.ylabel('$f(x_k)$')
+        plt.title(f'Objective vs iteration. {solver_output.solver.obj.name}')
+    if normalise_loss_data:
+        plt.ylabel(r'$\bar{f}(x_k)$')
+    else:
+        plt.ylabel('$f(x_k)$')
     plt.legend()
     plt.grid(True, which="both", ls="-")
 

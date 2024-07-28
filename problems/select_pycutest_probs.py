@@ -1,4 +1,5 @@
 import io
+from collections import Counter
 import sys
 import numpy as np
 import pycutest
@@ -75,24 +76,35 @@ def check_problems_within_range(probs, lower_bound=50, upper_bound=100):
 
 ################################################################################
 
-probs = pycutest.find_problems(constraints='unconstrained',
-                               regular=True,
-                               degree=[2, 1000])
+# probs = pycutest.find_problems(constraints='unconstrained',
+#                                regular=True,
+#                                degree=[2, 1000])
 
 # for some reason the loop always gets stuck on this one
-probs = ['BA-L52LS']
 # probs.remove('BA-L52LS')
 
 FILENAME = 'problems/matching_problems.json'
-LOWER_DIM = 1
-UPPER_DIM = 500
+# LOWER_DIM = 1
+# UPPER_DIM = 500
 
-matching_problems = check_problems_within_range(probs=probs,lower_bound=LOWER_DIM,
-                                                upper_bound=UPPER_DIM)
+# matching_problems = check_problems_within_range(probs=probs,lower_bound=LOWER_DIM,
+#                                                 upper_bound=UPPER_DIM)
 
 # Save (append) the list to a file
-save_matching_problems_to_file(matching_problems, FILENAME)
+# save_matching_problems_to_file(matching_problems, FILENAME)
 
 # Read the list back from the file
-# loaded_problems = load_matching_problems_from_file(filename)
-# print("Loaded problems:", loaded_problems)
+loaded_problems = load_matching_problems_from_file(FILENAME)
+print("Loaded problems:", loaded_problems)
+# Strip the suffixes from the problem names
+base_names = [name.split('_')[0] for name in loaded_problems]
+
+# Count the occurrences of each problem name
+name_counts = Counter(base_names)
+
+# Sort the problem names by their frequency in descending order
+sorted_names = sorted(name_counts.items(), key=lambda x: x[1], reverse=True)
+
+# Print the sorted problem names
+for name, count in sorted_names:
+    print(f"{name}: {count}")

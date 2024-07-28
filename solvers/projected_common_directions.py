@@ -53,16 +53,17 @@ class ProjectedCommonDirectionsConfig:
     ensemble: str = ''
     inner_use_full_grad: bool = True
 
-    # Determines whether to orthogonalise (QR) P_k, the subspace matrix
-    # NOTE: LOGIC FOR THIS BEING FALSE NOT YET IMPLEMENTED
+    # Determines whether to orthogonalise (QR) P_k, the subspace matrix.
     orth_P_k: bool = True
+    # Determines whether P_k columns are ordinarily normalised to unit Euclidian norm.
+    normalise_P_k_cols: bool = False
     
     # Constants --- CFS framework and others
     beta: float = 0.001
     tau: float = 0.5
-    c_const: int = 10 # Positive integer. May also be set to np.inf to recover usual backtracking process
+    c_const: int = 0 # Positive integer. May also be set to np.inf to recover usual backtracking process
     alpha_max: float = 100 # Ceiling on step size parameter
-    N_try: int = 100 # Number of allowable step retries for each subspace until success
+    N_try: int = 1 # Number of allowable step retries for each subspace until success
     p_const: int = 1 # Positive integer, used in setting initial alpha
 
     
@@ -152,6 +153,11 @@ class ProjectedCommonDirectionsConfig:
             passable_attrs.extend(['random_proj_dim_frac', 'ensemble'])
         if self.direction_str != 'newton':
             passable_attrs.extend(['reg_lambda', 'use_hess']) # only comes in for Newton-like searches
+
+        # If we are orthogonalising P_k, then the column-wise normalisation
+        # setting is redundant.
+        if self.orth_P_k:
+            passable_attrs.append('normalise_P_k_cols')
 
         # NOTE: edge case --- Lee2022's CommonDirections
         if self.random_proj_dim == self.obj.input_dim: # recover Lee2022's CommonDirections
@@ -339,8 +345,9 @@ class ProjectedCommonDirections:
                                 ambient_dim=self.obj.input_dim,
                                 no_dirs=self.subspace_dim,
                                 curr_is_orth=False,
-                                orthogonalise=self.orth_P_k)
-            return Q, None, None, None, None
+                                orthogonalise=self.orth_P_k,
+                                normalise_cols=self.normalise_P_k_cols)
+            return Q
         else:
             G = kwargs['grads_matrix']
             X = kwargs['updates_matrix']
@@ -354,8 +361,9 @@ class ProjectedCommonDirections:
                                 ambient_dim=self.obj.input_dim,
                                 no_dirs=self.subspace_dim - P.shape[1],
                                 curr_is_orth=False,
-                                orthogonalise=self.orth_P_k)
-            return Q, None, None, None, None
+                                orthogonalise=self.orth_P_k,
+                                normalise_cols=self.normalise_P_k_cols)
+            return Q
             
     # Initialise the vectors to be stored throughout the algorithm (if any)
     def init_stored_vectors(self, grad_vec):
@@ -485,9 +493,9 @@ class ProjectedCommonDirections:
 
         G, X, D = self.init_stored_vectors(grad_vec=proj_grad)
         
-        Q, last_cond_no, last_P_rank, last_P_norm, P = self.update_subspace(grads_matrix=G,
-                                                                            updates_matrix=X,
-                                                                            hess_diag_dirs_matrix=D)
+        Q = self.update_subspace(grads_matrix=G,
+                                 updates_matrix=X,
+                                 hess_diag_dirs_matrix=D)
         
         # Project B matrix
         # Later may want to do this using Hessian actions in the case where Hessian information is used at all.
@@ -580,9 +588,10 @@ class ProjectedCommonDirections:
                                                     hess_diag_dirs_matrix=D)
 
                 # Update subspace basis matrix
-                Q, last_cond_no, last_P_rank, last_P_norm, P = self.update_subspace(grads_matrix=G,
-                                                                                    updates_matrix=X,
-                                                                                    hess_diag_dirs_matrix=D)
+                Q = self.update_subspace(grads_matrix=G,
+                                         updates_matrix=X,
+                                         hess_diag_dirs_matrix=D)
+                
                 # Count added derivative/actions costs
                 deriv_eval_count += self.deriv_per_iter
                 
@@ -607,9 +616,9 @@ class ProjectedCommonDirections:
                                                         hess_diag_dirs_matrix=None,
                                                         reassigning_latest_proj_grad=True)
                     # Update subspace basis matrix
-                    Q, last_cond_no, last_P_rank, last_P_norm, P = self.update_subspace(grads_matrix=G,
-                                                                                        updates_matrix=X,
-                                                                                        hess_diag_dirs_matrix=D)
+                    Q = self.update_subspace(grads_matrix=G,
+                                             updates_matrix=X,
+                                             hess_diag_dirs_matrix=D)
                     
                     # Update derivative evals count
                     deriv_eval_count += self.random_proj_dim + self.subspace_no_random

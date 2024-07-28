@@ -116,7 +116,7 @@ def main():
                           'NONDIA',                            # 5
                           'GENHUMPS',                          # 6
                           'ARGLINA']                           # 7
-    problem_name = test_problems_list[6]
+    problem_name = test_problems_list[0]
     input_dim = 100
     problem_tup = get_problem(problem_name, input_dim)
     SAVE_RESULTS = False

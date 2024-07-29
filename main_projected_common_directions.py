@@ -57,7 +57,11 @@ def run_solvers(problem_tup, solvers_list, no_runs, result_attrs,
     
     return results_dict
 
-def plot_run_solvers(output_dict, normalise_loss):
+def plot_run_solvers(output_dict, normalise_loss,
+                     suppress_c_const=False,
+                     suppress_N_try=False,
+                     suppress_dir=False,
+                     suppress_sketch_size=False):
     # Extract all SolverOutput objects from a results dictionary.
     output_list = [solver_output for _, solver_outputs in output_dict['raw_results'] for solver_output in solver_outputs]
     
@@ -67,12 +71,20 @@ def plot_run_solvers(output_dict, normalise_loss):
                                              normalise_deriv_evals_vs_dimension=True,
                                              normalise_P_k_dirs_vs_dimension=True,
                                              normalise_S_k_dirs_vs_dimension=True,
-                                             normalise_loss_data=normalise_loss)
+                                             normalise_loss_data=normalise_loss,
+                                             suppress_c_const=suppress_c_const,
+                                             suppress_N_try=suppress_N_try,
+                                             suppress_dir=suppress_dir,
+                                             suppress_sketch_size=suppress_sketch_size)
     plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
                                              deriv_evals_axis=False,
-                                             normalise_P_k_dirs_vs_dimension=False,
-                                             normalise_S_k_dirs_vs_dimension=False,
-                                             normalise_loss_data=normalise_loss)
+                                             normalise_P_k_dirs_vs_dimension=True,
+                                             normalise_S_k_dirs_vs_dimension=True,
+                                             normalise_loss_data=normalise_loss,
+                                             suppress_c_const=suppress_c_const,
+                                             suppress_N_try=suppress_N_try,
+                                             suppress_dir=suppress_dir,
+                                             suppress_sketch_size=suppress_sketch_size)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
     #                                            attr_names=['update_norms'], log_plot=True)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
@@ -124,17 +136,20 @@ def main():
                           'OSCIPATH',                          # 11, n in {2, 5, 10, 25, 100, 500}
                           'YATP2LS',                           # 12, n in {2, 10, 50, 100, 200, 350}
                           'PENALTY2']                          # 13, n in {4, 10, 50, 100, 200, 500}
-    problem_name = test_problems_list[8]
+    problem_name = test_problems_list[0]
     input_dim = 100
     problem_tup = get_problem(problem_name, input_dim)
-    NORMALISE_LOSS = False
+    NORMALISE_LOSS = True
     SAVE_RESULTS = False
 
     passable_name = 'passable2'
-    configs_list = [combine_configs(problem_name, input_dim, 'full_newton', passable_name),
+    configs_list = [#combine_configs(problem_name, input_dim, 'full_newton', passable_name),
                     combine_configs(problem_name, input_dim, 'solver0', passable_name),
-                    combine_configs(problem_name, input_dim, 'solver3', passable_name),
-                    combine_configs(problem_name, input_dim, 'solver4', passable_name)]
+                    combine_configs(problem_name, input_dim, 'solver1', passable_name),
+                    combine_configs(problem_name, input_dim, 'solver2', passable_name),
+                    combine_configs(problem_name, input_dim, 'solver3', passable_name),]
+                    # combine_configs(problem_name, input_dim, 'solver4', passable_name),
+                    # combine_configs(problem_name, input_dim, 'solver5', passable_name)]
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 
     # Run and store results
@@ -148,7 +163,9 @@ def main():
     #                                       attr_names=results_attrs)
 
     # (detailed plots, each individual run represented)
-    plot_run_solvers(results_dict, NORMALISE_LOSS)
+    plot_run_solvers(results_dict, NORMALISE_LOSS,
+                     suppress_dir=True,
+                     suppress_sketch_size=True)
 
     plt.show()
 

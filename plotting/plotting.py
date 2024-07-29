@@ -184,7 +184,11 @@ def plot_loss_vs_iteration(solver_outputs: list,
                            normalise_P_k_dirs_vs_dimension: bool=False,
                            normalise_S_k_dirs_vs_dimension: bool=False,
                            normalise_loss_data: bool=False,
-                           labels=None):
+                           labels=None,
+                           suppress_dir: bool=False,
+                           suppress_sketch_size: bool=False,
+                           suppress_c_const: bool=False,
+                           suppress_N_try: bool=False):
     """
     Plot the loss (function values) vs iteration count for multiple solvers.
 
@@ -210,7 +214,11 @@ def plot_loss_vs_iteration(solver_outputs: list,
             for solver_out in solver_outputs:
                 new_label = solver_loss_label(solver_out,
                                               normalise_P_k_dirs_vs_dimension,
-                                              normalise_S_k_dirs_vs_dimension)
+                                              normalise_S_k_dirs_vs_dimension,
+                                              suppress_dir=suppress_dir,
+                                              suppress_sketch_size=suppress_sketch_size,
+                                              suppress_c_const=suppress_c_const,
+                                              suppress_N_try=suppress_N_try)
                 labels.append(new_label)
         except: # Generic chronological numbering
             labels = [f"Solver {i}" for i in range(len(solver_outputs))]
@@ -258,10 +266,16 @@ def plot_loss_vs_iteration(solver_outputs: list,
     if deriv_evals_axis:
         if normalise_deriv_evals_vs_dimension:
             plt.xlabel('Equivalent gradient evaluations')
-            plt.title(f'Objective vs equivalent gradient evaluations. {solver_output.solver.obj.name}')
+            if normalise_loss_data:
+                plt.title(f'Normalised objective vs equivalent gradient evaluations. {solver_output.solver.obj.name}')
+            else:
+                plt.title(f'Objective vs equivalent gradient evaluations. {solver_output.solver.obj.name}')
         else:
             plt.xlabel('(Directional) derivative evaluations')
-            plt.title(f'Objective vs (directional) derivative evaluations. {solver_output.solver.obj.name}')
+            if normalise_loss_data:
+                plt.title(f'Normalised objective vs (directional) derivative evaluations. {solver_output.solver.obj.name}')
+            else:
+                plt.title(f'Objective vs (directional) derivative evaluations. {solver_output.solver.obj.name}')
     else:
         plt.xlabel('Iteration')
         plt.title(f'Objective vs iteration. {solver_output.solver.obj.name}')

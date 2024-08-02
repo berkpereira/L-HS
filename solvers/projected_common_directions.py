@@ -77,6 +77,9 @@ class ProjectedCommonDirectionsConfig:
 
     def __post_init__(self):
 
+        if not (self.orth_P_k or self.normalise_P_k_cols):
+            raise ValueError('Must have either self.orth_P_k or self.normalise_P_k_cols active!!!')
+
         if self.p_const < 1 or self.c_const < 1:
             raise ValueError('p and c constants must be POSITIVE integers!')
 
@@ -201,13 +204,15 @@ class ProjectedCommonDirections:
         for key, value in config.__dict__.items():
             setattr(self, key, value)
 
+        raise Exception('CAREFULLY CHECK DERIVATIVE COSTS WITH GOODNOTES! SOME STUFF IS WRONG IN THIS CODE!')
+
         # Store the config object itself as an attribute
         self.config = config
 
         # Distinguish case when no problem information is used in P_k, i.e.,
         # where P_k is fully random.
         if self.subspace_no_grads == 0 and self.subspace_no_updates == 0:
-            self.subspace_constr_method = 'random'
+            self.subspace_constr_method = 'randonb m'
         else:
             self.subspace_constr_method = None
 
@@ -236,30 +241,33 @@ class ProjectedCommonDirections:
         # Increment number of derivatives computed in each iteration depending on
         # algorithm variant in use
         if self.subspace_constr_method == 'random':
-            self.deriv_per_iter = self.subspace_dim + 1
+            self.deriv_per_succ_iter = self.subspace_dim
+            self.deriv_per_unsucc_iter = self.subspace_dim
         else:
             if self.random_proj: # random tilde grad projection
                 if self.inner_use_full_grad:
-                    self.deriv_per_iter = (self.subspace_dim - self.subspace_no_grads) + self.random_proj_dim + 1
+                    self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
+                    self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
                 else:
-                    self.deriv_per_iter = self.random_proj_dim
+                    raise Exception('No longer in use!')
+                    self.deriv_per_succ_iter = self.random_proj_dim
             else: # deterministic tilde grad projection
                 raise Exception('"Deterministic" projections no longer in use!')
                 if self.reproject_grad:
                     if self.inner_use_full_grad:
-                        self.deriv_per_iter = 2 * self.subspace_dim + 1
+                        self.deriv_per_succ_iter = 2 * self.subspace_dim + 1
                     else:
-                        self.deriv_per_iter = 2 * self.subspace_dim
+                        self.deriv_per_succ_iter = 2 * self.subspace_dim
                 else:
                     if self.inner_use_full_grad:
-                        self.deriv_per_iter = 2 * self.subspace_dim + 1
+                        self.deriv_per_succ_iter = 2 * self.subspace_dim + 1
                     else:
-                        self.deriv_per_iter = self.subspace_dim
+                        self.deriv_per_succ_iter = self.subspace_dim
         # NOTE: edge case of a full-space method
         if self.subspace_dim == self.obj.input_dim:
-            self.deriv_per_iter = self.obj.input_dim
+            self.deriv_per_succ_iter = self.obj.input_dim
         
-        if self.deriv_per_iter > self.obj.input_dim:
+        if self.deriv_per_succ_iter > self.obj.input_dim:
             raise Exception("Method uses as many or more derivatives per iteration than if using full space method!")
             warnings.warn("Using as many or more derivatives per iteration than if using full space method!", UserWarning)
 
@@ -534,7 +542,7 @@ class ProjectedCommonDirections:
 
         # Start loop
         # NOTE: Not even allowing deriv evals to EVER go over self.deriv_budget.
-        while (k < self.max_iter) and (deriv_eval_count + self.deriv_per_iter < self.deriv_budget):
+        while (k < self.max_iter) and (deriv_eval_count + self.deriv_per_succ_iter < self.deriv_budget):
             # Termination
             if norm_full_grad < self.tol:
                 terminated = True
@@ -594,7 +602,7 @@ class ProjectedCommonDirections:
                                          hess_diag_dirs_matrix=D)
                 
                 # Count added derivative/actions costs
-                deriv_eval_count += self.deriv_per_iter
+                deriv_eval_count += self.deriv_per_succ_iter
                 
                 # Update 2nd order matrix
                 if self.direction_str == 'newton':
@@ -622,7 +630,7 @@ class ProjectedCommonDirections:
                                              hess_diag_dirs_matrix=D)
                     
                     # Update derivative evals count
-                    deriv_eval_count += self.random_proj_dim + self.subspace_no_random
+                    deriv_eval_count += self.deriv_per_unsucc_iter
 
                     # Reset backtracking counter
                     j_try = 0

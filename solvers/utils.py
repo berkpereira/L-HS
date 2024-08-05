@@ -1,6 +1,7 @@
 import scipy, scipy.optimize, scipy.linalg
 import autograd.numpy as np
 import json
+import re
 
 class SolverOutput():
     def __init__(self, solver, final_f_val, final_x, final_k, f_vals, update_norms=None, **kwargs):
@@ -39,6 +40,14 @@ def update_best_known_result(objective_name, new_best_value):
         best_known_results[objective_name] = new_best_value
         with open(best_known_results_file_name, 'w') as f:
             json.dump(best_known_results, f, indent=4)
+
+def problem_name_dim_tuple_from_json_name(json_prob_name: str):
+    match = re.match(r"([A-Za-z0-9_\-]+)_n(\d+)", json_prob_name)
+    if match:
+        return match.group(1), int(match.group(2))
+    else:
+        raise ValueError("String format is not as expected")
+
 
 def normalise_loss(loss_data: list, f_sol: float, f0: float):
     """
@@ -98,6 +107,7 @@ def average_solver_runs(problem: tuple, solver_list: list,
         output_dict['raw_results'].append((solver, raw_solver_outputs))
     
     return output_dict
+
 
 
 # Can use scipy's implementation of a strong-Wolfe-condition-ensuring

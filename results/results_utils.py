@@ -1,10 +1,13 @@
 import json
 import os
 import csv
+import re
+from ast import literal_eval
 import hashlib
 from datetime import datetime
-from solvers.utils import SolverOutput
-from solvers.projected_common_directions import ProjectedCommonDirectionsConfig
+from solvers.utils import SolverOutput, problem_name_dim_tuple_from_json_name
+from solvers.projected_common_directions import ProjectedCommonDirections, ProjectedCommonDirectionsConfig
+import problems.test_problems
 
 MAPPING_FILE = 'results/config_mapping.json'
 
@@ -44,6 +47,69 @@ def config_to_mapping_hash(solver_config: ProjectedCommonDirectionsConfig):
     # Get the hashed file name
     hashed_filename = mapping[solver_config_str]
     return hashed_filename
+
+def hash_to_config_str(hash: str) -> str:
+    # Load the mapping file
+    if not os.path.exists(MAPPING_FILE):
+        raise Exception('Mapping file does not exist.')
+
+    with open(MAPPING_FILE, 'r') as file:
+        mapping = json.load(file)
+
+    # Find the config string corresponding to the hash
+    for config_str, mapped_hash in mapping.items():
+        if mapped_hash == hash:
+            return config_str
+
+    raise Exception('Hash not found in the mapping file.')
+
+def create_solver_from_config_string(config_str: str, objective_instance) -> ProjectedCommonDirections:
+    """
+    Create an instance of ProjectedCommonDirections from a string representation of its configuration.
+
+    Args:
+        config_str (str): String representation of ProjectedCommonDirectionsConfig.
+        objective_instance (Objective): An instance of the Objective class to be used in the configuration.
+
+    Returns:
+        ProjectedCommonDirections: Initialized solver instance.
+    """
+    # Remove the class name and parentheses
+    config_str = config_str[len("ProjectedCommonDirectionsConfig("):-1]
+    
+    # Split the string into key-value pairs
+    config_dict = {}
+    key_value_pairs = config_str.split(', ')
+    
+    for pair in key_value_pairs:
+        key, value = pair.split('=')
+        key = key.strip()
+        value = value.strip()
+        
+        # Handle specific cases for boolean and None
+        if value in {"True", "False"}:
+            value = value == "True"
+        elif value == "None":
+            value = None
+        else:
+            try:
+                # Try to interpret the value as a literal (int, float, etc.)
+                value = literal_eval(value)
+            except (ValueError, SyntaxError):
+                # If literal_eval fails, leave the value as a string
+                pass
+
+        config_dict[key] = value
+
+    # Add the objective instance to the configuration dictionary
+    config_dict['obj'] = objective_instance
+
+    # Create the ProjectedCommonDirectionsConfig instance
+    config = ProjectedCommonDirectionsConfig(**config_dict)
+
+    # Create and return the solver instance
+    return ProjectedCommonDirections(config)
+
 
 # NOTE: this functions keeps only KEEP_NO solver runs' data.
 # These are prioritised vs any incoming data by the equivalent gradient
@@ -144,14 +210,28 @@ def load_solver_results(problem_name: str, solver_config, output_dir='results'):
 
     return results
 
-def get_best_known_sol(problem_name: str):
+def get_best_known_sol(extended_problem_name: str):
     """
-    problem_name: str, should be of format such as 'ROSENBR_n2'
+    extended_problem_name: str, should be of format such as 'ROSENBR_n2'
     """
+    # First, try one of the manually implemented problems (NOT CUTEst)
+    name, input_dim = problem_name_dim_tuple_from_json_name(extended_problem_name)
+
+    if name in problems.test_problems.manual_list:
+        x0, obj = problems.test_problems.select_problem(name, input_dim)
+        f_sol = obj.f_sol
+        return f_sol
+
+    # Otherwise, this is a CUTEst problem, so the following should work if
+    # it has been attempted before.
+
     with open('results/best_known_results.json', 'r') as f:
         best_known_results = json.load(f)
     try:
-        return best_known_results.get(problem_name, None)
+        f_sol = best_known_results.get(extended_problem_name, None)
+        if f_sol is None:
+            raise Exception('Retrieving best known solution returned None !')
+        return f_sol
     except:
         raise Exception('Could not retrieve best known problem objective value!')
 
@@ -205,13 +285,13 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
                 if run_id != current_run_id:
                     if current_run_data:
                         process_run_data(current_run_data, equiv_grad_list,
-                                         success_dict[hash], f_sol)
+                                         success_dict[hash], f_sol, accuracy)
                         seen_counter_dict[hash] += 1
                         current_run_data = []
                     current_run_id = run_id
                 current_run_data.append(row)
             if current_run_data:
-                process_run_data(current_run_data, equiv_grad_list, success_dict[hash], f_sol)
+                process_run_data(current_run_data, equiv_grad_list, success_dict[hash], f_sol, accuracy)
                 seen_counter_dict[hash] += 1
     
     # Check that all counter values are the same
@@ -226,13 +306,13 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
             success_dict[hash] = [value / count for value in success_dict[hash]]
     
     # Add on informative accuracy key-value pair, for later use in plotting.
-    success_dict.update({'accuracy': accuracy})
+    success_dict.update({'accuracy': accuracy, 'equiv_grad_list': equiv_grad_list})
     return success_dict
 
 # NOTE: THIS FUNCTION FOR CHECKING WHETHER ACCURACY HAS BEEN MET,
 # SEE WHERE IT IS CALLED ABOVE IN generate_data_profiles
 def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
-    f0 = run_data[0]['f_vals'] # first loss value
+    f0 = float(run_data[0]['f_vals']) # first loss value
     success_grad_evals = None
 
     # Read row by row and compute normalised_loss

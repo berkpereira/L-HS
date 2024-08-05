@@ -23,24 +23,24 @@ def main():
                           'PENALTY2']                          # 13, n in {4, 10, 50, 100, 200, 500}
     problem_name = test_problems_list[0]
     input_dim = 100
+    extended_problem_name = problem_name + '_n' + str(input_dim)
     problem_tup = running.get_problem(problem_name, input_dim)
     NORMALISE_LOSS = True
     SAVE_RESULTS = False
 
     passable_name = 'passable2'
-    configs_list = [#running.combine_configs(problem_name, input_dim, 'full_newton', passable_name),
-                    running.combine_configs(problem_name, input_dim, 'solver0', passable_name),
-                    running.combine_configs(problem_name, input_dim, 'solver1', passable_name),
-                    running.combine_configs(problem_name, input_dim, 'solver2', passable_name),
-                    running.combine_configs(problem_name, input_dim, 'solver3', passable_name),]
-                    # running.combine_configs(problem_name, input_dim, 'solver4', passable_name),
-                    # running.combine_configs(problem_name, input_dim, 'solver5', passable_name)]
+    configs_list = [running.combine_configs(extended_problem_name, 'solver0', passable_name),
+                    running.combine_configs(extended_problem_name, 'solver1', passable_name),
+                    running.combine_configs(extended_problem_name, 'solver2', passable_name),
+                    running.combine_configs(extended_problem_name, 'solver3', passable_name),]
+                    
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 
     # Run and store results
     results_attrs = ['final_f_val']
-    results_dict = running.run_solvers(problem_tup, solvers_list, no_runs=3,
-                               result_attrs=results_attrs, save_results=SAVE_RESULTS)
+    results_dict = running.run_solvers_single_prob(problem_tup, solvers_list,
+                                                   no_runs=3,
+                                                   result_attrs=results_attrs, save_results=SAVE_RESULTS)
 
     # Plot
     # plotting.plotting.plot_solver_averages(results_dict, ['final_f_val'])

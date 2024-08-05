@@ -9,6 +9,13 @@ import json
 import pycutest
 from autograd import grad, hessian
 from scipy.optimize import rosen
+import solvers.utils
+
+manual_list = ['rosenbrock_single',
+               'rosenbrock_multiple',
+               'powell',
+               'well_conditioned_convex_quadratic',
+               'ill_conditioned_convex_quadratic']
 
 class Objective:
     def __init__(self, name: str, input_dim: int,
@@ -187,7 +194,17 @@ def genhumps(input_dim: int):
 ################################################################################
 ################################################################################
 
-def select_problem(problem_name: str, input_dim: int=None):
+def select_problem(problem_name: str, input_dim: int=None,
+                   extended_name: bool=False):
+    """
+    extended_name: bool determines whether problem_name was given in the 'ROSENBR_n2' format
+    """
+    if extended_name and (input_dim is not None):
+        raise ValueError('Feeding input dimension both as part of an extended (JSON-like) name and also in its own input argument!')
+
+    if extended_name:
+        problem_name, input_dim = solvers.utils.problem_name_dim_tuple_from_json_name(problem_name)
+    
     # Load CUTEst problem names from JSON file
     with open('problems/cutest_unconstrained.json', 'r') as f:
         cutest_unconstrained_names = json.load(f)

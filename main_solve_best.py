@@ -1,4 +1,5 @@
 from running import running
+import solvers.utils
 from solvers.projected_common_directions import ProjectedCommonDirections, ProjectedCommonDirectionsConfig
 import json
 import re
@@ -8,13 +9,6 @@ def read_json_problems(file_name: str):
     with open(file_name, 'r') as file:
         items_list = json.load(file)
     return items_list
-
-def problem_tuple_from_json_name(json_prob_name: str):
-    match = re.match(r"([A-Za-z0-9\-]+)_n(\d+)", json_prob_name)
-    if match:
-        return match.group(1), int(match.group(2))
-    else:
-        raise ValueError("String format is not as expected")
 
 def main():
     running.soft_window_clear()
@@ -33,7 +27,7 @@ def main():
     # Refer to OBSIDIAN WEEK 32 log notes on this!
     for json_prob_name in problem_names_list:
         # raise Exception('Check where we stopped by looking at the best known results file')
-        problem_name, input_dim = problem_tuple_from_json_name(json_prob_name)
+        problem_name, input_dim = solvers.utils.problem_name_dim_tuple_from_json_name(json_prob_name)
         
         if input_dim <= 200:
             continue

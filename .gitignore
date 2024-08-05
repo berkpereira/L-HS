@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# Some prototype solvers
+solvers/LBFGS.py
+solvers/rand_subs_quad_reg.py
+
 # PyCUTEst problem cache
 pycutest_cache_holder
 time_autograd.ipynb

@@ -4,6 +4,7 @@ import csv
 import hashlib
 from datetime import datetime
 from solvers.utils import SolverOutput
+from solvers.projected_common_directions import ProjectedCommonDirectionsConfig
 
 MAPPING_FILE = 'results/config_mapping.json'
 
@@ -27,15 +28,32 @@ def save_mapping(solver_config_str, hashed_filename):
     with open(MAPPING_FILE, 'w') as file:
         json.dump(mapping, file, indent=4)
 
+# NOTE: THINK THIS FUNCTION BELOW IS NO LONGER NEEDED
+def config_to_mapping_hash(solver_config: ProjectedCommonDirectionsConfig):
+    # Load the mapping file
+    solver_config_str = str(solver_config)
+    if not os.path.exists(MAPPING_FILE):
+        raise Exception('Mapping file does not exist.')
+
+    with open(MAPPING_FILE, 'r') as file:
+        mapping = json.load(file)
+
+    if solver_config_str not in mapping:
+        raise Exception('Solver configuration not found in the mapping file.')
+
+    # Get the hashed file name
+    hashed_filename = mapping[solver_config_str]
+    return hashed_filename
+
 # NOTE: this functions keeps only KEEP_NO solver runs' data.
 # These are prioritised vs any incoming data by the equivalent gradient
 # evaluations budget of the run. The larger the budget, the higher the priority.
 # NOTE: KEEP_NO is hard-coded here! For instance, Cartis' and Roberts' 2023
-# paper uses KEEP_NO equal to 10.
+# paper uses KEEP_NO equal to 10 (see its page 39, final line).
 def save_solver_output(problem_name: str, solver_config_str: str,
                        solver_output: SolverOutput, output_dir='results'):
     
-    KEEP_NO = 10
+    KEEP_NO = 10 # 10 is used in Cartis and Roberts 2023 scalable DFO paper
     
     # Create the directory for the problem if it does not exist
     problem_dir = os.path.join(output_dir, problem_name)
@@ -107,19 +125,13 @@ def save_solver_output(problem_name: str, solver_config_str: str,
                 writer.writerow(row)
 
 def load_solver_results(problem_name: str, solver_config, output_dir='results'):
-    # Load the mapping file
-    solver_config_str = str(solver_config)
-    if not os.path.exists(MAPPING_FILE):
-        raise Exception('Mapping file does not exist.')
-
-    with open(MAPPING_FILE, 'r') as file:
-        mapping = json.load(file)
-
-    if solver_config_str not in mapping:
-        raise Exception('Solver configuration not found in the mapping file.')
-
+    """
+    problem_name: str formatted such as 'ROSEN-BR_n2', where the part after the
+    underscore specifies the ambient dimension of the problem. 
+    """
     # Get the hashed file name
-    hashed_filename = mapping[solver_config_str]
+    # hashed_filename = config_to_mapping_hash(solver_config)
+    hashed_filename = get_hashed_filename(str(solver_config))
     file_path = os.path.join(output_dir, problem_name, f'{hashed_filename}.csv')
 
     if not os.path.exists(file_path):
@@ -131,3 +143,101 @@ def load_solver_results(problem_name: str, solver_config, output_dir='results'):
         results = [row for row in reader]
 
     return results
+
+def generate_data_profiles(problem_name_list: list, solver_config_list: list,
+                           accuracy: float, max_equiv_grad: int):
+    """
+    problem_name_list: list. Each element should be a string formatted such
+    as 'ROSEN-BR_n2', where the part after the underscore specifies the
+    ambient dimension of the problem.
+
+    solver_config_list: list where each element is an instance
+    of ProjectedCommonDirectionsConfig.
+
+    accuracy: float between 0 and 1
+
+    max_equiv_grad: int, maximum equivalent gradient evaluation number to
+    check for when reading results, as well as limit to the right end of
+    the x axis when actually plotting the data profile 
+    """
+    if not (0 < accuracy < 1):
+        raise ValueError('Input accuracy must be in the open interval (0, 1).')
+
+    equiv_grad_list = [i for i in range(max_equiv_grad + 1)]
+    
+    # Need a counter for each solver.
+    # As we read each run in a given solver, we increment the corresponding
+    # counter in this list, up from 0. Represents the CARDINALITY of
+    # set P in the usual definitions of data profiles.
+    seen_counter_dict = {}
+
+    # Success dictionary. Each solver has a list which maps one-to-one with
+    # equiv_grad_list. All starts at zero. As we read runs by a solver, 
+    # whenever some equiv_grad allowance yielded the required accuracy,
+    # we increment by one all the elements in the corresponding list from that
+    # one up to the end one.
+    success_dict = {}
+
+    for solver_config in solver_config_list:
+        solver_config_str = str(solver_config)
+        hash = get_hashed_filename(solver_config_str)
+        seen_counter_dict[hash] = 0
+        success_dict[hash] = [0] * len(equiv_grad_list)
+        for problem_name in problem_name_list:
+            results = load_solver_results(problem_name, solver_config)
+            current_run_id = None
+            current_run_data = []
+            for row in results:
+                run_id = row['run_id']
+                if run_id != current_run_id:
+                    if current_run_data:
+                        process_run_data(current_run_data, equiv_grad_list,
+                                         success_dict[hash])
+                        seen_counter_dict[hash] += 1
+                        current_run_data = []
+                    current_run_id = run_id
+                current_run_data.append(row)
+            if current_run_data:
+                process_run_data(current_run_data, equiv_grad_list, success_dict[hash])
+                seen_counter_dict[hash] += 1
+
+# NOTE: THIS FUNCTION NOT NEEDED
+def analyze_solver_results(results):
+    integer_list = list(range(100))
+    success_list = [0] * 100
+    counter = 0
+    current_run_id = None
+    current_run_data = []
+
+    for row in results:
+        run_id = row['run_id']
+
+        if run_id != current_run_id:
+            if current_run_data:
+                process_run_data(current_run_data, integer_list, success_list)
+                counter += 1
+                current_run_data = []
+
+            current_run_id = run_id
+
+        current_run_data.append(row)
+
+    if current_run_data:
+        process_run_data(current_run_data, integer_list, success_list)
+        counter += 1
+
+    return integer_list, success_list, counter
+
+# NOTE: THIS FUNCTION FOR CHECKING WHETHER ACCURACY HAS BEEN MET,
+# SEE WHERE IT IS CALLED ABOVE IN generate_data_profiles
+# TODO: MUST OBVIOUSLY ENSURE NON-BOGUS CONDITION-CHECKING
+def process_run_data(run_data, integer_list, success_list):
+    for i in integer_list:
+        previous_row = None
+        for row in run_data:
+            if float(row['equiv_grad_evals']) > i:
+                if previous_row and float(previous_row['f_vals']) < 10:
+                    for j in range(i, len(success_list)):
+                        success_list[j] += 1
+                break
+            previous_row = row

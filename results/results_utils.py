@@ -144,6 +144,18 @@ def load_solver_results(problem_name: str, solver_config, output_dir='results'):
 
     return results
 
+def get_best_known_sol(problem_name: str):
+    """
+    problem_name: str, should be of format such as 'ROSENBR_n2'
+    """
+    with open('results/best_known_results.json', 'r') as f:
+        best_known_results = json.load(f)
+    try:
+        return best_known_results.get(problem_name, None)
+    except:
+        raise Exception('Could not retrieve best known problem objective value!')
+
+
 def generate_data_profiles(problem_name_list: list, solver_config_list: list,
                            accuracy: float, max_equiv_grad: int):
     """
@@ -184,6 +196,7 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
         seen_counter_dict[hash] = 0
         success_dict[hash] = [0] * len(equiv_grad_list)
         for problem_name in problem_name_list:
+            f_sol = get_best_known_sol(problem_name)
             results = load_solver_results(problem_name, solver_config)
             current_run_id = None
             current_run_data = []
@@ -192,52 +205,45 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
                 if run_id != current_run_id:
                     if current_run_data:
                         process_run_data(current_run_data, equiv_grad_list,
-                                         success_dict[hash])
+                                         success_dict[hash], f_sol)
                         seen_counter_dict[hash] += 1
                         current_run_data = []
                     current_run_id = run_id
                 current_run_data.append(row)
             if current_run_data:
-                process_run_data(current_run_data, equiv_grad_list, success_dict[hash])
+                process_run_data(current_run_data, equiv_grad_list, success_dict[hash], f_sol)
                 seen_counter_dict[hash] += 1
-
-# NOTE: THIS FUNCTION NOT NEEDED
-def analyze_solver_results(results):
-    integer_list = list(range(100))
-    success_list = [0] * 100
-    counter = 0
-    current_run_id = None
-    current_run_data = []
-
-    for row in results:
-        run_id = row['run_id']
-
-        if run_id != current_run_id:
-            if current_run_data:
-                process_run_data(current_run_data, integer_list, success_list)
-                counter += 1
-                current_run_data = []
-
-            current_run_id = run_id
-
-        current_run_data.append(row)
-
-    if current_run_data:
-        process_run_data(current_run_data, integer_list, success_list)
-        counter += 1
-
-    return integer_list, success_list, counter
+    
+    # Check that all counter values are the same
+    counter_values = list(seen_counter_dict.values())
+    if counter_values.count(counter_values[0]) != len(counter_values):
+        raise Exception('Inconsistent run counts across solvers.')
+    
+    # Normalize success_dict values by the seen_counter_dict values
+    for hash in success_dict:
+        count = seen_counter_dict[hash]
+        if count > 0:
+            success_dict[hash] = [value / count for value in success_dict[hash]]
+    
+    # Add on informative accuracy key-value pair, for later use in plotting.
+    success_dict.update({'accuracy': accuracy})
+    return success_dict
 
 # NOTE: THIS FUNCTION FOR CHECKING WHETHER ACCURACY HAS BEEN MET,
 # SEE WHERE IT IS CALLED ABOVE IN generate_data_profiles
-# TODO: MUST OBVIOUSLY ENSURE NON-BOGUS CONDITION-CHECKING
-def process_run_data(run_data, integer_list, success_list):
-    for i in integer_list:
-        previous_row = None
-        for row in run_data:
-            if float(row['equiv_grad_evals']) > i:
-                if previous_row and float(previous_row['f_vals']) < 10:
-                    for j in range(i, len(success_list)):
-                        success_list[j] += 1
-                break
-            previous_row = row
+def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
+    f0 = run_data[0]['f_vals'] # first loss value
+    success_grad_evals = None
+
+    # Read row by row and compute normalised_loss
+    for row in run_data:
+        normalised_loss = (float(row['f_vals']) - f_sol) / (f0 - f_sol)
+        if normalised_loss <= accuracy:
+            success_grad_evals = float(row['equiv_grad_evals'])
+            break
+
+    # If a success is found, update success_list
+    if success_grad_evals is not None:
+        success_grad_index = next(i for i, val in enumerate(equiv_grad_list) if val >= success_grad_evals)
+        for j in range(success_grad_index, len(success_list)):
+            success_list[j] += 1

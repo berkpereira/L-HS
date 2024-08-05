@@ -31,11 +31,11 @@ def main():
     _ = os.system(f'say last solved problem has index {last_index}')
 
     # Refer to OBSIDIAN WEEK 32 log notes on this!
-    for json_prob_name in problem_names_list[92:]:
+    for json_prob_name in problem_names_list:
         # raise Exception('Check where we stopped by looking at the best known results file')
         problem_name, input_dim = problem_tuple_from_json_name(json_prob_name)
         
-        if input_dim > 200:
+        if input_dim <= 200:
             continue
 
         try:

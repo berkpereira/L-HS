@@ -36,7 +36,6 @@ class ProjectedCommonDirectionsConfig:
     Uses solvers.utils.append_dirs.
     """
     obj: Any                    
-    reg_lambda: float
     
     subspace_no_grads: int = None
     subspace_no_updates: int = None
@@ -53,6 +52,8 @@ class ProjectedCommonDirectionsConfig:
     reproject_grad: bool = False
     ensemble: str = ''
     inner_use_full_grad: bool = True
+
+    reg_lambda: float = 0
 
     # Determines whether to orthogonalise (QR) P_k, the subspace matrix.
     orth_P_k: bool = True
@@ -78,9 +79,10 @@ class ProjectedCommonDirectionsConfig:
     timeout_secs: int = np.inf
 
     def __post_init__(self):
-
         if not (self.orth_P_k or self.normalise_P_k_cols):
             raise ValueError('Must have either self.orth_P_k or self.normalise_P_k_cols active!!!')
+        if self.orth_P_k and self.normalise_P_k_cols:
+            raise ValueError('It is redundant to have both orthogonalisation and explicit column normalisation!')
 
         if self.p_const < 1 or self.c_const < 1:
             raise ValueError('p and c constants must be POSITIVE integers!')
@@ -97,57 +99,73 @@ class ProjectedCommonDirectionsConfig:
             raise Exception('Cannot specify numbers of directions directly and as fractions of ambient dimension simultaneously!')
 
         # If fractions are specified, use them to set the integer attributes
-        if self.subspace_frac_grads is not None:
-            prospective_subspace_no_grads = self.subspace_frac_grads * self.obj.input_dim
-            if int(prospective_subspace_no_grads) == prospective_subspace_no_grads:
-                self.subspace_no_grads = int(prospective_subspace_no_grads)
-            else:
-                raise Exception(f"""Specified fraction of gradient directions does NOT give integer number of directions!
-                                Gradients fraction: {self.subspace_frac_grads}. Ambient dimension: {self.obj.input_dim}""")
-        if self.subspace_frac_updates is not None:
-            prospective_subspace_no_updates = self.subspace_frac_updates * self.obj.input_dim
-            if int(prospective_subspace_no_updates) == prospective_subspace_no_updates:
-                self.subspace_no_updates = int(prospective_subspace_no_updates)
-            else:
-                raise Exception(f"""Specified fraction of update directions does NOT give integer number of directions!
-                                Updates fraction: {self.subspace_frac_updates}. Ambient dimension: {self.obj.input_dim}""")
-        if self.subspace_frac_random is not None:
-            prospective_subspace_no_random = self.subspace_frac_random * self.obj.input_dim
-            if int(prospective_subspace_no_random) == prospective_subspace_no_random:
-                self.subspace_no_random = int(prospective_subspace_no_random)
-            else:
-                raise Exception(f"""Specified fraction of random directions does NOT give integer number of directions!
-                                Random fraction: {self.subspace_frac_random}. Ambient dimension: {self.obj.input_dim}""")
-        if self.random_proj_dim_frac is not None:
-            prospective_random_proj_dim = self.random_proj_dim_frac * self.obj.input_dim
-            if int(prospective_random_proj_dim) == prospective_random_proj_dim:
-                self.random_proj_dim = int(prospective_random_proj_dim)
-            else:
-                raise Exception(f"""Specified fraction of random projection dimension does NOT give integer number of dimensions!
-                                Random proj dim fraction: {self.random_proj_dim_frac}. Ambient dimension: {self.obj.input_dim}""")
+        # NOTE: This only goes for cases where a solver is then to be run.
+        # When obj is None, this is when we are using config objects in manner
+        # of comparison of the same specification across different
+        # problems (e.g. in plotting data profiles)
+        if self.obj is not None: 
+            if self.subspace_frac_grads is not None:
+                prospective_subspace_no_grads = self.subspace_frac_grads * self.obj.input_dim
+                if int(prospective_subspace_no_grads) == prospective_subspace_no_grads:
+                    self.subspace_no_grads = int(prospective_subspace_no_grads)
+                else:
+                    raise Exception(f"""Specified fraction of gradient directions does NOT give integer number of directions!
+                                    Gradients fraction: {self.subspace_frac_grads}. Ambient dimension: {self.obj.input_dim}""")
+            if self.subspace_frac_updates is not None:
+                prospective_subspace_no_updates = self.subspace_frac_updates * self.obj.input_dim
+                if int(prospective_subspace_no_updates) == prospective_subspace_no_updates:
+                    self.subspace_no_updates = int(prospective_subspace_no_updates)
+                else:
+                    raise Exception(f"""Specified fraction of update directions does NOT give integer number of directions!
+                                    Updates fraction: {self.subspace_frac_updates}. Ambient dimension: {self.obj.input_dim}""")
+            if self.subspace_frac_random is not None:
+                prospective_subspace_no_random = self.subspace_frac_random * self.obj.input_dim
+                if int(prospective_subspace_no_random) == prospective_subspace_no_random:
+                    self.subspace_no_random = int(prospective_subspace_no_random)
+                else:
+                    raise Exception(f"""Specified fraction of random directions does NOT give integer number of directions!
+                                    Random fraction: {self.subspace_frac_random}. Ambient dimension: {self.obj.input_dim}""")
+            if self.random_proj_dim_frac is not None:
+                prospective_random_proj_dim = self.random_proj_dim_frac * self.obj.input_dim
+                if int(prospective_random_proj_dim) == prospective_random_proj_dim:
+                    self.random_proj_dim = int(prospective_random_proj_dim)
+                else:
+                    raise Exception(f"""Specified fraction of random projection dimension does NOT give integer number of dimensions!
+                                    Random proj dim fraction: {self.random_proj_dim_frac}. Ambient dimension: {self.obj.input_dim}""")
         
         # If integer attributes are specified, set the fractional attributes accordingly
-        if self.subspace_frac_grads is None:
-            self.subspace_frac_grads = self.subspace_no_grads / self.obj.input_dim
-        if self.subspace_frac_updates is None:
-            self.subspace_frac_updates = self.subspace_no_updates / self.obj.input_dim
-        if self.subspace_frac_random is None:
-            self.subspace_frac_random = self.subspace_no_random / self.obj.input_dim
-        if self.random_proj_dim_frac is None:
-            self.random_proj_dim_frac = self.random_proj_dim / self.obj.input_dim
+        # NOTE: as in the above, we may have (obj is None) e.g. when plotting
+        # data profiles, where the specification of numbers of dimensions across
+        # different problems of generally different ambient dimensions makes
+        # no sense.
+        if self.obj is not None:
+            if self.subspace_frac_grads is None:
+                self.subspace_frac_grads = self.subspace_no_grads / self.obj.input_dim
+            if self.subspace_frac_updates is None:
+                self.subspace_frac_updates = self.subspace_no_updates / self.obj.input_dim
+            if self.subspace_frac_random is None:
+                self.subspace_frac_random = self.subspace_no_random / self.obj.input_dim
+            if self.random_proj_dim_frac is None:
+                self.random_proj_dim_frac = self.random_proj_dim / self.obj.input_dim
 
-        # Overall dimension of subspace
-        self.subspace_dim = self.subspace_no_grads + self.subspace_no_updates + self.subspace_no_random
+            # Overall dimension of subspace
+            self.subspace_dim = self.subspace_no_grads + self.subspace_no_updates + self.subspace_no_random
 
         # Handle the relationship between deriv_budget and equiv_grad_budget
-        if self.equiv_grad_budget is not None and self.deriv_budget is not None:
-            raise Exception('Cannot specify derivative budget and equivalent gradient budget simultaneously!')
-        if self.equiv_grad_budget is not None:
-            self.deriv_budget = int(self.equiv_grad_budget * self.obj.input_dim)
-        elif self.deriv_budget is not None:
-            self.equiv_grad_budget = self.deriv_budget / self.obj.input_dim
-        else:
-            raise Exception("Either deriv_budget or equiv_grad_budget must be specified.")
+        # NOTE: this is another aspect which we have no need for when
+        # e.g. generating data profiles, i.e. when (self.obj is None)
+        if self.obj is not None:
+            if self.equiv_grad_budget is not None and self.deriv_budget is not None:
+                raise Exception('Cannot specify derivative budget and equivalent gradient budget simultaneously!')
+            if self.equiv_grad_budget is not None:
+                self.deriv_budget = int(self.equiv_grad_budget * self.obj.input_dim)
+            elif self.deriv_budget is not None:
+                self.equiv_grad_budget = self.deriv_budget / self.obj.input_dim
+            else:
+                raise Exception("Either deriv_budget or equiv_grad_budget must be specified.")
+        
+        if self.subspace_frac_grads + self.subspace_frac_updates + self.subspace_frac_random > 1:
+            raise Exception('Total subspace fraction exceeds 1, this makes no sense!')
         
         # More straightforward stuff, CFS constants
         self.nu = self.tau ** (-self.c_const) # 'Forwardtracking' factor
@@ -169,11 +187,11 @@ class ProjectedCommonDirectionsConfig:
             passable_attrs.append('normalise_P_k_cols')
 
         # NOTE: edge case --- Lee2022's CommonDirections
-        if self.random_proj_dim == self.obj.input_dim: # recover Lee2022's CommonDirections
+        if self.random_proj_dim_frac == 1: # recover Lee2022's CommonDirections
             passable_attrs.append('ensemble') # ensemble plays no role
 
         # NOTE: edge case --- full-space/classical linesearch method
-        if self.subspace_dim == self.obj.input_dim:
+        if (self.subspace_frac_grads + self.subspace_frac_updates + self.subspace_frac_random) == 1:
             passable_attrs.extend(['random_proj_dim_frac', 'subspace_frac_grads',
                                    'subspace_frac_updates', 'subspace_frac_random',
                                    'random_proj', 'ensemble', 'inner_use_full_grad',

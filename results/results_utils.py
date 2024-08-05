@@ -63,16 +63,17 @@ def hash_to_config_str(hash: str) -> str:
 
     raise Exception('Hash not found in the mapping file.')
 
-def create_solver_from_config_string(config_str: str, objective_instance) -> ProjectedCommonDirections:
+def create_config_from_config_string(config_str: str, objective_instance) -> ProjectedCommonDirections:
     """
-    Create an instance of ProjectedCommonDirections from a string representation of its configuration.
+    Create an instance of ProjectedCommonDirectionsConfig from a string
+    representation of it.
 
     Args:
         config_str (str): String representation of ProjectedCommonDirectionsConfig.
         objective_instance (Objective): An instance of the Objective class to be used in the configuration.
 
     Returns:
-        ProjectedCommonDirections: Initialized solver instance.
+        ProjectedCommonDirectionsConfig: Initialised config instance.
     """
     # Remove the class name and parentheses
     config_str = config_str[len("ProjectedCommonDirectionsConfig("):-1]
@@ -106,9 +107,8 @@ def create_solver_from_config_string(config_str: str, objective_instance) -> Pro
 
     # Create the ProjectedCommonDirectionsConfig instance
     config = ProjectedCommonDirectionsConfig(**config_dict)
-
-    # Create and return the solver instance
-    return ProjectedCommonDirections(config)
+    
+    return config
 
 
 # NOTE: this functions keeps only KEEP_NO solver runs' data.

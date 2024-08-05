@@ -45,38 +45,34 @@ def config_str_to_linestyle(config_str: str):
     return LINESTYLES[linestyle_index]
 
 # This function generates an appropriate label string given a SolverOutput object.
-def solver_loss_label(solver: ProjectedCommonDirections,
-                      normalise_P_k_dirs_vs_dimension: bool,
-                      normalise_S_k_dirs_vs_dimension: bool,
+def solver_loss_label(config: ProjectedCommonDirectionsConfig,
                       suppress_dir: bool=False,
                       suppress_sketch_size: bool=False,
                       suppress_c_const: bool=False,
                       suppress_N_try: bool=False):
-    
-    ambient_dim = solver.obj.input_dim
 
     # NOTE: edge case --- full-space method
-    if solver.subspace_dim == ambient_dim:
+    if config.subspace_frac_grads == 1 or config.subspace_frac_updates == 1 or config.subspace_frac_random == 1:
         full_space_method = True
     else:
         full_space_method = False
     
     # NOTE: edge case --- Lee2022's CommonDirections
-    if (solver.random_proj and (solver.random_proj_dim == ambient_dim)):
+    if (config.random_proj and (config.random_proj_dim_frac == 1)):
         lee_common_method = True
     else:
         lee_common_method = False
     
     # NOTE: edge case --- randomised subspace method
-    if solver.subspace_frac_grads == 0 and solver.subspace_frac_updates == 0:
+    if config.subspace_frac_grads == 0 and config.subspace_frac_updates == 0:
         random_subspace_method = True
     else:
         random_subspace_method = False
 
-    if solver.direction_str == 'newton':
-        direction_str_formatted = solver.direction_str.capitalize()
-    elif solver.direction_str == 'sd':
-        direction_str_formatted = solver.direction_str.upper()
+    if config.direction_str == 'newton':
+        direction_str_formatted = config.direction_str.capitalize()
+    elif config.direction_str == 'sd':
+        direction_str_formatted = config.direction_str.upper()
 
     if full_space_method:
         new_label_template = """Full-space method
@@ -88,37 +84,23 @@ def solver_loss_label(solver: ProjectedCommonDirections,
         
         return new_label
 
-    no_sub_grads   = solver.subspace_no_grads
-    no_sub_updates = solver.subspace_no_updates
-    no_sub_random  = solver.subspace_no_random
+    frac_sub_grads   = config.subspace_frac_grads
+    frac_sub_updates = config.subspace_frac_updates
+    frac_sub_random  = config.subspace_frac_random
 
-    if normalise_P_k_dirs_vs_dimension:
-        no_sub_grads      /= ambient_dim
-        no_sub_updates    /= ambient_dim
-        no_sub_random     /= ambient_dim
-        no_sub_grads_str   = f'${no_sub_grads*100:.0f}\%$'
-        no_sub_grads_eq    = '$=$' if no_sub_grads == np.round(no_sub_grads, 2) else r'$\approx$'
-        no_sub_updates_str = f'${no_sub_updates*100:.0f}\%$'
-        no_sub_updates_eq  = '$=$' if no_sub_updates == np.round(no_sub_updates, 2) else r'$\approx$'
-        no_sub_random_str  = f'${no_sub_random*100:.0f}\%$'
-        no_sub_random_eq   = '$=$' if no_sub_random == np.round(no_sub_random, 2) else r'$\approx$'
-    else:
-        no_sub_grads_str   = f'${no_sub_grads}$'
-        no_sub_updates_str = f'${no_sub_updates}$'
-        no_sub_random_str  = f'${no_sub_random}$'
-        no_sub_grads_eq    = '$=$'
-        no_sub_updates_eq  = '$=$'
-        no_sub_random_eq   = '$=$'
 
-    if normalise_S_k_dirs_vs_dimension:
-        S_k_dim = solver.random_proj_dim / ambient_dim
-        S_k_dim_str = f'${S_k_dim*100:.0f}\%$'
-        S_k_eq = '$=$'if S_k_dim == np.round(S_k_dim, 2) else r'$\approx$'
-    else:
-        S_k_dim = solver.random_proj_dim
-        S_k_dim_str = f'${S_k_dim}$'
-        S_k_eq = '$=$'
-    
+    frac_sub_grads_str   = f'${frac_sub_grads*100:.0f}\%$'
+    frac_sub_grads_eq    = '$=$' if frac_sub_grads == np.round(frac_sub_grads, 2) else r'$\approx$'
+    frac_sub_updates_str = f'${frac_sub_updates*100:.0f}\%$'
+    frac_sub_updates_eq  = '$=$' if frac_sub_updates == np.round(frac_sub_updates, 2) else r'$\approx$'
+    frac_sub_random_str  = f'${frac_sub_random*100:.0f}\%$'
+    frac_sub_random_eq   = '$=$' if frac_sub_random == np.round(frac_sub_random, 2) else r'$\approx$'
+
+
+    S_k_dim_frac = config.random_proj_dim_frac
+    S_k_dim_str = f'${S_k_dim_frac*100:.0f}\%$'
+    S_k_eq = '$=$'if S_k_dim_frac == np.round(S_k_dim_frac, 2) else r'$\approx$'
+
 
     if lee_common_method:
         grad_dirs_str  = r'$\nabla{f}(x_k)$'
@@ -128,28 +110,27 @@ def solver_loss_label(solver: ProjectedCommonDirections,
         label_lines = [r"""Random subspace method"""]
     else:
         grad_dirs_str  = r'$\tilde{\nabla}f(x_k)$'
-        #label_lines = [r"""L-ProjDir"""]
         label_lines = [r"""\verb|L-ProjDir|"""]
     update_dirs_str = r'$s_k$'
 
     format_args = {}
 
-    if solver.subspace_frac_grads > 0:
-        label_lines.append(r"""\# {grad_dirs_str} dirs.\ {no_sub_grads_eq} {no_sub_grads_str}""")
+    if config.subspace_frac_grads > 0:
+        label_lines.append(r"""\# {grad_dirs_str} dirs.\ {frac_sub_grads_eq} {frac_sub_grads_str}""")
         format_args.update({'grad_dirs_str': grad_dirs_str,
-                            'no_sub_grads_eq': no_sub_grads_eq,
-                            'no_sub_grads_str': no_sub_grads_str})
-    if solver.subspace_frac_updates > 0:
-        label_lines.append(r"""\# {update_dirs_str} dirs.\ {no_sub_updates_eq} {no_sub_updates_str}""")
+                            'frac_sub_grads_eq': frac_sub_grads_eq,
+                            'frac_sub_grads_str': frac_sub_grads_str})
+    if config.subspace_frac_updates > 0:
+        label_lines.append(r"""\# {update_dirs_str} dirs.\ {frac_sub_updates_eq} {frac_sub_updates_str}""")
         format_args.update({'update_dirs_str': update_dirs_str,
-                            'no_sub_updates_eq': no_sub_updates_eq,
-                            'no_sub_updates_str': no_sub_updates_str})
-    if solver.subspace_frac_random > 0:
-        label_lines.append(r"""\# Random dirs.\ {no_sub_random_eq} {no_sub_random_str}""")
-        format_args.update({'no_sub_random_eq': no_sub_random_eq,
-                            'no_sub_random_str': no_sub_random_str})
+                            'frac_sub_updates_eq': frac_sub_updates_eq,
+                            'frac_sub_updates_str': frac_sub_updates_str})
+    if config.subspace_frac_random > 0:
+        label_lines.append(r"""\# Random dirs.\ {frac_sub_random_eq} {frac_sub_random_str}""")
+        format_args.update({'frac_sub_random_eq': frac_sub_random_eq,
+                            'frac_sub_random_str': frac_sub_random_str})
 
-    if not (suppress_sketch_size or (solver.subspace_frac_grads == 0)):
+    if not (suppress_sketch_size or (config.subspace_frac_grads == 0)):
         label_lines.append(r"""Sketch size {S_k_eq} {S_k_dim_str}""")
         format_args.update({'S_k_eq': S_k_eq,
                             'S_k_dim_str': S_k_dim_str})
@@ -158,18 +139,18 @@ def solver_loss_label(solver: ProjectedCommonDirections,
         format_args.update({'direction_str_formatted': direction_str_formatted})
     
     if not suppress_c_const:
-        if solver.c_const == np.inf:
+        if config.c_const == np.inf:
             c_const_str = r'$\infty$'
         else:
-            c_const_str = f'${solver.c_const}$'
+            c_const_str = f'${config.c_const}$'
         label_lines.append(r"""$c =$ {c_const_str}""")
         format_args.update({'c_const_str': c_const_str})
 
     if not suppress_N_try:
-        if solver.N_try == np.inf:
+        if config.N_try == np.inf:
             N_try_str = r'$\infty$'
         else:
-            N_try_str = f'${solver.N_try}$'
+            N_try_str = f'${config.N_try}$'
         label_lines.append(r"""$\#_{N_try_subscript} =$ {N_try_str}""")
         format_args.update({'N_try_subscript': r'{\text{try}}', 'N_try_str': N_try_str})
 
@@ -184,8 +165,6 @@ def solver_loss_label(solver: ProjectedCommonDirections,
 def plot_loss_vs_iteration(solver_outputs: list,
                            deriv_evals_axis: bool=False,
                            normalise_deriv_evals_vs_dimension: bool=False,
-                           normalise_P_k_dirs_vs_dimension: bool=False,
-                           normalise_S_k_dirs_vs_dimension: bool=False,
                            normalise_loss_data: bool=False,
                            labels=None,
                            suppress_dir: bool=False,
@@ -215,9 +194,7 @@ def plot_loss_vs_iteration(solver_outputs: list,
         try: # If subspace dimension is a meaningful concept for the solver
             labels = []
             for solver_out in solver_outputs:
-                new_label = solver_loss_label(solver_out.solver,
-                                              normalise_P_k_dirs_vs_dimension,
-                                              normalise_S_k_dirs_vs_dimension,
+                new_label = solver_loss_label(solver_out.solver.config,
                                               suppress_dir=suppress_dir,
                                               suppress_sketch_size=suppress_sketch_size,
                                               suppress_c_const=suppress_c_const,
@@ -305,11 +282,15 @@ def plot_data_profiles(success_dict):
     # Iterate over the solvers in success_dict and plot their success rates
     for hash, success_list in success_dict.items():
         config_str = results.results_utils.hash_to_config_str(hash)
-        solver = results.results_utils.create_solver_from_config_string(config_str=config_str, objective_instance=None)
-        label = solver_loss_label(solver=solver,
-                                  normalise_P_k_dirs_vs_dimension=True,
-                                  normalise_S_k_dirs_vs_dimension=True)
-        plt.plot(equiv_grad_list, success_list, label=label)
+        config = results.results_utils.create_config_from_config_string(config_str=config_str, objective_instance=None)
+        
+        # Use the hash of the configuration to determine the color
+        color = config_str_to_color(str(config))
+        linestyle = config_str_to_linestyle(str(config))
+        
+        label = solver_loss_label(config=config)
+        plt.plot(equiv_grad_list, success_list, color=color,
+                 linestyle=linestyle,label=label)
 
     # Add plot title, labels, and legend
     plt.title(f"Data Profile (Accuracy = {accuracy})")

@@ -45,8 +45,8 @@ def main():
 
     if PROFILE:
         success_dict = results.results_utils.generate_data_profiles(problem_name_list,
-                                                                    configs_list, accuracy=0.15,
-                                                                    max_equiv_grad=400)
+                                                                    configs_list, accuracy=0.1,
+                                                                    max_equiv_grad=250)
         plotting.plotting.plot_data_profiles(success_dict)
         plt.show()
 

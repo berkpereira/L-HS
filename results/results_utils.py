@@ -312,7 +312,7 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
 # NOTE: THIS FUNCTION FOR CHECKING WHETHER ACCURACY HAS BEEN MET,
 # SEE WHERE IT IS CALLED ABOVE IN generate_data_profiles
 def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
-    f0 = float(run_data[0]['f_vals']) # first loss value
+    f0 = float(run_data[0]['f_vals'])  # first loss value
     success_grad_evals = None
 
     # Read row by row and compute normalised_loss
@@ -322,8 +322,17 @@ def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
             success_grad_evals = float(row['equiv_grad_evals'])
             break
 
+    # Check if the largest element in equiv_grad_list is larger than the largest element in run_data['equiv_grad_evals']
+    max_equiv_grad_list = max(equiv_grad_list)
+    max_run_data_equiv_grad_evals = max(float(row['equiv_grad_evals']) for row in run_data)
+    if max_equiv_grad_list > max_run_data_equiv_grad_evals:
+        raise ValueError("Placeholder error message: equiv_grad_list has larger values than run_data equiv_grad_evals")
+
     # If a success is found, update success_list
     if success_grad_evals is not None:
-        success_grad_index = next(i for i, val in enumerate(equiv_grad_list) if val >= success_grad_evals)
-        for j in range(success_grad_index, len(success_list)):
-            success_list[j] += 1
+        success_grad_index = next((i for i, val in enumerate(equiv_grad_list) if val >= success_grad_evals), None)
+        
+        if success_grad_index is not None:
+            for j in range(success_grad_index, len(success_list)):
+                success_list[j] += 1
+

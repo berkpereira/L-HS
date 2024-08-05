@@ -26,6 +26,7 @@ def main():
     extended_problem_name = problem_name + '_n' + str(input_dim)
     problem_tup = running.get_problem(problem_name, input_dim)
     NORMALISE_LOSS = True
+    
     SAVE_RESULTS = False
 
     passable_name = 'passable2'

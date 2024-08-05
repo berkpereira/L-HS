@@ -49,7 +49,13 @@ def import_cutest_problem(problem_name: str, input_dim=None):
         p = pycutest.import_problem(problem_name)
         input_dim = p.n
     else:
-        p = pycutest.import_problem(problem_name, sifParams={'N': input_dim})
+        try:
+            p = pycutest.import_problem(problem_name, sifParams={'N': input_dim})
+        except: # problem may not have choosable dimension, even if the one we choose is the default one
+            p = pycutest.import_problem(problem_name)
+
+        if p.n != input_dim:
+            raise Exception('Something gone wrong, input dimension not as expected!!')
     func = p.obj
     grad_func = p.grad
     hess_func = p.hess

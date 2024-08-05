@@ -111,7 +111,7 @@ def strong_wolfe_linesearch(func, grad_func, x, direction, c1, c2, max_iter):
 
 
 # TALL(!) scaled Gaussian sketching matrix!
-# Scaling as used, e.g., in cartis2022 paper
+# Scaling as  used, e.g., in cartis2022 paper
 # Subspace dimension taken to be the number of columns, n
 def scaled_gaussian(m, n):
     return np.random.normal(scale=np.sqrt(1 / n), size=(m, n))
@@ -135,6 +135,9 @@ def append_dirs(curr_mat: np.ndarray, ambient_dim: int,
                 no_dirs: int, curr_is_orth: bool,
                 orthogonalise: bool,
                 normalise_cols: bool):
+    if not (orthogonalise or normalise_cols):
+        raise Exception('Pretty sure you would NOT want to do this without orthogonalising or at least normalising the columns of P_k.')
+
     # If 0 directions to be added, simply return the
     # (maybe orthogonalised) input matrix.
     if no_dirs == 0:
@@ -146,7 +149,7 @@ def append_dirs(curr_mat: np.ndarray, ambient_dim: int,
 
 
     n = ambient_dim # column/ambient dimension
-    A = np.random.randn(n, no_dirs) # draw Gaussian matrix
+    A = np.random.randn(n, no_dirs) # draw (scaled!) Gaussian matrix
 
     if curr_mat is None:
         stack = A

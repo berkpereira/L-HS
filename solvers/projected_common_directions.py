@@ -10,6 +10,7 @@ being equal to the ambient dimension).
 For discussion of these ideas, see relevant docs/*.md file.
 """
 from dataclasses import dataclass, fields
+import time
 from typing import Any
 import warnings
 
@@ -74,6 +75,7 @@ class ProjectedCommonDirectionsConfig:
     equiv_grad_budget: float = None
     iter_print_gap: int = 50
     verbose: bool = False
+    timeout_secs: int = np.inf
 
     def __post_init__(self):
 
@@ -155,7 +157,7 @@ class ProjectedCommonDirectionsConfig:
         passable_attrs = ['obj', 'verbose', 'deriv_budget', 'equiv_grad_budget',
                           'iter_print_gap', 'random_proj_dim', 'max_iter',
                           'tol', 'subspace_no_grads','subspace_no_updates',
-                          'subspace_no_random']
+                          'subspace_no_random', 'timeout_secs']
         if self.subspace_no_grads == 0: # 'tilde projections' do not come up
             passable_attrs.extend(['random_proj_dim_frac', 'ensemble'])
         if self.direction_str != 'newton':
@@ -204,7 +206,7 @@ class ProjectedCommonDirections:
         for key, value in config.__dict__.items():
             setattr(self, key, value)
 
-        raise Exception('CAREFULLY CHECK DERIVATIVE COSTS WITH GOODNOTES! SOME STUFF IS WRONG IN THIS CODE!')
+        # raise Exception('CAREFULLY CHECK DERIVATIVE COSTS WITH GOODNOTES! SOME STUFF IS WRONG IN THIS CODE!')
 
         # Store the config object itself as an attribute
         self.config = config
@@ -212,7 +214,7 @@ class ProjectedCommonDirections:
         # Distinguish case when no problem information is used in P_k, i.e.,
         # where P_k is fully random.
         if self.subspace_no_grads == 0 and self.subspace_no_updates == 0:
-            self.subspace_constr_method = 'randonb m'
+            self.subspace_constr_method = 'random'
         else:
             self.subspace_constr_method = None
 
@@ -268,8 +270,7 @@ class ProjectedCommonDirections:
             self.deriv_per_succ_iter = self.obj.input_dim
         
         if self.deriv_per_succ_iter > self.obj.input_dim:
-            raise Exception("Method uses as many or more derivatives per iteration than if using full space method!")
-            warnings.warn("Using as many or more derivatives per iteration than if using full space method!", UserWarning)
+            raise Exception("Method uses more derivatives per iteration than if you used a full space method!")
 
     # Draw a TALL sketching matrix from random ensemble.
     def draw_sketch(self):
@@ -453,7 +454,7 @@ class ProjectedCommonDirections:
             
         return direction
 
-    def print_iter_info(self, last: bool, k: int, deriv_evals: int, x, f_x, norm_full_grad, step_size, terminated=None):
+    def print_iter_info(self, last: bool, k: int, deriv_evals: int, x, f_x, norm_full_grad, step_size, terminated=None, timed_out=False):
         x_str = ", ".join([f"{xi:7.4f}" for xi in x])
         info_str = f"k = {k:4} || deriv_evals = {deriv_evals:4.2e} || x = [{x_str}] || f(x) = {f_x:8.6e} || g_norm = {norm_full_grad:8.6e}"
         
@@ -464,6 +465,14 @@ class ProjectedCommonDirections:
             if terminated:
                 print('------------------------------------------------------------------------------------------')
                 print('TERMINATED')
+                print('------------------------------------------------------------------------------------------')
+                print(info_str)
+                print('------------------------------------------------------------------------------------------')
+                print()
+                print()
+            elif timed_out:
+                print('------------------------------------------------------------------------------------------')
+                print(f'TIMED OUT: {self.timeout_secs} SECONDS ELAPSED')
                 print('------------------------------------------------------------------------------------------')
                 print(info_str)
                 print('------------------------------------------------------------------------------------------')
@@ -485,6 +494,9 @@ class ProjectedCommonDirections:
         x = x0
         alpha = self.alpha_max * (self.tau ** self.p_const)
         
+        # Set timer
+        start_time = time.time()
+
         f_x = self.func(x)
         full_grad = self.grad_func(x)
         norm_full_grad = np.linalg.norm(full_grad)
@@ -534,6 +546,7 @@ class ProjectedCommonDirections:
         deriv_evals_list = [0]
         j_try = 0
         terminated = False
+        timed_out = False
 
 
         store_all_full_grads = [full_grad]
@@ -546,6 +559,9 @@ class ProjectedCommonDirections:
             # Termination
             if norm_full_grad < self.tol:
                 terminated = True
+                break
+            if time.time() - start_time > self.timeout_secs:
+                timed_out = True
                 break
             
             full_grad_prev = full_grad
@@ -664,7 +680,7 @@ class ProjectedCommonDirections:
 
 
         if self.verbose:
-            self.print_iter_info(last=True, terminated=terminated, k=k,
+            self.print_iter_info(last=True, terminated=terminated, timed_out=timed_out, k=k,
                                  deriv_evals=deriv_eval_count,
                                  x=x, f_x=f_x, norm_full_grad=norm_full_grad,
                                  step_size=alpha)

@@ -7,6 +7,21 @@ from solvers.projected_common_directions import ProjectedCommonDirectionsConfig
 
 # Dictionary to hold configuration parameters for all solver variants
 solver_variants_dict = {
+    "solve_best": {
+        "subspace_frac_grads": 0,
+        "subspace_frac_updates": 0,
+        "subspace_frac_random": 1,
+        "random_proj_dim_frac": 0,
+        "direction_str": 'newton',
+        "reg_lambda": 0.01,
+        "ensemble": 'haar',
+        "orth_P_k": True,
+        "normalise_P_k_cols": False,
+        "alpha_max": 1,
+        "tau": 0.5,
+        "c_const": np.inf,
+        "N_try": np.inf,
+    },
     "full_sd": {
         "subspace_frac_grads": 0,
         "subspace_frac_updates": 0,

@@ -188,7 +188,7 @@ def plot_loss_vs_iteration(solver_outputs: list,
     but referring to the 'dimension' of S_k instead
     labels: List of labels for each solver output.
     """
-    plt.figure(figsize=FIGSIZE_REF)
+    fig = plt.figure(figsize=FIGSIZE_REF)
     
     if labels is None:
         try: # If subspace dimension is a meaningful concept for the solver
@@ -265,6 +265,7 @@ def plot_loss_vs_iteration(solver_outputs: list,
         plt.ylabel('$f(x_k)$')
     plt.legend()
     plt.grid(True, which="both", ls="-")
+    return fig
 
 def plot_data_profiles(success_dict):
     """

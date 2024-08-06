@@ -45,10 +45,11 @@ def main():
 
     if PROFILE:
         success_dict = results.results_utils.generate_data_profiles(problem_name_list,
-                                                                    configs_list, accuracy=0.1,
+                                                                    configs_list, accuracy=0.001,
                                                                     max_equiv_grad=250)
-        plotting.plotting.plot_data_profiles(success_dict)
+        fig = plotting.plotting.plot_data_profiles(success_dict)
         plt.show()
+        fig.savefig('plot.pdf')
 
 if __name__ == '__main__':
     main()

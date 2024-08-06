@@ -273,7 +273,7 @@ def plot_data_profiles(success_dict):
     success_dict: Dictionary containing success rates for different solvers and
                   additional keys for 'accuracy' and 'equiv_grad_list'.
     """
-    plt.figure(figsize=FIGSIZE_REF)
+    fig = plt.figure(figsize=FIGSIZE_REF)
 
     # Retrieve equiv_grad_list and accuracy for plotting
     equiv_grad_list = success_dict.pop('equiv_grad_list')
@@ -298,6 +298,7 @@ def plot_data_profiles(success_dict):
     plt.ylabel("Success Rate")
     plt.legend()
     plt.grid(True)
+    return fig
 
 # This function plots arbitrary scalar array attributes of solver output objects.
 def plot_scalar_vs_iteration(solver_outputs: list,

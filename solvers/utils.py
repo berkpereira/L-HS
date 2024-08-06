@@ -31,13 +31,13 @@ class SolverOutputAverage():
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-def update_best_known_result(objective_name, new_best_value):
+def update_best_known_result(extended_objective_name, new_best_value):
     best_known_results_file_name = 'results/best_known_results.json'
     with open(best_known_results_file_name, 'r') as f:
         best_known_results = json.load(f)
     
-    if objective_name not in best_known_results or new_best_value < best_known_results[objective_name]:
-        best_known_results[objective_name] = new_best_value
+    if extended_objective_name not in best_known_results or new_best_value < best_known_results[extended_objective_name]:
+        best_known_results[extended_objective_name] = new_best_value
         with open(best_known_results_file_name, 'w') as f:
             json.dump(best_known_results, f, indent=4)
 

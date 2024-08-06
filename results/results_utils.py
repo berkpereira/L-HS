@@ -1,7 +1,7 @@
 import json
 import os
 import csv
-import re
+import numpy as np
 from ast import literal_eval
 import hashlib
 from datetime import datetime
@@ -255,7 +255,9 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
     if not (0 < accuracy < 1):
         raise ValueError('Input accuracy must be in the open interval (0, 1).')
 
-    equiv_grad_list = [i for i in range(max_equiv_grad + 1)]
+    # equiv_grad_list = [i for i in range(max_equiv_grad + 1)]
+    LIST_STEP = 0.1
+    equiv_grad_list = np.arange(0, max_equiv_grad + 1 + LIST_STEP, LIST_STEP)
     
     # Need a counter for each solver.
     # As we read each run in a given solver, we increment the corresponding
@@ -335,4 +337,3 @@ def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
         if success_grad_index is not None:
             for j in range(success_grad_index, len(success_list)):
                 success_list[j] += 1
-

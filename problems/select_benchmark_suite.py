@@ -60,7 +60,7 @@ def main():
     print(f'NO. SUITABLE PROBLEMS AS FILTERED: {no_suitable}')
     # print(suitable_name_dim_dict)
 
-    WRITE_TO_FILE = True
+    WRITE_TO_FILE = False
 
     chosen_problems = select_random_combinations(suitable_name_dim_dict, 20)
     print(chosen_problems)

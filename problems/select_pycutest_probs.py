@@ -1,3 +1,7 @@
+"""
+This script's purpose is simply to find all the CUTEst problems remotely
+applicable to our purposes.
+"""
 import io
 from collections import Counter
 import sys

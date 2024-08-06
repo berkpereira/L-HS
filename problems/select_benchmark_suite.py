@@ -66,8 +66,9 @@ def main():
     print(chosen_problems)
 
     if WRITE_TO_FILE:
+        raise Exception('This should no longer be used! Turn WRITE_TO_FILE to False.')
         JSON_FILE_NAME = 'problems/small_profile_problems.json'
-        write_json_file(JSON_FILE_NAME, chosen_problems)
+        # write_json_file()
     
 
 if __name__ == '__main__':

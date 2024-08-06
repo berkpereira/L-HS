@@ -9,6 +9,7 @@ of the variants in a small suite of CUTEst problems, which I aim to select here.
 The expectation here is to use something like 15--20 problems.
 """
 import os
+import numpy as np
 import pycutest
 import json
 import solvers.utils
@@ -32,7 +33,7 @@ def generate_chosen_dict():
     for extended_name in results_dict:
         name, input_dim = solvers.utils.problem_name_dim_tuple_from_json_name(extended_name)
         best_sol = results_dict[extended_name]
-        if 100 <= input_dim <= 200 and best_sol < 1e4:
+        if 50 <= input_dim <= 200 and best_sol < 1e4:
             # print(f'Name: {name}, dim: {input_dim}')
             # print(f'Best sol.: {results_dict[extended_name]}')
             if name in suitable_name_dim_dict:

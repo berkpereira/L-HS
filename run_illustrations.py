@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 def main():
     running.soft_window_clear()
-    running.set_seed(42)
+    # running.set_seed(42)
 
     # Choose problem
     test_problems_list = ['rosenbrock_single',                 # 0, n even
@@ -30,10 +30,10 @@ def main():
     SAVE_RESULTS = False
 
     passable_name = 'passable2'
-    configs_list = [running.combine_configs(extended_problem_name, 'solver0', passable_name),
-                    running.combine_configs(extended_problem_name, 'solver1', passable_name),
-                    running.combine_configs(extended_problem_name, 'solver2', passable_name),
-                    running.combine_configs(extended_problem_name, 'solver3', passable_name),]
+    configs_list = [running.combine_configs(extended_problem_name, ['solver0'], passable_name),
+                    #running.combine_configs(extended_problem_name, ['solver1'], passable_name),
+                    #running.combine_configs(extended_problem_name, ['solver2'], passable_name),
+                    running.combine_configs(extended_problem_name, ['solver3'], passable_name),]
                     
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 

@@ -1,7 +1,7 @@
 import problems.test_problems
 import autograd.numpy as np
 from solvers.projected_common_directions import ProjectedCommonDirections, ProjectedCommonDirectionsConfig
-from solver_configs.projected_common_directions_configs import solver_variants_dict
+from solver_configs.projected_common_directions_configs import solver_config_tree
 from solver_configs.passable_configs import passable_variants_dict
 import results.results_utils
 from problems.test_problems import select_problem
@@ -19,11 +19,27 @@ def soft_window_clear():
 
 # This function combines the solver and passable configurations into a proper
 # configuration object (ProjectedCommonDirectionsConfig) to be subsequently used.
-def combine_configs(extended_problem_name: str, solver_name: str,
+def combine_configs(extended_problem_name: str, config_path: list,
                     passable_name: str):
     problem_name, input_dim = problem_name_dim_tuple_from_json_name(extended_problem_name)
+    """
+    Combines problem, solver, and passable configurations into a single configuration.
+
+    Parameters:
+        extended_problem_name (str): Full problem name including dimension (e.g., 'rosenbrock_single_n100').
+        config_path (list): List of strings representing the path in the config tree.
+        passable_name (str): Name of the passable configuration to use.
+    
+    Returns:
+        ProjectedCommonDirectionsConfig: Combined configuration object.
+    """
+    # Traverse the configuration tree based on the provided path
+    config_dict = solver_config_tree
+    for key in config_path:
+        config_dict = config_dict[key]
+
     config_dict = {'obj': problems.test_problems.select_problem(problem_name, input_dim)[1],
-                   **solver_variants_dict[solver_name],
+                   **config_dict,
                    **passable_variants_dict[passable_name]}
     return ProjectedCommonDirectionsConfig(**config_dict)
 
@@ -83,9 +99,6 @@ def run_solvers_multiple_prob(extended_problem_name_list, solver_name_list,
                                                              str(solver.config),
                                                              output)
 
-
-
-
 def plot_run_solvers(output_dict, normalise_loss,
                      suppress_c_const=False,
                      suppress_N_try=False,
@@ -98,8 +111,6 @@ def plot_run_solvers(output_dict, normalise_loss,
     plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
                                              deriv_evals_axis=True,
                                              normalise_deriv_evals_vs_dimension=True,
-                                             normalise_P_k_dirs_vs_dimension=True,
-                                             normalise_S_k_dirs_vs_dimension=True,
                                              normalise_loss_data=normalise_loss,
                                              suppress_c_const=suppress_c_const,
                                              suppress_N_try=suppress_N_try,
@@ -107,8 +118,6 @@ def plot_run_solvers(output_dict, normalise_loss,
                                              suppress_sketch_size=suppress_sketch_size)
     plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
                                              deriv_evals_axis=False,
-                                             normalise_P_k_dirs_vs_dimension=True,
-                                             normalise_S_k_dirs_vs_dimension=True,
                                              normalise_loss_data=normalise_loss,
                                              suppress_c_const=suppress_c_const,
                                              suppress_N_try=suppress_N_try,
@@ -150,7 +159,6 @@ def plot_data_profiles(problem_name_list: list, solver_config_list: list,
                                                                 max_equiv_grad)
     plotting.plotting.plot_data_profiles(success_dict)
     
-
 def run_average_solvers(problem_tup, solvers_list, no_runs, result_attrs):
     avg_results_dict = average_solver_runs(problem_tup, solvers_list, no_runs, result_attrs)
     return avg_results_dict

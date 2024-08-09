@@ -6,7 +6,7 @@ import autograd.numpy as np
 from solvers.projected_common_directions import ProjectedCommonDirectionsConfig
 
 # Dictionary to hold configuration parameters for all solver variants
-solver_variants_dict = {
+solver_config_tree = {
     "solve_best": {
         "subspace_frac_grads": 0,
         "subspace_frac_updates": 0,

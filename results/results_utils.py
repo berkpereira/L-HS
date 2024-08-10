@@ -337,3 +337,18 @@ def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
         if success_grad_index is not None:
             for j in range(success_grad_index, len(success_list)):
                 success_list[j] += 1
+
+def generate_pdf_file_name(config_path_list, plot_type: str):
+    # Ensure all config paths are the same except for the last element
+    common_path = config_path_list[0][:-1]  # Take the first config path, excluding the last element
+    for config_path in config_path_list:
+        if config_path[:-1] != common_path:
+            raise ValueError("All config paths should be the same except for the last (deepest) element.")
+
+    # Concatenate the common parts of the config paths to form the base of the file name
+    middle_name = '_'.join(common_path)
+
+    # Add the suffix for the profile type
+    file_name = '/Users/gabrielpereira/Library/CloudStorage/OneDrive-Nexus365/ox-mmsc-cloud/dissertation/mmsc-thesis/images/python-figures/' + middle_name + '_' + plot_type + '.pdf'
+    
+    return file_name

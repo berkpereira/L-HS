@@ -30,10 +30,10 @@ def main():
     SAVE_RESULTS = False
 
     passable_name = 'passable2'
-    configs_list = [running.combine_configs(extended_problem_name, ['solver0'], passable_name),
-                    #running.combine_configs(extended_problem_name, ['solver1'], passable_name),
-                    #running.combine_configs(extended_problem_name, ['solver2'], passable_name),
-                    running.combine_configs(extended_problem_name, ['solver3'], passable_name),]
+    configs_list = [running.combine_configs(extended_problem_name, ['sample_solvers', 'solver0'], passable_name),
+                    running.combine_configs(extended_problem_name, ['sample_solvers', 'solver1'], passable_name),
+                    running.combine_configs(extended_problem_name, ['sample_solvers', 'solver2'], passable_name),
+                    running.combine_configs(extended_problem_name, ['sample_solvers', 'solver3'], passable_name),]
                     
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 

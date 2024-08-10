@@ -1,13 +1,7 @@
 """
-This script is largely based on the work from https://doi.org/10.1007/s12532-022-00219-z (Lee, Wang, and Lin, 2022). There is another module in this repo, common_directions.py, reflecting the algorithms proposed in that paper closely. This module adapts that with some changes.
-
-Namely, here we implement a version of that algorithm that never uses full gradient information.
-We also seek to make this version of the algorithm more general, including variants that do/do not use Hessian information, etc.
 The common thread to all of these methods is that THE FULL GRADIENT IS NEVER USED IN ITSELF IN THE ALGORITHM,
 except when using edge case algorithm parameters (namely 'dimension' of S_k
 being equal to the ambient dimension).
-
-For discussion of these ideas, see relevant docs/*.md file.
 """
 from dataclasses import dataclass, fields
 import time
@@ -102,36 +96,17 @@ class ProjectedCommonDirectionsConfig:
         # NOTE: This only goes for cases where a solver is then to be run.
         # When obj is None, this is when we are using config objects in manner
         # of comparison of the same specification across different
-        # problems (e.g. in plotting data profiles)
-        if self.obj is not None: 
+        # problems (e.g. in plotting data profiles). In this case it would make
+        # no sense to assign numbers of directions here.
+        if self.obj is not None:
             if self.subspace_frac_grads is not None:
-                prospective_subspace_no_grads = self.subspace_frac_grads * self.obj.input_dim
-                if int(prospective_subspace_no_grads) == prospective_subspace_no_grads:
-                    self.subspace_no_grads = int(prospective_subspace_no_grads)
-                else:
-                    raise Exception(f"""Specified fraction of gradient directions does NOT give integer number of directions!
-                                    Gradients fraction: {self.subspace_frac_grads}. Ambient dimension: {self.obj.input_dim}""")
+                self.subspace_no_grads = int(np.ceil(self.subspace_frac_grads * self.obj.input_dim))
             if self.subspace_frac_updates is not None:
-                prospective_subspace_no_updates = self.subspace_frac_updates * self.obj.input_dim
-                if int(prospective_subspace_no_updates) == prospective_subspace_no_updates:
-                    self.subspace_no_updates = int(prospective_subspace_no_updates)
-                else:
-                    raise Exception(f"""Specified fraction of update directions does NOT give integer number of directions!
-                                    Updates fraction: {self.subspace_frac_updates}. Ambient dimension: {self.obj.input_dim}""")
+                self.subspace_no_updates = int(np.ceil(self.subspace_frac_updates * self.obj.input_dim))
             if self.subspace_frac_random is not None:
-                prospective_subspace_no_random = self.subspace_frac_random * self.obj.input_dim
-                if int(prospective_subspace_no_random) == prospective_subspace_no_random:
-                    self.subspace_no_random = int(prospective_subspace_no_random)
-                else:
-                    raise Exception(f"""Specified fraction of random directions does NOT give integer number of directions!
-                                    Random fraction: {self.subspace_frac_random}. Ambient dimension: {self.obj.input_dim}""")
+                self.subspace_no_random = int(np.ceil(self.subspace_frac_random * self.obj.input_dim))
             if self.random_proj_dim_frac is not None:
-                prospective_random_proj_dim = self.random_proj_dim_frac * self.obj.input_dim
-                if int(prospective_random_proj_dim) == prospective_random_proj_dim:
-                    self.random_proj_dim = int(prospective_random_proj_dim)
-                else:
-                    raise Exception(f"""Specified fraction of random projection dimension does NOT give integer number of dimensions!
-                                    Random proj dim fraction: {self.random_proj_dim_frac}. Ambient dimension: {self.obj.input_dim}""")
+                self.random_proj_dim = int(np.ceil(self.random_proj_dim_frac * self.obj.input_dim))
         
         # If integer attributes are specified, set the fractional attributes accordingly
         # NOTE: as in the above, we may have (obj is None) e.g. when plotting
@@ -151,6 +126,9 @@ class ProjectedCommonDirectionsConfig:
             # Overall dimension of subspace
             self.subspace_dim = self.subspace_no_grads + self.subspace_no_updates + self.subspace_no_random
 
+            if self.subspace_dim > self.obj.input_dim:
+                raise Exception('Sum of subspace dimensions is larger than the problem ambient dimension!')
+
         # Handle the relationship between deriv_budget and equiv_grad_budget
         # NOTE: this is another aspect which we have no need for when
         # e.g. generating data profiles, i.e. when (self.obj is None)
@@ -168,7 +146,7 @@ class ProjectedCommonDirectionsConfig:
             raise Exception('Total subspace fraction exceeds 1, this makes no sense!')
         
         # More straightforward stuff, CFS constants
-        self.nu = self.tau ** (-self.c_const) # 'Forwardtracking' factor
+        self.nu = self.tau ** (-self.c_const) # 'Forward-tracking' factor
 
     def __str__(self):
         # These attributes should play no role for our purposes (consistent line plot colouring)
@@ -224,8 +202,6 @@ class ProjectedCommonDirections:
         for key, value in config.__dict__.items():
             setattr(self, key, value)
 
-        # raise Exception('CAREFULLY CHECK DERIVATIVE COSTS WITH GOODNOTES! SOME STUFF IS WRONG IN THIS CODE!')
-
         # Store the config object itself as an attribute
         self.config = config
 
@@ -261,13 +237,21 @@ class ProjectedCommonDirections:
         # Increment number of derivatives computed in each iteration depending on
         # algorithm variant in use
         if self.subspace_constr_method == 'random':
-            self.deriv_per_succ_iter = self.subspace_dim
-            self.deriv_per_unsucc_iter = self.subspace_dim
+            if self.direction_str == 'sd':
+                self.deriv_per_succ_iter = self.subspace_dim
+                self.deriv_per_unsucc_iter = self.subspace_dim
+            elif self.direction_str == 'newton':
+                self.deriv_per_succ_iter = self.subspace_dim + (self.subspace_dim + 1) * self.obj.input_dim
+                self.deriv_per_unsucc_iter = (self.obj.input_dim + 1) * self.subspace_dim
         else:
             if self.random_proj: # random tilde grad projection
                 if self.inner_use_full_grad:
-                    self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
-                    self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
+                    if self.direction_str == 'sd':
+                        self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
+                        self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
+                    elif self.direction_str == 'newton':
+                        self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim + (self.subspace_dim + 1) * self.obj.input_dim
+                        self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random + (self.subspace_no_random + 1) * self.obj.input_dim
                 else:
                     raise Exception('No longer in use!')
                     self.deriv_per_succ_iter = self.random_proj_dim

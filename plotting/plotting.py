@@ -9,7 +9,7 @@ from results.results_utils import get_hashed_filename
 
 # Enable LaTeX rendering, etc.
 plt.rcParams.update({
-    'font.size': 11,
+    'font.size': 9,
     "text.usetex": True,
     "text.latex.preamble": r"""\usepackage{amsmath}""",
     "font.family": "serif",
@@ -20,7 +20,8 @@ plt.rcParams.update({
 })
 
 # "Default" graphic parameters
-FIGSIZE_REF = (5.9, 3)
+FIGSIZE_REF = (5.9, 2.4)
+FIGSIZE_HALF = (FIGSIZE_REF[0] / 2, FIGSIZE_REF[1])
 LINE_WIDTH = 1
 MARKER_SIZE = 1
 
@@ -45,11 +46,11 @@ def config_str_to_linestyle(config_str: str):
     return LINESTYLES[linestyle_index]
 
 # This function generates an appropriate label string given a SolverOutput object.
-def solver_loss_label(config: ProjectedCommonDirectionsConfig,
-                      suppress_dir: bool=False,
-                      suppress_sketch_size: bool=False,
-                      suppress_c_const: bool=False,
-                      suppress_N_try: bool=False):
+def solver_label(config: ProjectedCommonDirectionsConfig,
+                 include_Pk_orth: bool=False,
+                 include_sketch_size: bool=False,
+                 include_c_const: bool=False,
+                 include_N_try: bool=False):
 
     # NOTE: edge case --- full-space method
     if config.subspace_frac_grads == 1 or config.subspace_frac_updates == 1 or config.subspace_frac_random == 1:
@@ -69,14 +70,12 @@ def solver_loss_label(config: ProjectedCommonDirectionsConfig,
     else:
         random_subspace_method = False
 
-    if config.direction_str == 'newton':
-        direction_str_formatted = config.direction_str.capitalize()
-    elif config.direction_str == 'sd':
-        direction_str_formatted = config.direction_str.upper()
-
     if full_space_method:
-        new_label_template = """Full-space method
-        Search: {direction_str_formatted}"""
+        if config.direction_str == 'newton':
+            direction_str_formatted = config.direction_str.capitalize()
+        elif config.direction_str == 'sd':
+            direction_str_formatted = config.direction_str.upper()
+        new_label_template = """{direction_str_formatted} method"""
 
         new_label = new_label_template.format(
             direction_str_formatted=direction_str_formatted
@@ -101,44 +100,43 @@ def solver_loss_label(config: ProjectedCommonDirectionsConfig,
     S_k_dim_str = f'${S_k_dim_frac*100:.0f}\%$'
     S_k_eq = '$=$'if S_k_dim_frac == np.round(S_k_dim_frac, 2) else r'$\approx$'
 
-
-    if lee_common_method:
-        grad_dirs_str  = r'$\nabla{f}(x_k)$'
-        label_lines = [r"""\verb|L-CommDir|"""]
-    elif random_subspace_method:
-        grad_dirs_str  = None
-        label_lines = [r"""Random subspace method"""]
-    else:
-        grad_dirs_str  = r'$\tilde{\nabla}f(x_k)$'
-        label_lines = [r"""\verb|L-ProjDir|"""]
-    update_dirs_str = r'$s_k$'
-
     format_args = {}
 
-    if config.subspace_frac_grads > 0:
-        label_lines.append(r"""\# {grad_dirs_str} dirs.\ {frac_sub_grads_eq} {frac_sub_grads_str}""")
-        format_args.update({'grad_dirs_str': grad_dirs_str,
-                            'frac_sub_grads_eq': frac_sub_grads_eq,
-                            'frac_sub_grads_str': frac_sub_grads_str})
-    if config.subspace_frac_updates > 0:
-        label_lines.append(r"""\# {update_dirs_str} dirs.\ {frac_sub_updates_eq} {frac_sub_updates_str}""")
-        format_args.update({'update_dirs_str': update_dirs_str,
-                            'frac_sub_updates_eq': frac_sub_updates_eq,
-                            'frac_sub_updates_str': frac_sub_updates_str})
-    if config.subspace_frac_random > 0:
-        label_lines.append(r"""\# Random dirs.\ {frac_sub_random_eq} {frac_sub_random_str}""")
-        format_args.update({'frac_sub_random_eq': frac_sub_random_eq,
-                            'frac_sub_random_str': frac_sub_random_str})
+    if lee_common_method:
+        if config.direction_str == 'sd':
+            label_lines = [r"""\verb|L-CommDir-SD-{grad_frac_str}.{update_frac_str}.{random_frac_str}|"""]
+        elif config.direction_str == 'newton':
+            label_lines = [r"""\verb|L-CommDir-N-{grad_frac_str}.{update_frac_str}.{random_frac_str}|"""]
+    elif random_subspace_method:
+        grad_dirs_str  = None
+        if config.direction_str == 'sd':
+            label_lines = [r"""RS-SD"""]
+        elif config.direction_str == 'newton':
+            label_lines = [r"""RS-N"""]
+    else:
+        if config.direction_str == 'sd':
+            label_lines = [r"""\verb|L-HS-SD-{grad_frac_str}.{update_frac_str}.{random_frac_str}|"""]
+        elif config.direction_str == 'newton':
+            label_lines = [r"""\verb|L-HS-N-{grad_frac_str}.{update_frac_str}.{random_frac_str}|"""]
+    
+    if not random_subspace_method:
+        format_args.update({'grad_frac_str': str(int(config.subspace_frac_grads * 100)),
+                            'update_frac_str': str(int(config.subspace_frac_updates * 100)),
+                            'random_frac_str': str(int(config.subspace_frac_random * 100))})
+        
+    if include_Pk_orth and (not full_space_method):
+        if config.orth_P_k:
+            label_lines.append(r"""$P_k$ orthonormal""")
+        elif config.normalise_P_k_cols:
+            label_lines.append(r"""$P_k$ \textbf{{not}} orthonormal""")
 
-    if not (suppress_sketch_size or (config.subspace_frac_grads == 0)):
+
+    if (include_sketch_size and config.subspace_frac_grads != 0 and (not lee_common_method)):
         label_lines.append(r"""Sketch size {S_k_eq} {S_k_dim_str}""")
         format_args.update({'S_k_eq': S_k_eq,
                             'S_k_dim_str': S_k_dim_str})
-    if not suppress_dir:
-        label_lines.append(r"""Search: {direction_str_formatted}""")
-        format_args.update({'direction_str_formatted': direction_str_formatted})
     
-    if not suppress_c_const:
+    if include_c_const:
         if config.c_const == np.inf:
             c_const_str = r'$\infty$'
         else:
@@ -146,7 +144,7 @@ def solver_loss_label(config: ProjectedCommonDirectionsConfig,
         label_lines.append(r"""$c =$ {c_const_str}""")
         format_args.update({'c_const_str': c_const_str})
 
-    if not suppress_N_try:
+    if include_N_try:
         if config.N_try == np.inf:
             N_try_str = r'$\infty$'
         else:
@@ -167,10 +165,10 @@ def plot_loss_vs_iteration(solver_outputs: list,
                            normalise_deriv_evals_vs_dimension: bool=False,
                            normalise_loss_data: bool=False,
                            labels=None,
-                           suppress_dir: bool=False,
-                           suppress_sketch_size: bool=False,
-                           suppress_c_const: bool=False,
-                           suppress_N_try: bool=False):
+                           include_Pk_orth: bool=False,
+                           include_sketch_size: bool=False,
+                           include_c_const: bool=False,
+                           include_N_try: bool=False):
     """
     Plot the loss (function values) vs iteration count for multiple solvers.
 
@@ -188,17 +186,17 @@ def plot_loss_vs_iteration(solver_outputs: list,
     but referring to the 'dimension' of S_k instead
     labels: List of labels for each solver output.
     """
-    fig = plt.figure(figsize=FIGSIZE_REF)
+    fig = plt.figure(figsize=FIGSIZE_HALF)
     
     if labels is None:
-        try: # If subspace dimension is a meaningful concept for the solver
+        try:
             labels = []
             for solver_out in solver_outputs:
-                new_label = solver_loss_label(solver_out.solver.config,
-                                              suppress_dir=suppress_dir,
-                                              suppress_sketch_size=suppress_sketch_size,
-                                              suppress_c_const=suppress_c_const,
-                                              suppress_N_try=suppress_N_try)
+                new_label = solver_label(solver_out.solver.config,
+                                         include_Pk_orth=include_Pk_orth,
+                                         include_sketch_size=include_sketch_size,
+                                         include_c_const=include_c_const,
+                                         include_N_try=include_N_try)
                 labels.append(new_label)
         except: # Generic chronological numbering
             labels = [f"Solver {i}" for i in range(len(solver_outputs))]
@@ -246,10 +244,6 @@ def plot_loss_vs_iteration(solver_outputs: list,
     if deriv_evals_axis:
         if normalise_deriv_evals_vs_dimension:
             plt.xlabel('Equivalent gradient evaluations')
-            if normalise_loss_data:
-                plt.title(f'Normalised objective vs equivalent gradient evaluations. {solver_output.solver.obj.name}')
-            else:
-                plt.title(f'Objective vs equivalent gradient evaluations. {solver_output.solver.obj.name}')
         else:
             plt.xlabel('(Directional) derivative evaluations')
             if normalise_loss_data:
@@ -258,23 +252,27 @@ def plot_loss_vs_iteration(solver_outputs: list,
                 plt.title(f'Objective vs (directional) derivative evaluations. {solver_output.solver.obj.name}')
     else:
         plt.xlabel('Iteration')
-        plt.title(f'Objective vs iteration. {solver_output.solver.obj.name}')
+        # plt.title(f'Objective vs iteration. {solver_output.solver.obj.name}')
     if normalise_loss_data:
-        plt.ylabel(r'$\bar{f}(x_k)$')
+        plt.ylabel(r'Normalised objective')
     else:
-        plt.ylabel('$f(x_k)$')
+        plt.ylabel('Objective')
     plt.legend()
     plt.grid(True, which="both", ls="-")
     return fig
 
-def plot_data_profiles(success_dict):
+def plot_data_profiles(success_dict: dict,
+                       include_Pk_orth: bool=False,
+                       include_sketch_size: bool=False,
+                       include_c_const: bool=False,
+                       include_N_try: bool=False):
     """
     Plot data profiles from the success_dict generated by generate_data_profiles.
     
     success_dict: Dictionary containing success rates for different solvers and
                   additional keys for 'accuracy' and 'equiv_grad_list'.
     """
-    fig = plt.figure(figsize=FIGSIZE_REF)
+    fig = plt.figure(figsize=FIGSIZE_HALF)
 
     # Retrieve equiv_grad_list and accuracy for plotting
     equiv_grad_list = success_dict.pop('equiv_grad_list')
@@ -289,14 +287,18 @@ def plot_data_profiles(success_dict):
         color = config_str_to_color(str(config))
         linestyle = config_str_to_linestyle(str(config))
         
-        label = solver_loss_label(config=config)
+        label = solver_label(config=config,
+                             include_Pk_orth=include_Pk_orth,
+                             include_sketch_size=include_sketch_size,
+                             include_c_const=include_c_const,
+                             include_N_try=include_N_try)
         plt.plot(equiv_grad_list, success_list, color=color,
                  linestyle=linestyle,label=label)
 
     # Add plot title, labels, and legend
-    plt.title(f"Data Profile (Accuracy = {accuracy})")
-    plt.xlabel("Equivalent Gradient Evaluations")
-    plt.ylabel("Success Rate")
+    # plt.title(f"Accuracy = {accuracy}")
+    plt.xlabel("Equivalent gradient evaluations")
+    plt.ylabel("Fraction of problems solved")
     plt.legend()
     plt.grid(True)
     return fig

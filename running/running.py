@@ -78,14 +78,14 @@ def run_solvers_single_prob(problem_tup, solvers_list, no_runs,
 
 # This function is simpler than averaging ones, but more flexible in allowing
 # for multiple solvers along with multiple problems.
-def run_solvers_multiple_prob(extended_problem_name_list, solver_name_list,
+def run_solvers_multiple_prob(extended_problem_name_list, config_path_list,
                               passable_name, no_runs, 
                               save_results=False):
     for problem_name in extended_problem_name_list:
         problem_tuple = select_problem(problem_name, extended_name=True)
         x0, obj = problem_tuple
-        for solver_name in solver_name_list:
-            full_config = combine_configs(problem_name, solver_name,
+        for config_path in config_path_list:
+            full_config = combine_configs(problem_name, config_path,
                                           passable_name)
             solver = ProjectedCommonDirections(config=full_config)
             for _ in range(no_runs):
@@ -100,29 +100,28 @@ def run_solvers_multiple_prob(extended_problem_name_list, solver_name_list,
                                                              output)
 
 def plot_run_solvers(output_dict, normalise_loss,
-                     suppress_c_const=False,
-                     suppress_N_try=False,
-                     suppress_dir=False,
-                     suppress_sketch_size=False):
+                     include_Pk_orth: bool=False,
+                     include_c_const: bool=False,
+                     include_N_try: bool=False,
+                     include_sketch_size: bool=False):
     # Extract all SolverOutput objects from a results dictionary.
     output_list = [solver_output for _, solver_outputs in output_dict['raw_results'] for solver_output in solver_outputs]
     
-    # Uncomment the following lines to 'select' plotting functions
-    plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
-                                             deriv_evals_axis=True,
-                                             normalise_deriv_evals_vs_dimension=True,
-                                             normalise_loss_data=normalise_loss,
-                                             suppress_c_const=suppress_c_const,
-                                             suppress_N_try=suppress_N_try,
-                                             suppress_dir=suppress_dir,
-                                             suppress_sketch_size=suppress_sketch_size)
-    plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
-                                             deriv_evals_axis=False,
-                                             normalise_loss_data=normalise_loss,
-                                             suppress_c_const=suppress_c_const,
-                                             suppress_N_try=suppress_N_try,
-                                             suppress_dir=suppress_dir,
-                                             suppress_sketch_size=suppress_sketch_size)
+    return plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
+                                                    deriv_evals_axis=True,
+                                                    normalise_deriv_evals_vs_dimension=True,
+                                                    normalise_loss_data=normalise_loss,
+                                                    include_Pk_orth=include_Pk_orth,
+                                                    include_c_const=include_c_const,
+                                                    include_N_try=include_N_try,
+                                                    include_sketch_size=include_sketch_size)
+    # plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
+    #                                          deriv_evals_axis=False,
+    #                                          normalise_loss_data=normalise_loss,
+    #                                          include_Pk_orth=include_Pk_orth,
+    #                                          include_c_const=include_c_const,
+    #                                          include_N_try=include_N_try,
+    #                                          include_sketch_size=include_sketch_size)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
     #                                            attr_names=['update_norms'], log_plot=True)
     # plotting.plotting.plot_scalar_vs_iteration(solver_outputs=output_list,
@@ -149,7 +148,6 @@ def plot_run_solvers(output_dict, normalise_loss,
     #                                                 attr_names=['update_norms', 'P_ranks'], log_plots=[True, False])
     # plotting.plotting.twin_plot_scalar_vs_iteration(solver_outputs=output_list,
     #                                                 attr_names=['f_vals', 'angles_to_full_grad'], log_plots=[True, False])
-    pass
 
 def plot_data_profiles(problem_name_list: list, solver_config_list: list,
                        accuracy: float, max_equiv_grad: int):

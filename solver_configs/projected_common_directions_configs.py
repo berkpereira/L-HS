@@ -1,6 +1,6 @@
 """
-This file is meant to store a curated set of configurations of
-ProjectedCommonDirections 
+This file is meant to store a curated set of configurations for use in 
+numerical experiments for thesis results.
 """
 import autograd.numpy as np
 from solvers.projected_common_directions import ProjectedCommonDirectionsConfig
@@ -9,11 +9,33 @@ from solvers.projected_common_directions import ProjectedCommonDirectionsConfig
 solver_config_tree = {
     "sd": {
         'orth_choices': { # for binary orthogonalisation-related variant choices
-            'solver0': {
-                'subspace_...': 'stuff',
-            },
             'solver1': {
-                'subspace...': 'more here',
+                "subspace_frac_grads": 0.2,
+                "subspace_frac_updates": 0.2,
+                "subspace_frac_random": 0.2,
+                "random_proj_dim_frac": 1,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "normalise_P_k_cols": False,
+                "alpha_max": 100,
+                "tau": 0.5,
+                "c_const": np.inf,
+                "N_try": 200,
+            },
+            'solver2': {
+                "subspace_frac_grads": 0.2,
+                "subspace_frac_updates": 0.2,
+                "subspace_frac_random": 0.2,
+                "random_proj_dim_frac": 1,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": False,
+                "normalise_P_k_cols": True,
+                "alpha_max": 100,
+                "tau": 0.5,
+                "c_const": np.inf,
+                "N_try": 200,
             }
         }
     },

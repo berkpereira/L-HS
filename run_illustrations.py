@@ -1,10 +1,14 @@
 from running import running
+import results.results_utils
 from solvers.projected_common_directions import ProjectedCommonDirections, ProjectedCommonDirectionsConfig
 import matplotlib.pyplot as plt
 
 def main():
     running.soft_window_clear()
-    # running.set_seed(42)
+
+    CONFIG_PATH_LIST = [['sample_solvers', 'solver1'],
+                        ['sample_solvers', 'solver2'],
+                        ['sample_solvers', 'solver3']]
 
     # Choose problem
     test_problems_list = ['rosenbrock_single',                 # 0, n even
@@ -28,12 +32,13 @@ def main():
     NORMALISE_LOSS = True
     
     SAVE_RESULTS = False
+    
+    SAVE_FIG = False
 
     passable_name = 'passable2'
-    configs_list = [running.combine_configs(extended_problem_name, ['sample_solvers', 'solver0'], passable_name),
-                    running.combine_configs(extended_problem_name, ['sample_solvers', 'solver1'], passable_name),
-                    running.combine_configs(extended_problem_name, ['sample_solvers', 'solver2'], passable_name),
-                    running.combine_configs(extended_problem_name, ['sample_solvers', 'solver3'], passable_name),]
+    configs_list = []
+    for config_path in CONFIG_PATH_LIST:
+        configs_list.append(running.combine_configs(extended_problem_name, config_path=config_path, passable_name=passable_name))
                     
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 
@@ -49,11 +54,12 @@ def main():
     #                                       attr_names=results_attrs)
 
     # (detailed plots, each individual run represented)
-    running.plot_run_solvers(results_dict, NORMALISE_LOSS,
-                            suppress_dir=True,
-                            suppress_sketch_size=True)
+    fig = running.plot_run_solvers(results_dict, NORMALISE_LOSS,
+                                   include_Pk_orth=True)
 
     plt.show()
+    if SAVE_FIG:
+        fig.savefig(fname=results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, 'illustration'))
 
 if __name__ == '__main__':
     main()

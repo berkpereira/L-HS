@@ -1,11 +1,5 @@
 # ```projected_common_directions.md```
 
-This script is largely based on the work from https://doi.org/10.1007/s12532-022-00219-z (Lee, Wang, and Lin, 2022). There is another module in this repo, common_directions.py, reflecting the algorithms proposed in that paper closely. This module adapts that with some changes.
-
-Namely, here we implement a version of that algorithm that never uses full gradient information.
-We also seek to make this version of the algorithm more general, including variants that do/do not use Hessian information, etc.
-The common thread to all of these methods is that THE FULL GRADIENT IS NEVER USED IN ITSELF IN THE ALGORITHM.
-
 ## Some notation
 
 We use $P_k$ to denote matrices whose column range is contained in the subspace to which we reduce the problem. These columns are constructed using problem information (e.g., iterates, projected gradients of the objective, ...). We may refer to the orthogonalised basis as $\hat{Q}_k$, through the QR factorisation

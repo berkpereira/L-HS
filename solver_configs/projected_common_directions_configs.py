@@ -7,7 +7,7 @@ from solvers.projected_common_directions import ProjectedCommonDirectionsConfig
 
 # Dictionary to hold configuration parameters for all solver variants
 solver_config_tree = {
-    "sd": {
+    "sd": { # 
         'orth_Pk': { # orthogonalise Pk ?
             'solver1': {
                 "subspace_frac_grads": 0.2,

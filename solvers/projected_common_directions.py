@@ -57,8 +57,8 @@ class ProjectedCommonDirectionsConfig:
     # Constants --- CFS framework and others
     beta: float = 0.001
     tau: float = 0.5       # Float in (0, 1)
-    c_const: int = 1       # POSITIVE integer. May also be set to np.inf to recover usual backtracking process
-    N_try: int = 1         # Number of allowable step retries for each subspace until success
+    c_const: int = np.inf  # POSITIVE integer. May also be set to np.inf to recover usual backtracking process
+    N_try: int = 100         # Number of allowable step retries for each subspace until success
     alpha_max: float = 100 # Ceiling on step size parameter
     p_const: int = 1       # POSITIVE integer, used in setting initial alpha
 

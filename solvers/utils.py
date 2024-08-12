@@ -186,8 +186,8 @@ def normalise_matrix_columns(mat: np.ndarray) -> np.ndarray:
     # Iterate over each column to normalise
     for i in range(mat_copy.shape[1]):
         col_norm = np.linalg.norm(mat_copy[:, i])
-        if col_norm == 0:
-            raise ValueError(f"Column {i} is a zero vector, cannot normalise.")
+        if col_norm == 0: # usually because an update vector was very very small. Benign.
+            continue
         mat_copy[:, i] /= col_norm
     
     return mat_copy

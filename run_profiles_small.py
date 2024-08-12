@@ -8,21 +8,22 @@ import os
 
 def main():
 
-    RUN = False
+    RUN = True
     SAVE_RESULTS = False
     NO_RUNS = 10
     
-    PROFILE = True
+    PLOT_PROFILE = False
     SAVE_FIG = False
 
 ################################################################################
 ################################################################################
 
-    CONFIG_PATH_LIST = [['sample_solvers', 'solver1'],
-                        ['sample_solvers', 'solver2'],
-                        ['sample_solvers', 'solver3']]
+    CONFIG_PATH_LIST = [['sd', 'orth_Pk', 'solver1'],
+                        ['sd', 'orth_Pk', 'solver2'],
+                        ['sd', 'orth_Pk', 'solver3'],
+                        ['sd', 'orth_Pk', 'solver4']]
 
-    PASSABLE_NAME = 'passable2'
+    PASSABLE_NAME = 'default'
 
     ################################################################################
     ################################################################################
@@ -30,8 +31,8 @@ def main():
     with open('problems/small_profile_problems.json', 'r') as f:
         problem_name_list = json.load(f)
 
-    if RUN and PROFILE:
-        raise Exception('Cannot have both RUN and PROFILE at the same time!')
+    if RUN and PLOT_PROFILE:
+        raise Exception('Cannot have both RUN and PLOT_PROFILE at the same time!')
 
     if RUN:
         running.running.run_solvers_multiple_prob(extended_problem_name_list=problem_name_list,
@@ -44,7 +45,7 @@ def main():
     ################################################################################
     ################################################################################
 
-    if PROFILE:
+    if PLOT_PROFILE:
         configs_list = []
         for problem_name in problem_name_list:
             for config_path in CONFIG_PATH_LIST:
@@ -58,7 +59,9 @@ def main():
                                                                     configs_list, accuracy=1e-2,
                                                                     max_equiv_grad=200)
         fig = plotting.plotting.plot_data_profiles(success_dict,
-                                                   include_Pk_orth=True)
+                                                   include_Pk_orth=True,
+                                                   include_sketch_size=True,
+                                                   figsize=(5.9/2, 3.3))
         plt.show()
         if SAVE_FIG:
             fig.savefig(fname=results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, 'small_profile'))

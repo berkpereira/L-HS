@@ -10,38 +10,57 @@ solver_config_tree = {
     "sd": { # 
         'orth_Pk': { # orthogonalise Pk ?
             'solver1': {
-                "subspace_frac_grads": 0.2,
-                "subspace_frac_updates": 0.2,
-                "subspace_frac_random": 0.2,
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
                 "random_proj_dim_frac": 1,
                 "direction_str": 'sd',
                 "ensemble": 'haar',
                 "orth_P_k": True,
                 "normalise_P_k_cols": False,
                 "alpha_max": 100,
-                "tau": 0.5,
-                "c_const": np.inf,
-                "N_try": 200,
             },
             'solver2': {
-                "subspace_frac_grads": 0.2,
-                "subspace_frac_updates": 0.2,
-                "subspace_frac_random": 0.2,
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
                 "random_proj_dim_frac": 1,
                 "direction_str": 'sd',
                 "ensemble": 'haar',
                 "orth_P_k": False,
                 "normalise_P_k_cols": True,
                 "alpha_max": 100,
-                "tau": 0.5,
-                "c_const": np.inf,
-                "N_try": 200,
+            },
+            'solver3': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "normalise_P_k_cols": False,
+                "alpha_max": 100,
+            },
+            'solver4': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": False,
+                "normalise_P_k_cols": True,
+                "alpha_max": 100,
             }
         }
     },
     "newton": {
-        'orth_choices'
+        'orth_Pk'
     },
+    
+################################################################################
+    
     "sample_solvers": {
         "solver0": {
             "subspace_frac_grads": 0.1,

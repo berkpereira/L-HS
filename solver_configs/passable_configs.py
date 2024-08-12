@@ -10,12 +10,11 @@ import autograd.numpy as np
 
 passable_variants_dict = {
     "default": {
-        "tol": 1e-6,
+        "tol": 0,
         "max_iter": np.inf,
         "equiv_grad_budget": 500,
         "iter_print_gap": 500,
         "verbose": True,
-        "timeout_secs": 60
     },
     "solve_best": {
         "tol": 1e-6,

@@ -58,7 +58,7 @@ class ProjectedCommonDirectionsConfig:
     beta: float = 0.001
     tau: float = 0.5       # Float in (0, 1)
     c_const: int = np.inf  # POSITIVE integer. May also be set to np.inf to recover usual backtracking process
-    N_try: int = 100         # Number of allowable step retries for each subspace until success
+    N_try: int = 200         # Number of allowable step retries for each subspace until success
     alpha_max: float = 100 # Ceiling on step size parameter
     p_const: int = 1       # POSITIVE integer, used in setting initial alpha
 
@@ -94,8 +94,8 @@ class ProjectedCommonDirectionsConfig:
 
         # If fractions are specified, use them to set the integer attributes
         # NOTE: This only goes for cases where a solver is then to be run.
-        # When obj is None, this is when we are using config objects in manner
-        # of comparison of the same specification across different
+        # Otherwise --- when obj is None --- is when we are using config objects
+        # in comparison of the same specification across different
         # problems (e.g. in plotting data profiles). In this case it would make
         # no sense to assign numbers of directions here.
         if self.obj is not None:
@@ -247,11 +247,21 @@ class ProjectedCommonDirections:
             if self.random_proj: # random tilde grad projection
                 if self.inner_use_full_grad:
                     if self.direction_str == 'sd':
-                        self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
-                        self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
+                        if self.subspace_dim == self.obj.input_dim or self.random_proj_dim_frac == 1: # edge case, full space method
+                            self.deriv_per_succ_iter = self.obj.input_dim
+                            self.deriv_per_unsucc_iter = 0
+                        else: # usual cases
+                            self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
+                            self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
                     elif self.direction_str == 'newton':
-                        self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim + (self.subspace_dim + 1) * self.obj.input_dim
-                        self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random + (self.subspace_no_random + 1) * self.obj.input_dim
+                        if self.subspace_dim == self.obj.input_dim: # edge case, full space method
+                            self.deriv_per_succ_iter = (self.obj.input_dim + 1) * self.obj.input_dim
+                        elif self.random_proj_dim_frac == 1:
+                            self.deriv_per_succ_iter = self.obj.input_dim + (self.subspace_dim + 1) * self.obj.input_dim
+                            self.deriv_per_unsucc_iter = 0 + (self.subspace_no_random + 1) * self.obj.input_dim
+                        else: # usual cases
+                            self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim + (self.subspace_dim + 1) * self.obj.input_dim
+                            self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random + (self.subspace_no_random + 1) * self.obj.input_dim
                 else:
                     raise Exception('No longer in use!')
                     self.deriv_per_succ_iter = self.random_proj_dim
@@ -271,7 +281,8 @@ class ProjectedCommonDirections:
         if self.subspace_dim == self.obj.input_dim:
             self.deriv_per_succ_iter = self.obj.input_dim
         
-        if self.deriv_per_succ_iter > self.obj.input_dim:
+        if ((self.direction_str == 'sd' and self.deriv_per_succ_iter > self.obj.input_dim) or
+            (self.direction_str == 'newton' and self.deriv_per_succ_iter > (self.obj.input_dim + 1) * self.obj.input_dim)):
             raise Exception("Method uses more derivatives per iteration than if you used a full space method!")
 
     # Draw a TALL sketching matrix from random ensemble.

@@ -8,20 +8,22 @@ import os
 
 def main():
 
-    RUN = True
+    RUN = False
     SAVE_RESULTS = False
     NO_RUNS = 10
     
-    PLOT_PROFILE = False
+    PLOT_PROFILE = True
     SAVE_FIG = False
 
 ################################################################################
 ################################################################################
 
-    CONFIG_PATH_LIST = [['sd', 'orth_Pk', 'solver1'],
-                        ['sd', 'orth_Pk', 'solver2'],
-                        ['sd', 'orth_Pk', 'solver3'],
-                        ['sd', 'orth_Pk', 'solver4']]
+    CONFIG_PATH_LIST = [
+        ['sd', 'orth_Pk', 'solver1'],
+        ['sd', 'orth_Pk', 'solver2'],
+        ['sd', 'orth_Pk', 'solver3'],
+        ['sd', 'orth_Pk', 'solver4']
+        ]
 
     PASSABLE_NAME = 'default'
 
@@ -47,21 +49,22 @@ def main():
 
     if PLOT_PROFILE:
         configs_list = []
-        for problem_name in problem_name_list:
-            for config_path in CONFIG_PATH_LIST:
+        for config_path in CONFIG_PATH_LIST:
+            for problem_name in problem_name_list:
                 config = running.running.combine_configs(extended_problem_name=problem_name,
                                                         config_path=config_path,
-                                                        passable_name=PASSABLE_NAME)
+                                                        passable_name=PASSABLE_NAME,
+                                                        ignore_problem=True)
                 configs_list.append(config)
 
-
+        print('Configs done')
         success_dict = results.results_utils.generate_data_profiles(problem_name_list,
                                                                     configs_list, accuracy=1e-2,
-                                                                    max_equiv_grad=200)
+                                                                    max_equiv_grad=150)
         fig = plotting.plotting.plot_data_profiles(success_dict,
                                                    include_Pk_orth=True,
                                                    include_sketch_size=True,
-                                                   figsize=(5.9/2, 3.3))
+                                                   figsize=(5.9, 2.6))
         plt.show()
         if SAVE_FIG:
             fig.savefig(fname=results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, 'small_profile'))

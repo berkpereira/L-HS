@@ -20,7 +20,7 @@ plt.rcParams.update({
 })
 
 # "Default" graphic parameters
-FIGSIZE_REF = (5.9, 2.4)
+FIGSIZE_REF = (5.9, 2.9)
 FIGSIZE_HALF = (FIGSIZE_REF[0] / 2, FIGSIZE_REF[1])
 LINE_WIDTH = 1
 MARKER_SIZE = 1

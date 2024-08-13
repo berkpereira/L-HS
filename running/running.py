@@ -20,7 +20,7 @@ def soft_window_clear():
 # This function combines the solver and passable configurations into a proper
 # configuration object (ProjectedCommonDirectionsConfig) to be subsequently used.
 def combine_configs(extended_problem_name: str, config_path: list,
-                    passable_name: str):
+                    passable_name: str, ignore_problem: bool=False):
     problem_name, input_dim = problem_name_dim_tuple_from_json_name(extended_problem_name)
     """
     Combines problem, solver, and passable configurations into a single configuration.
@@ -38,9 +38,14 @@ def combine_configs(extended_problem_name: str, config_path: list,
     for key in config_path:
         config_dict = config_dict[key]
 
-    config_dict = {'obj': problems.test_problems.select_problem(problem_name, input_dim)[1],
-                   **config_dict,
-                   **passable_variants_dict[passable_name]}
+    if ignore_problem:
+        config_dict = {'obj': None,
+                       **config_dict,
+                       **passable_variants_dict[passable_name]}
+    else:
+        config_dict = {'obj': problems.test_problems.select_problem(problem_name, input_dim)[1],
+                       **config_dict,
+                       **passable_variants_dict[passable_name]}
     return ProjectedCommonDirectionsConfig(**config_dict)
 
 def get_problem(problem_name, input_dim):

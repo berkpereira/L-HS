@@ -258,8 +258,8 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
         raise ValueError('Input accuracy must be in the open interval (0, 1).')
 
     # equiv_grad_list = [i for i in range(max_equiv_grad + 1)]
-    # LIST_STEP = 0.1
-    LIST_STEP = 1
+    LIST_STEP = 0.1
+    # LIST_STEP = 1
     equiv_grad_list = np.arange(0, max_equiv_grad + 1 + LIST_STEP, LIST_STEP)
     
     # Need a counter for each solver.
@@ -341,7 +341,8 @@ def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
             for j in range(success_grad_index, len(success_list)):
                 success_list[j] += 1
 
-def generate_pdf_file_name(config_path_list, plot_type: str):
+def generate_pdf_file_name(config_path_list, plot_type: str,
+                           accuracy: float=None):
     # Ensure all config paths are the same except for the last element
     common_path = config_path_list[0][:-1]  # Take the first config path, excluding the last element
     for config_path in config_path_list:
@@ -351,7 +352,9 @@ def generate_pdf_file_name(config_path_list, plot_type: str):
     # Concatenate the common parts of the config paths to form the base of the file name
     middle_name = '_'.join(common_path)
 
+    accuracy_str = '' if accuracy is None else str(accuracy)
+
     # Add the suffix for the profile type
-    file_name = '/Users/gabrielpereira/Library/CloudStorage/OneDrive-Nexus365/ox-mmsc-cloud/dissertation/mmsc-thesis/images/python-figures/' + middle_name + '_' + plot_type + '.pdf'
+    file_name = '/Users/gabrielpereira/Library/CloudStorage/OneDrive-Nexus365/ox-mmsc-cloud/dissertation/mmsc-thesis/images/python-figures/' + middle_name + '_' + plot_type + '_accuracy_' + accuracy_str + '.pdf'
     
     return file_name

@@ -257,8 +257,8 @@ class ProjectedCommonDirections:
                         if self.subspace_dim == self.obj.input_dim: # edge case, full space method
                             self.deriv_per_succ_iter = (self.obj.input_dim + 1) * self.obj.input_dim
                         elif self.random_proj_dim_frac == 1:
-                            self.deriv_per_succ_iter = self.obj.input_dim + (self.subspace_dim + 1) * self.obj.input_dim
-                            self.deriv_per_unsucc_iter = 0 + (self.subspace_no_random + 1) * self.obj.input_dim
+                            self.deriv_per_succ_iter = self.obj.input_dim + (self.subspace_dim) * self.obj.input_dim
+                            self.deriv_per_unsucc_iter = 0 + (self.subspace_no_random) * self.obj.input_dim
                         else: # usual cases
                             self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim + (self.subspace_dim + 1) * self.obj.input_dim
                             self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random + (self.subspace_no_random + 1) * self.obj.input_dim
@@ -562,13 +562,14 @@ class ProjectedCommonDirections:
         timed_out = False
 
 
-        store_all_full_grads = [full_grad]
-        store_all_proj_grads = [proj_grad]
-        store_all_x = [x]
+        #store_all_full_grads = [full_grad]
+        #store_all_proj_grads = [proj_grad]
+        #store_all_x = [x]
 
         # Start loop
         # NOTE: Not even allowing deriv evals to EVER go over self.deriv_budget.
         while (k < self.max_iter) and (deriv_eval_count + self.deriv_per_succ_iter < self.deriv_budget):
+            spent_derivatives = False
             # Termination
             if norm_full_grad < self.tol:
                 terminated = True
@@ -592,13 +593,13 @@ class ProjectedCommonDirections:
                 last_angle_to_full_grad = np.arccos(np.dot(direction, -full_grad) / (np.linalg.norm(direction) * np.linalg.norm(full_grad))) * 180 / np.pi
 
             j_try += 1
-            if armijo_satisfied: # Successful iteration
-                
+            if armijo_satisfied: # NOTE: SUCCESSFUL ITERATION
+                spent_derivatives = True
                 # Update iterate and step size parameter alpha
                 x = x + x_update
                 alpha = np.min((self.alpha_max, self.nu * alpha))
                 j_try = 0
-                store_all_x.append(x)
+                # store_all_x.append(x)
 
                 # Compute upcoming update's info:
                 last_update_norm = np.linalg.norm(x_update)
@@ -637,11 +638,12 @@ class ProjectedCommonDirections:
                 if self.direction_str == 'newton':
                     proj_B = np.transpose(Q) @ (full_B @ Q)
                     proj_B = self.regularise_hessian(proj_B)
-            else: # Unsuccessful iteration
+            else: # NOTE: UNSUCCESSFUL ITERATION
                 # x is unchanged
                 # Decrease step size parameter alpha (backtracking)
                 alpha = self.tau * alpha
                 if j_try == self.N_try:
+                    spent_derivatives = True
                     # Must reproject the current gradient
                     if self.subspace_no_grads > 0:
                         proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
@@ -672,25 +674,26 @@ class ProjectedCommonDirections:
                                      f_x=f_x, norm_full_grad=norm_full_grad,
                                      step_size=alpha)
 
-            # Append info for later plotting
-            store_all_full_grads.append(full_grad)
-            norm_full_grad = np.linalg.norm(full_grad)
+            # Only keeping records if meaningful developments have happened.
+            if spent_derivatives:
+                # Append info for later plotting
+                # store_all_full_grads.append(full_grad)
+                
+                # if self.subspace_no_grads > 0:
+                #     store_all_proj_grads.append(proj_grad)
+
+                direction_norms_list.append(np.linalg.norm(direction))
+                update_norms_list.append(last_update_norm)
+                angles_to_full_grad_list.append(last_angle_to_full_grad)
+                f_vals_list.append(f_x)
+                full_grad_norms_list.append(np.linalg.norm(full_grad))
+                if proj_grad is not None:
+                    proj_grad_norms_list.append(np.linalg.norm(proj_grad))
+                deriv_evals_list.append(deriv_eval_count)
             
-            if self.subspace_no_grads > 0:
-                store_all_proj_grads.append(proj_grad)
-
-            direction_norms_list.append(np.linalg.norm(direction))
-            update_norms_list.append(last_update_norm)
-            angles_to_full_grad_list.append(last_angle_to_full_grad)
-            f_vals_list.append(f_x)
-            full_grad_norms_list.append(np.linalg.norm(full_grad))
-            if proj_grad is not None:
-                proj_grad_norms_list.append(np.linalg.norm(proj_grad))
-
-            # Update iteration count metrics
+            norm_full_grad = np.linalg.norm(full_grad)
+            # Update iteration count regardless
             k += 1
-            deriv_evals_list.append(deriv_eval_count)
-
 
         if self.verbose:
             self.print_iter_info(last=True, terminated=terminated, timed_out=timed_out, k=k,

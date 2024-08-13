@@ -53,7 +53,49 @@ solver_config_tree = {
                 "normalise_P_k_cols": True,
                 "alpha_max": 100,
             }
-        }
+        },
+        'haar_gauss': {
+            'solver1': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver2': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'scaled_gaussian',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver3': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.6,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver4': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.6,
+                "direction_str": 'sd',
+                "ensemble": 'scaled_gaussian',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+        },
     },
     "newton": {
         'orth_Pk'

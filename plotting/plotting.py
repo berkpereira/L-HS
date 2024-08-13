@@ -50,7 +50,8 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
                  include_Pk_orth: bool=False,
                  include_sketch_size: bool=False,
                  include_c_const: bool=False,
-                 include_N_try: bool=False):
+                 include_N_try: bool=False,
+                 include_ensemble: bool=False):
 
     # NOTE: edge case --- full-space method
     if config.subspace_frac_grads == 1 or config.subspace_frac_updates == 1 or config.subspace_frac_random == 1:
@@ -134,6 +135,13 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
         elif config.normalise_P_k_cols:
             label_lines.append(r"""$P_k$ \textbf{{not}} orthonormal""")
 
+    if include_ensemble and (config.random_proj_dim_frac not in (0, 1)):
+        if config.ensemble == 'scaled_gaussian':
+            label_lines.append(r"""$S_k$ Gaussian""")
+        elif config.ensemble == 'haar':
+            label_lines.append(r"""$S_k$ orthonormal""")
+        else:
+            raise Exception('Unrecognised ensemble!')
 
     if (include_sketch_size and config.subspace_frac_grads != 0 and (not lee_common_method)):
         # label_lines.append(r"""Sketch size {S_k_eq} {S_k_dim_str}""")
@@ -175,6 +183,7 @@ def plot_loss_vs_iteration(solver_outputs: list,
                            include_sketch_size: bool=False,
                            include_c_const: bool=False,
                            include_N_try: bool=False,
+                           include_ensemble: bool=False,
                            figsize='full_width',
                            label_ncol: int=1):
     """
@@ -209,7 +218,8 @@ def plot_loss_vs_iteration(solver_outputs: list,
                                          include_Pk_orth=include_Pk_orth,
                                          include_sketch_size=include_sketch_size,
                                          include_c_const=include_c_const,
-                                         include_N_try=include_N_try)
+                                         include_N_try=include_N_try,
+                                         include_ensemble=include_ensemble)
                 labels.append(new_label)
         except: # Generic chronological numbering
             labels = [f"Solver {i}" for i in range(len(solver_outputs))]
@@ -279,6 +289,7 @@ def plot_data_profiles(success_dict: dict,
                        include_sketch_size: bool=False,
                        include_c_const: bool=False,
                        include_N_try: bool=False,
+                       include_ensemble: bool=False,
                        figsize='full_width',
                        label_ncol: int=1):
     """
@@ -311,7 +322,8 @@ def plot_data_profiles(success_dict: dict,
                              include_Pk_orth=include_Pk_orth,
                              include_sketch_size=include_sketch_size,
                              include_c_const=include_c_const,
-                             include_N_try=include_N_try)
+                             include_N_try=include_N_try,
+                             include_ensemble=include_ensemble)
         plt.step(equiv_grad_list, success_list, color=color,
                  linestyle=linestyle,label=label, where='post')
 

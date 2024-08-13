@@ -54,7 +54,7 @@ solver_config_tree = {
                 "alpha_max": 100,
             }
         },
-        'haar_gauss': {
+        'haar_gauss': { # use Haar-orthonormal or Gauss matrices for sketching?
             'solver1': {
                 "subspace_frac_grads": 0.1,
                 "subspace_frac_updates": 0.1,
@@ -96,6 +96,58 @@ solver_config_tree = {
                 "alpha_max": 100,
             },
         },
+        'sketch_size': { # What sketch size to use?
+            'solver0': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.05,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver1': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.1,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver2': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver3': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.4,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver4': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.6,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+        }
     },
     "newton": {
         'orth_Pk'

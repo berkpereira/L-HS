@@ -109,6 +109,7 @@ def plot_run_solvers(output_dict, normalise_loss,
                      include_c_const: bool=False,
                      include_N_try: bool=False,
                      include_sketch_size: bool=False,
+                     include_ensemble: bool=False,
                      figsize='full_width',
                      label_ncol: int=1):
     # Extract all SolverOutput objects from a results dictionary.
@@ -122,6 +123,7 @@ def plot_run_solvers(output_dict, normalise_loss,
                                                     include_c_const=include_c_const,
                                                     include_N_try=include_N_try,
                                                     include_sketch_size=include_sketch_size,
+                                                    include_ensemble=include_ensemble,
                                                     figsize=figsize,
                                                     label_ncol=label_ncol)
     # plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,

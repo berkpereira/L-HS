@@ -7,32 +7,36 @@ import json
 import os
 
 def main():
-
+    # RUNNING
     RUN = False
     SAVE_RESULTS = False
     NO_RUNS = 10
     
+    # PLOTTING
     PLOT_PROFILE = True
     SAVE_FIG = False
 
     ACCURACY = 1e-2
-    MAX_EQUIV_GRAD = 60
+    PLOT_MAX_EQUIV_GRAD = 150
     LABEL_NCOL = 2
+    FIGSIZE = (5.9, 2.3)
 
 ################################################################################
 ################################################################################
 
+    experiment_str = 'sketch_size'
     CONFIG_PATH_LIST = [
-        ['sd', 'orth_Pk', 'solver1'],
-        ['sd', 'orth_Pk', 'solver2'],
-        ['sd', 'orth_Pk', 'solver3'],
-        ['sd', 'orth_Pk', 'solver4']
+        ['sd', experiment_str, 'solver0'], # only there sometimes
+        ['sd', experiment_str, 'solver1'],
+        ['sd', experiment_str, 'solver2'],
+        ['sd', experiment_str, 'solver3'],
+        ['sd', experiment_str, 'solver4'],
         ]
 
     PASSABLE_NAME = 'default_data_profiles'
 
-    ################################################################################
-    ################################################################################
+################################################################################
+################################################################################
     # Read in the 20 problems selected for small data profiles.
     with open('problems/small_profile_problems.json', 'r') as f:
         problem_name_list = json.load(f)
@@ -64,11 +68,12 @@ def main():
         print('Configs done')
         success_dict = results.results_utils.generate_data_profiles(problem_name_list,
                                                                     configs_list, accuracy=ACCURACY,
-                                                                    max_equiv_grad=MAX_EQUIV_GRAD)
+                                                                    max_equiv_grad=PLOT_MAX_EQUIV_GRAD)
         fig = plotting.plotting.plot_data_profiles(success_dict,
-                                                   include_Pk_orth=True,
+                                                   include_Pk_orth=False,
                                                    include_sketch_size=True,
-                                                   figsize=(5.9, 2.0),
+                                                   include_ensemble=False,
+                                                   figsize=FIGSIZE,
                                                    label_ncol=LABEL_NCOL)
         plt.show()
         if SAVE_FIG:

@@ -28,12 +28,13 @@ def main():
 
 ################################################################################
 ################################################################################
-
+    
+    experiment_str = 'haar_gauss'
     CONFIG_PATH_LIST = [
-        ['sd', 'orth_Pk', 'solver1'],
-        ['sd', 'orth_Pk', 'solver2'],
-        ['sd', 'orth_Pk', 'solver3'],
-        ['sd', 'orth_Pk', 'solver4']
+        ['sd', experiment_str, 'solver1'],
+        ['sd', experiment_str, 'solver2'],
+        ['sd', experiment_str, 'solver3'],
+        ['sd', experiment_str, 'solver4'],
         ]
     
     NO_RUNS = 5
@@ -43,6 +44,7 @@ def main():
     SAVE_RESULTS = False
     
     SAVE_FIG = False
+    FIGSIZE = (5.9, 2.4)
     LABEL_NCOL = 1
 
     passable_name = 'default_illustrations'
@@ -69,9 +71,10 @@ def main():
 
     # (detailed plots, each individual run represented)
     fig = running.plot_run_solvers(results_dict, NORMALISE_LOSS,
-                                   include_Pk_orth=True,
+                                   include_Pk_orth=False,
                                    include_sketch_size=True,
-                                   figsize=(5.9, 2.4),
+                                   include_ensemble=True,
+                                   figsize=FIGSIZE,
                                    label_ncol=LABEL_NCOL)
 
     plt.show()

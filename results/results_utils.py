@@ -92,6 +92,8 @@ def create_config_from_config_string(config_str: str, objective_instance) -> Pro
             value = value == "True"
         elif value == "None":
             value = None
+        elif value == 'inf':
+            value = np.inf
         else:
             try:
                 # Try to interpret the value as a literal (int, float, etc.)
@@ -161,18 +163,18 @@ def save_solver_output(problem_name: str, solver_config_str: str,
     
     # Add new run data to grouped data
     run_data = []
-    for iter in range(len(solver_output.f_vals)):
+    for row in range(len(solver_output.f_vals)):
         run_data.append({
             'run_id': data['run_id'],
             'equiv_grad_budget': data['equiv_grad_budget'],
-            'iter': iter,
-            'deriv_evals': data['deriv_evals'][iter] if data['deriv_evals'].size > iter else None,
-            'equiv_grad_evals':  data['equiv_grad_evals'][iter] if data['equiv_grad_evals'].size > iter else None,
-            'f_vals': data['f_vals'][iter],
-            'update_norms': data['update_norms'][iter] if data['update_norms'].size > iter else None,
-            'full_grad_norms': data['full_grad_norms'][iter] if data['full_grad_norms'].size > iter else None,                
-            'proj_grad_norms': data['proj_grad_norms'][iter] if data['proj_grad_norms'].size > iter else None,
-            'config_str': data['config_str'] if iter == 0 else None  # Only store config_str in the first row
+            'row': row,
+            'deriv_evals': data['deriv_evals'][row] if data['deriv_evals'].size > row else None,
+            'equiv_grad_evals':  data['equiv_grad_evals'][row] if data['equiv_grad_evals'].size > row else None,
+            'f_vals': data['f_vals'][row],
+            'update_norms': data['update_norms'][row] if data['update_norms'].size > row else None,
+            'full_grad_norms': data['full_grad_norms'][row] if data['full_grad_norms'].size > row else None,                
+            'proj_grad_norms': data['proj_grad_norms'][row] if data['proj_grad_norms'].size > row else None,
+            'config_str': data['config_str'] if row == 0 else None  # Only store config_str in the first row
         })
     grouped_data[data['run_id']] = run_data
     
@@ -181,7 +183,7 @@ def save_solver_output(problem_name: str, solver_config_str: str,
 
     # Write the selected runs back to the file
     with open(file_path, mode='w', newline='') as file:
-        fieldnames = ['run_id', 'equiv_grad_budget', 'iter', 'deriv_evals', 'equiv_grad_evals', 'f_vals', 'update_norms', 'full_grad_norms', 'proj_grad_norms', 'config_str']
+        fieldnames = ['run_id', 'equiv_grad_budget', 'row', 'deriv_evals', 'equiv_grad_evals', 'f_vals', 'update_norms', 'full_grad_norms', 'proj_grad_norms', 'config_str']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         for run in sorted_runs:
@@ -256,7 +258,8 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
         raise ValueError('Input accuracy must be in the open interval (0, 1).')
 
     # equiv_grad_list = [i for i in range(max_equiv_grad + 1)]
-    LIST_STEP = 0.1
+    # LIST_STEP = 0.1
+    LIST_STEP = 1
     equiv_grad_list = np.arange(0, max_equiv_grad + 1 + LIST_STEP, LIST_STEP)
     
     # Need a counter for each solver.

@@ -5,11 +5,6 @@ import matplotlib.pyplot as plt
 
 def main():
     running.soft_window_clear()
-
-    CONFIG_PATH_LIST = [['sample_solvers', 'solver1'],
-                        ['sample_solvers', 'solver2'],
-                        ['sample_solvers', 'solver3']]
-
     # Choose problem
     test_problems_list = ['rosenbrock_single',                 # 0, n even
                           'rosenbrock_multiple',               # 1, n even
@@ -29,13 +24,32 @@ def main():
     input_dim = 100
     extended_problem_name = problem_name + '_n' + str(input_dim)
     problem_tup = running.get_problem(problem_name, input_dim)
+
+
+################################################################################
+################################################################################
+
+    CONFIG_PATH_LIST = [
+        ['sd', 'orth_Pk', 'solver1'],
+        ['sd', 'orth_Pk', 'solver2'],
+        ['sd', 'orth_Pk', 'solver3'],
+        ['sd', 'orth_Pk', 'solver4']
+        ]
+    
+    NO_RUNS = 5
+
     NORMALISE_LOSS = True
     
     SAVE_RESULTS = False
     
     SAVE_FIG = False
+    LABEL_NCOL = 1
 
-    passable_name = 'passable2'
+    passable_name = 'default_illustrations'
+
+################################################################################
+################################################################################
+
     configs_list = []
     for config_path in CONFIG_PATH_LIST:
         configs_list.append(running.combine_configs(extended_problem_name, config_path=config_path, passable_name=passable_name))
@@ -45,7 +59,7 @@ def main():
     # Run and store results
     results_attrs = ['final_f_val']
     results_dict = running.run_solvers_single_prob(problem_tup, solvers_list,
-                                                   no_runs=3,
+                                                   no_runs=NO_RUNS,
                                                    result_attrs=results_attrs, save_results=SAVE_RESULTS)
 
     # Plot
@@ -55,7 +69,10 @@ def main():
 
     # (detailed plots, each individual run represented)
     fig = running.plot_run_solvers(results_dict, NORMALISE_LOSS,
-                                   include_Pk_orth=True)
+                                   include_Pk_orth=True,
+                                   include_sketch_size=True,
+                                   figsize=(5.9, 2.4),
+                                   label_ncol=LABEL_NCOL)
 
     plt.show()
     if SAVE_FIG:

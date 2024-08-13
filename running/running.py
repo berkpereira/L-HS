@@ -108,7 +108,9 @@ def plot_run_solvers(output_dict, normalise_loss,
                      include_Pk_orth: bool=False,
                      include_c_const: bool=False,
                      include_N_try: bool=False,
-                     include_sketch_size: bool=False):
+                     include_sketch_size: bool=False,
+                     figsize='full_width',
+                     label_ncol: int=1):
     # Extract all SolverOutput objects from a results dictionary.
     output_list = [solver_output for _, solver_outputs in output_dict['raw_results'] for solver_output in solver_outputs]
     
@@ -119,7 +121,9 @@ def plot_run_solvers(output_dict, normalise_loss,
                                                     include_Pk_orth=include_Pk_orth,
                                                     include_c_const=include_c_const,
                                                     include_N_try=include_N_try,
-                                                    include_sketch_size=include_sketch_size)
+                                                    include_sketch_size=include_sketch_size,
+                                                    figsize=figsize,
+                                                    label_ncol=label_ncol)
     # plotting.plotting.plot_loss_vs_iteration(solver_outputs=output_list,
     #                                          deriv_evals_axis=False,
     #                                          normalise_loss_data=normalise_loss,

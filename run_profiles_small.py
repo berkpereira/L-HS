@@ -15,6 +15,10 @@ def main():
     PLOT_PROFILE = True
     SAVE_FIG = False
 
+    ACCURACY = 1e-2
+    MAX_EQUIV_GRAD = 60
+    LABEL_NCOL = 2
+
 ################################################################################
 ################################################################################
 
@@ -25,7 +29,7 @@ def main():
         ['sd', 'orth_Pk', 'solver4']
         ]
 
-    PASSABLE_NAME = 'default'
+    PASSABLE_NAME = 'default_data_profiles'
 
     ################################################################################
     ################################################################################
@@ -59,15 +63,16 @@ def main():
 
         print('Configs done')
         success_dict = results.results_utils.generate_data_profiles(problem_name_list,
-                                                                    configs_list, accuracy=1e-2,
-                                                                    max_equiv_grad=150)
+                                                                    configs_list, accuracy=ACCURACY,
+                                                                    max_equiv_grad=MAX_EQUIV_GRAD)
         fig = plotting.plotting.plot_data_profiles(success_dict,
                                                    include_Pk_orth=True,
                                                    include_sketch_size=True,
-                                                   figsize=(5.9, 2.6))
+                                                   figsize=(5.9, 2.0),
+                                                   label_ncol=LABEL_NCOL)
         plt.show()
         if SAVE_FIG:
-            fig.savefig(fname=results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, 'small_profile'))
+            fig.savefig(fname=results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, plot_type='small_profile', accuracy=ACCURACY))
         
 
 if __name__ == '__main__':

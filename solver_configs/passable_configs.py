@@ -9,10 +9,17 @@ the problem (obj object) itself, which we forgo here).
 import autograd.numpy as np
 
 passable_variants_dict = {
-    "default": {
+    "default_data_profiles": {
         "tol": 0,
         "max_iter": np.inf,
         "equiv_grad_budget": 180,
+        "iter_print_gap": 500,
+        "verbose": True,
+    },
+    "default_illustrations": {
+        "tol": 0,
+        "max_iter": np.inf,
+        "equiv_grad_budget": 300,
         "iter_print_gap": 500,
         "verbose": True,
     },

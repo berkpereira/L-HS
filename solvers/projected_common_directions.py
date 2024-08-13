@@ -44,13 +44,13 @@ class ProjectedCommonDirectionsConfig:
     random_proj_dim: int = None
     random_proj_dim_frac: float = None
     reproject_grad: bool = False
-    ensemble: str = ''
+    ensemble: str = '' # NOTE: in {'haar', 'scaled_gaussian'}
     inner_use_full_grad: bool = True
 
     reg_lambda: float = 0
 
     # Determines whether to orthogonalise (QR) P_k, the subspace matrix.
-    orth_P_k: bool = True
+    orth_P_k: bool = False
     # Determines whether P_k columns are ordinarily normalised to unit Euclidian norm.
     normalise_P_k_cols: bool = False
     

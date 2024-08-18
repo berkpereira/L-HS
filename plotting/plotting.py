@@ -54,7 +54,7 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
                  include_ensemble: bool=False):
 
     # NOTE: edge case --- full-space method
-    if config.subspace_frac_grads == 1 or config.subspace_frac_updates == 1 or config.subspace_frac_random == 1:
+    if config.subspace_frac_grads == 1 or config.subspace_frac_updates == 1 or config.subspace_frac_random == 1 or (config.subspace_frac_grads is None and config.subspace_frac_updates is None and config.subspace_frac_random is None):
         full_space_method = True
     else:
         full_space_method = False
@@ -93,13 +93,12 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
     frac_sub_random  = config.subspace_frac_random
 
 
-    frac_sub_grads_str   = f'${frac_sub_grads*100:.0f}\%$'
-    frac_sub_grads_eq    = '$=$' if frac_sub_grads == np.round(frac_sub_grads, 2) else r'$\approx$'
-    frac_sub_updates_str = f'${frac_sub_updates*100:.0f}\%$'
-    frac_sub_updates_eq  = '$=$' if frac_sub_updates == np.round(frac_sub_updates, 2) else r'$\approx$'
-    frac_sub_random_str  = f'${frac_sub_random*100:.0f}\%$'
-    frac_sub_random_eq   = '$=$' if frac_sub_random == np.round(frac_sub_random, 2) else r'$\approx$'
-
+    # frac_sub_grads_str   = f'${frac_sub_grads*100:.0f}\%$'
+    # frac_sub_grads_eq    = '$=$' if frac_sub_grads == np.round(frac_sub_grads, 2) else r'$\approx$'
+    # frac_sub_updates_str = f'${frac_sub_updates*100:.0f}\%$'
+    # frac_sub_updates_eq  = '$=$' if frac_sub_updates == np.round(frac_sub_updates, 2) else r'$\approx$'
+    # frac_sub_random_str  = f'${frac_sub_random*100:.0f}\%$'
+    # frac_sub_random_eq   = '$=$' if frac_sub_random == np.round(frac_sub_random, 2) else r'$\approx$'
 
     S_k_dim_frac = config.random_proj_dim_frac
     S_k_dim_str = f'$m_s = {S_k_dim_frac*100:.0f}\%$'

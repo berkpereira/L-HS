@@ -13,7 +13,7 @@ solver_config_tree = {
                 "subspace_frac_grads": 0.1,
                 "subspace_frac_updates": 0.1,
                 "subspace_frac_random": 0.1,
-                "random_proj_dim_frac": 1,
+                "random_proj_dim_frac": 0.2,
                 "direction_str": 'sd',
                 "ensemble": 'haar',
                 "orth_P_k": True,
@@ -24,7 +24,7 @@ solver_config_tree = {
                 "subspace_frac_grads": 0.1,
                 "subspace_frac_updates": 0.1,
                 "subspace_frac_random": 0.1,
-                "random_proj_dim_frac": 1,
+                "random_proj_dim_frac": 0.2,
                 "direction_str": 'sd',
                 "ensemble": 'haar',
                 "orth_P_k": False,
@@ -35,7 +35,7 @@ solver_config_tree = {
                 "subspace_frac_grads": 0.1,
                 "subspace_frac_updates": 0.1,
                 "subspace_frac_random": 0.1,
-                "random_proj_dim_frac": 0.2,
+                "random_proj_dim_frac": 0.6,
                 "direction_str": 'sd',
                 "ensemble": 'haar',
                 "orth_P_k": True,
@@ -46,13 +46,13 @@ solver_config_tree = {
                 "subspace_frac_grads": 0.1,
                 "subspace_frac_updates": 0.1,
                 "subspace_frac_random": 0.1,
-                "random_proj_dim_frac": 0.2,
+                "random_proj_dim_frac": 0.6,
                 "direction_str": 'sd',
                 "ensemble": 'haar',
                 "orth_P_k": False,
                 "normalise_P_k_cols": True,
                 "alpha_max": 100,
-            }
+            },
         },
         'haar_gauss': { # use Haar-orthonormal or Gauss matrices for sketching?
             'solver1': {
@@ -97,7 +97,7 @@ solver_config_tree = {
             },
         },
         'sketch_size': { # What sketch size to use?
-            'solver0': {
+            'solver1': {
                 "subspace_frac_grads": 0.1,
                 "subspace_frac_updates": 0.1,
                 "subspace_frac_random": 0.1,
@@ -107,7 +107,7 @@ solver_config_tree = {
                 "orth_P_k": True,
                 "alpha_max": 100,
             },
-            'solver1': {
+            'solver2': {
                 "subspace_frac_grads": 0.1,
                 "subspace_frac_updates": 0.1,
                 "subspace_frac_random": 0.1,
@@ -117,7 +117,7 @@ solver_config_tree = {
                 "orth_P_k": True,
                 "alpha_max": 100,
             },
-            'solver2': {
+            'solver3': {
                 "subspace_frac_grads": 0.1,
                 "subspace_frac_updates": 0.1,
                 "subspace_frac_random": 0.1,
@@ -127,7 +127,7 @@ solver_config_tree = {
                 "orth_P_k": True,
                 "alpha_max": 100,
             },
-            'solver3': {
+            'solver4': {
                 "subspace_frac_grads": 0.1,
                 "subspace_frac_updates": 0.1,
                 "subspace_frac_random": 0.1,
@@ -137,17 +137,89 @@ solver_config_tree = {
                 "orth_P_k": True,
                 "alpha_max": 100,
             },
-            'solver4': {
+            'solver5': {
                 "subspace_frac_grads": 0.1,
                 "subspace_frac_updates": 0.1,
                 "subspace_frac_random": 0.1,
-                "random_proj_dim_frac": 0.6,
+                "random_proj_dim_frac": 0.6, # NOTE: the reason we avoid random_proj_dim_frac = 0.8 (in a geometric series with the previous) is because this case expends more derivative information per iteration than if we just use the true (i.e. not even projected) gradient!
                 "direction_str": 'sd',
                 "ensemble": 'haar',
                 "orth_P_k": True,
                 "alpha_max": 100,
             },
-        }
+            'solver6': {
+                "subspace_frac_grads": 0,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random": 1,
+                "random_proj_dim_frac": 1,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+        },
+        'sketch_size_further': { # What sketch size to use? NOTE: now using more problem-directions
+            'solver1': {
+                "subspace_frac_grads": 0.2,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.05,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver2': {
+                "subspace_frac_grads": 0.2,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.1,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver3': {
+                "subspace_frac_grads": 0.2,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver4': {
+                "subspace_frac_grads": 0.2,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.4,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver5': {
+                "subspace_frac_grads": 0.2,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.6, # NOTE: the reason we avoid random_proj_dim_frac = 0.8 (in a geometric series with the previous) is because this case expends more derivative information per iteration than if we just use the true (i.e. not even projected) gradient!
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+            'solver6': {
+                "subspace_frac_grads": 0,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random": 1,
+                "random_proj_dim_frac": 1,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+        },
     },
     "newton": {
         'orth_Pk'

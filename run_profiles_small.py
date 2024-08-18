@@ -13,8 +13,9 @@ def main():
     NO_RUNS = 10
     
     # PLOTTING
-    PLOT_PROFILE = True
+    PLOT_PROFILE = False
     SAVE_FIG = False
+    FOR_APPENDIX = False
 
     ACCURACY = 1e-2
     PLOT_MAX_EQUIV_GRAD = 150
@@ -23,14 +24,15 @@ def main():
 
 ################################################################################
 ################################################################################
-
-    experiment_str = 'sketch_size'
+    order = 'sd'
+    experiment_str = 'orth_Pk'
     CONFIG_PATH_LIST = [
-        ['sd', experiment_str, 'solver0'], # only there sometimes
-        ['sd', experiment_str, 'solver1'],
-        ['sd', experiment_str, 'solver2'],
-        ['sd', experiment_str, 'solver3'],
-        ['sd', experiment_str, 'solver4'],
+        # [order, experiment_str, 'solver1'],
+        # [order, experiment_str, 'solver2'],
+        # [order, experiment_str, 'solver3'],
+        # [order, experiment_str, 'solver4'],
+        # [order, experiment_str, 'solver5'],
+        # [order, experiment_str, 'solver6'],
         ]
 
     PASSABLE_NAME = 'default_data_profiles'
@@ -77,7 +79,7 @@ def main():
                                                    label_ncol=LABEL_NCOL)
         plt.show()
         if SAVE_FIG:
-            fig.savefig(fname=results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, plot_type='small_profile', accuracy=ACCURACY))
+            fig.savefig(fname=results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, plot_type='small_profile', accuracy=ACCURACY, for_appendix=FOR_APPENDIX))
         
 
 if __name__ == '__main__':

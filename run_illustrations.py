@@ -28,13 +28,15 @@ def main():
 
 ################################################################################
 ################################################################################
-    
-    experiment_str = 'haar_gauss'
+    order = 'sd'
+    experiment_str = 'sketch_size'
     CONFIG_PATH_LIST = [
-        ['sd', experiment_str, 'solver1'],
-        ['sd', experiment_str, 'solver2'],
-        ['sd', experiment_str, 'solver3'],
-        ['sd', experiment_str, 'solver4'],
+        [order, experiment_str, 'solver1'],
+        [order, experiment_str, 'solver2'],
+        [order, experiment_str, 'solver3'],
+        [order, experiment_str, 'solver4'],
+        [order, experiment_str, 'solver5'],
+        [order, experiment_str, 'solver6'],
         ]
     
     NO_RUNS = 5
@@ -44,7 +46,9 @@ def main():
     SAVE_RESULTS = False
     
     SAVE_FIG = False
+    FOR_APPENDIX = False
     FIGSIZE = (5.9, 2.4)
+    # FIGSIZE = (5.9, 2.5)
     LABEL_NCOL = 1
 
     passable_name = 'default_illustrations'
@@ -73,13 +77,15 @@ def main():
     fig = running.plot_run_solvers(results_dict, NORMALISE_LOSS,
                                    include_Pk_orth=False,
                                    include_sketch_size=True,
-                                   include_ensemble=True,
+                                   include_ensemble=False,
                                    figsize=FIGSIZE,
                                    label_ncol=LABEL_NCOL)
 
     plt.show()
     if SAVE_FIG:
-        fig.savefig(fname=results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, 'illustration'))
+        fig.savefig(fname=results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST,
+                                                                       plot_type='illustration',
+                                                                       for_appendix=FOR_APPENDIX))
 
 if __name__ == '__main__':
     main()

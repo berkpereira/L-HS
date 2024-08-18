@@ -342,7 +342,7 @@ def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
                 success_list[j] += 1
 
 def generate_pdf_file_name(config_path_list, plot_type: str,
-                           accuracy: float=None):
+                           accuracy: float=None, for_appendix: bool=False):
     # Ensure all config paths are the same except for the last element
     common_path = config_path_list[0][:-1]  # Take the first config path, excluding the last element
     for config_path in config_path_list:
@@ -353,8 +353,9 @@ def generate_pdf_file_name(config_path_list, plot_type: str,
     middle_name = '_'.join(common_path)
 
     accuracy_str = '' if accuracy is None else str(accuracy)
+    appendix_str = '' if (not for_appendix) else '_for_appendix'
 
     # Add the suffix for the profile type
-    file_name = '/Users/gabrielpereira/Library/CloudStorage/OneDrive-Nexus365/ox-mmsc-cloud/dissertation/mmsc-thesis/images/python-figures/' + middle_name + '_' + plot_type + '_accuracy_' + accuracy_str + '.pdf'
+    file_name = '/Users/gabrielpereira/Library/CloudStorage/OneDrive-Nexus365/ox-mmsc-cloud/dissertation/mmsc-thesis/images/python-figures/' + middle_name + '_' + plot_type + '_accuracy_' + accuracy_str + appendix_str + '.pdf'
     
     return file_name

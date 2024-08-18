@@ -77,9 +77,9 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
 
     if full_space_method:
         if config.direction_str == 'newton':
-            direction_str_formatted = config.direction_str.capitalize()
+            direction_str_formatted = 'Regularised Newton'
         elif config.direction_str == 'sd':
-            direction_str_formatted = config.direction_str.upper()
+            direction_str_formatted = 'SD'
         new_label_template = """{direction_str_formatted} method"""
 
         new_label = new_label_template.format(

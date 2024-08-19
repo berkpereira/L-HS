@@ -469,7 +469,8 @@ class ProjectedCommonDirections:
             grad_vec = proj_grad
         
         if self.direction_str == 'newton':
-            direction = - Q @ np.linalg.inv(proj_B) @ np.transpose(Q) @ grad_vec
+            hat_direction = np.linalg.lstsq(proj_B, - np.transpose(Q) @ grad_vec)[0]
+            direction = np.dot(Q, hat_direction)
         elif self.direction_str == 'sd':
             direction = - Q @ np.transpose(Q) @ grad_vec
             

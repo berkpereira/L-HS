@@ -1,3 +1,4 @@
+import os
 from running import running
 import results.results_utils
 from solvers.projected_common_directions import ProjectedCommonDirections, ProjectedCommonDirectionsConfig
@@ -30,14 +31,15 @@ def main():
 ################################################################################
     order = 'sd'
     experiment_str = 'sketch_size_further'
-    CONFIG_PATH_LIST = [
-        [order, experiment_str, 'solver1'],
-        [order, experiment_str, 'solver2'],
-        [order, experiment_str, 'solver3'],
-        [order, experiment_str, 'solver4'],
-        [order, experiment_str, 'solver5'],
-        [order, experiment_str, 'solver6'],
-        ]
+    solver_numbers = [ # NOTE: select solvers
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+    ]
+    CONFIG_PATH_LIST = [[order, experiment_str, f'solver{i}'] for i in solver_numbers]
     
     NO_RUNS = 5
 
@@ -76,16 +78,18 @@ def main():
     # (detailed plots, each individual run represented)
     fig = running.plot_run_solvers(results_dict, NORMALISE_LOSS,
                                    include_Pk_orth=False,
-                                   include_sketch_size=True,
+                                   include_sketch_size=False,
                                    include_ensemble=False,
                                    figsize=FIGSIZE,
                                    label_ncol=LABEL_NCOL)
 
     plt.show()
     if SAVE_FIG:
-        fig.savefig(fname=results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST,
-                                                                       plot_type='illustration',
-                                                                       for_appendix=FOR_APPENDIX))
+        file_path = results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, plot_type='illustration', for_appendix=FOR_APPENDIX)
+        
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        fig.savefig(fname=file_path)
 
 if __name__ == '__main__':
     main()

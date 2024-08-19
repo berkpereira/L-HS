@@ -50,7 +50,7 @@ class ProjectedCommonDirectionsConfig:
     reg_lambda: float = 0
 
     # Determines whether to orthogonalise (QR) P_k, the subspace matrix.
-    orth_P_k: bool = False
+    orth_P_k: bool = True
     # Determines whether P_k columns are ordinarily normalised to unit Euclidian norm.
     normalise_P_k_cols: bool = False
     
@@ -142,8 +142,15 @@ class ProjectedCommonDirectionsConfig:
             else:
                 raise Exception("Either deriv_budget or equiv_grad_budget must be specified.")
         
-        if self.subspace_frac_grads + self.subspace_frac_updates + self.subspace_frac_random > 1:
-            raise Exception('Total subspace fraction exceeds 1, this makes no sense!')
+        # NOTE: this may raise an exception in certain scenarios when creating a
+        # config object from a string, where none of these specified (due to an
+        # edge case where the method is a classical full-space one,
+        # for instance)
+        try: 
+            if self.subspace_frac_grads + self.subspace_frac_updates + self.subspace_frac_random > 1:
+                raise Exception('Total subspace fraction exceeds 1, this makes no sense!')
+        except:
+            pass
         
         # More straightforward stuff, CFS constants
         self.nu = self.tau ** (-self.c_const) # 'Forward-tracking' factor
@@ -168,20 +175,21 @@ class ProjectedCommonDirectionsConfig:
         if self.random_proj_dim_frac == 1: # recover Lee2022's CommonDirections
             passable_attrs.append('ensemble') # ensemble plays no role
 
-        # NOTE: edge case --- full-space/classical linesearch method
-        if (self.subspace_frac_grads + self.subspace_frac_updates + self.subspace_frac_random) == 1:
+        # NOTE: edge case --- full-space/classical linesearch method.
+        if ((self.subspace_frac_grads is None and self.subspace_frac_updates is None and self.subspace_frac_random is None) or
+            (self.subspace_frac_grads + self.subspace_frac_updates + self.subspace_frac_random) == 1):
             passable_attrs.extend(['random_proj_dim_frac', 'subspace_frac_grads',
-                                   'subspace_frac_updates', 'subspace_frac_random',
-                                   'random_proj', 'ensemble', 'inner_use_full_grad',
-                                   'orth_P_k'])
-
-        if self.subspace_frac_grads > 0: # projections 'make sense'
-            if self.random_proj:
-                passable_attrs.append('reproject_grad')
-            else:
-                passable_attrs.append('ensemble')
-        else: # no tilde projections are ever computed
-            passable_attrs.extend(['ensemble', 'reproject_grad', 'random_proj'])
+                                'subspace_frac_updates', 'subspace_frac_random',
+                                'random_proj', 'ensemble', 'inner_use_full_grad',
+                                'orth_P_k', 'reproject_grad'])
+        else: # usual, not-full-space-method cases
+            if self.subspace_frac_grads > 0: # projections 'make sense'
+                if self.random_proj:
+                    passable_attrs.append('reproject_grad')
+                else:
+                    passable_attrs.append('ensemble')
+            else: # no tilde projections are ever computed
+                passable_attrs.extend(['ensemble', 'reproject_grad', 'random_proj'])
         
         attributes = []
         for field in fields(self):

@@ -29,7 +29,7 @@ def main():
 ################################################################################
 ################################################################################
     order = 'sd'
-    experiment_str = 'sketch_size'
+    experiment_str = 'sketch_size_further'
     CONFIG_PATH_LIST = [
         [order, experiment_str, 'solver1'],
         [order, experiment_str, 'solver2'],
@@ -48,7 +48,7 @@ def main():
     SAVE_FIG = False
     FOR_APPENDIX = False
     FIGSIZE = (5.9, 2.4)
-    # FIGSIZE = (5.9, 2.5)
+    # FIGSIZE = (5.9, 2.5) # NOTE: if a bit more (vertical) space is required
     LABEL_NCOL = 1
 
     passable_name = 'default_illustrations'

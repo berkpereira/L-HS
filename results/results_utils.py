@@ -257,9 +257,7 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
     if not (0 < accuracy < 1):
         raise ValueError('Input accuracy must be in the open interval (0, 1).')
 
-    # equiv_grad_list = [i for i in range(max_equiv_grad + 1)]
     LIST_STEP = 0.1
-    # LIST_STEP = 1
     equiv_grad_list = np.arange(0, max_equiv_grad + 1 + LIST_STEP, LIST_STEP)
     
     # Need a counter for each solver.
@@ -304,7 +302,7 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
     if counter_values.count(counter_values[0]) != len(counter_values):
         raise Exception('Inconsistent run counts across solvers.')
     
-    # Normalize success_dict values by the seen_counter_dict values
+    # Normalise success_dict values by the seen_counter_dict values
     for hash in success_dict:
         count = seen_counter_dict[hash]
         if count > 0:
@@ -328,9 +326,13 @@ def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
             break
 
     # Check if the largest element in equiv_grad_list is larger than the largest element in run_data['equiv_grad_evals']
+    # NOTE: this is only an issue if a success was not found, since one may
+    # erroneously have expected to find a success at higher budgets which are
+    # actually not in the run data at all. If a success has been found, then it
+    # does not matter either way, hence the second condition below!
     max_equiv_grad_list = max(equiv_grad_list)
     max_run_data_equiv_grad_evals = max(float(row['equiv_grad_evals']) for row in run_data)
-    if max_equiv_grad_list > max_run_data_equiv_grad_evals:
+    if max_equiv_grad_list > max_run_data_equiv_grad_evals and success_grad_evals is None:
         raise ValueError("Placeholder error message: equiv_grad_list has larger values than run_data equiv_grad_evals")
 
     # If a success is found, update success_list
@@ -342,7 +344,9 @@ def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
                 success_list[j] += 1
 
 def generate_pdf_file_name(config_path_list, plot_type: str,
-                           accuracy: float=None, for_appendix: bool=False):
+                           accuracy: float=None, for_appendix: bool=False,
+                           include_solver_names: bool=False,
+                           solver_name_list: list=None):
     # Ensure all config paths are the same except for the last element
     common_path = config_path_list[0][:-1]  # Take the first config path, excluding the last element
     for config_path in config_path_list:
@@ -355,7 +359,12 @@ def generate_pdf_file_name(config_path_list, plot_type: str,
     accuracy_str = '' if accuracy is None else str(accuracy)
     appendix_str = '' if (not for_appendix) else '_for_appendix'
 
+    solver_names_str = ''
+    if include_solver_names:
+        for solver_name in solver_name_list:
+            solver_names_str += solver_name
+
     # Add the suffix for the profile type
-    file_name = '/Users/gabrielpereira/Library/CloudStorage/OneDrive-Nexus365/ox-mmsc-cloud/dissertation/mmsc-thesis/images/python-figures/' + middle_name + '/' + plot_type + '_accuracy_' + accuracy_str + appendix_str + '.pdf'
+    file_name = '/Users/gabrielpereira/Library/CloudStorage/OneDrive-Nexus365/ox-mmsc-cloud/dissertation/mmsc-thesis/images/python-figures/' + middle_name + '/' + solver_names_str + plot_type + '_accuracy_' + accuracy_str + appendix_str + '.pdf'
     
     return file_name

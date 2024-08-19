@@ -340,6 +340,15 @@ solver_config_tree = {
                 "ensemble": 'haar',
                 "alpha_max": 100,
             },
+            '5.5.40': {
+                "subspace_frac_grads":   0.05,
+                "subspace_frac_updates": 0.05,
+                "subspace_frac_random":  0.40,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "alpha_max": 100,
+            },
 
 
             '10.10.0': {

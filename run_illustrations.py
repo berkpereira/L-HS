@@ -30,20 +30,20 @@ def main():
 ################################################################################
 ################################################################################
     order = 'sd'
-    experiment_str = 'sketch_size_further'
-    solver_numbers = [ # NOTE: select solvers
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
+    experiment_str = 'use_momentum'
+    solver_names = [ # NOTE: select solvers
+        'solver1',
+        'solver2',
+        'solver3',
+        'solver4',
+        'solver5',
+        'solver6',
+        'solver7',
+        'solver8',
     ]
-    CONFIG_PATH_LIST = [[order, experiment_str, f'solver{i}'] for i in solver_numbers]
+    CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
     
     NO_RUNS = 5
-
-    NORMALISE_LOSS = True
     
     SAVE_RESULTS = False
     
@@ -51,7 +51,7 @@ def main():
     FOR_APPENDIX = False
     FIGSIZE = (5.9, 2.4)
     # FIGSIZE = (5.9, 2.5) # NOTE: if a bit more (vertical) space is required
-    LABEL_NCOL = 1
+    LABEL_NCOL = 2
 
     passable_name = 'default_illustrations'
 
@@ -76,7 +76,7 @@ def main():
     #                                       attr_names=results_attrs)
 
     # (detailed plots, each individual run represented)
-    fig = running.plot_run_solvers(results_dict, NORMALISE_LOSS,
+    fig = running.plot_run_solvers(results_dict, normalise_loss=True,
                                    include_Pk_orth=False,
                                    include_sketch_size=False,
                                    include_ensemble=False,

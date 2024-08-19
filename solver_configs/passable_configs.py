@@ -19,7 +19,7 @@ passable_variants_dict = {
     "default_data_profiles_newton": {
         "tol": 1e-6,
         "max_iter": np.inf,
-        "equiv_grad_budget": 40_000,
+        "equiv_grad_budget": 3_000,
         "iter_print_gap": 500,
         "verbose": True,
     },

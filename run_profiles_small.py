@@ -14,27 +14,61 @@ def main():
     
     # PLOTTING
     PLOT_PROFILE = True
-    SAVE_FIG = True
+    SAVE_FIG = False
     FOR_APPENDIX = False
+    INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = True
 
     ACCURACY = 1e-2
-    PLOT_MAX_EQUIV_GRAD = 50
+    PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
+    # PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
     LABEL_NCOL = 2
     FIGSIZE = (5.9, 2.2)
 
 ################################################################################
 ################################################################################
     order = 'sd'
-    experiment_str = 'use_momentum'
-    solver_numbers = [
-        1,
-        2,
-        3,
-        4,
+    experiment_str = 'granular'
+    # solver_names = [ # NOTE: select solvers
+    #     'solver1',
+    #     'solver2',
+    #     'solver3',
+    #     'solver4',
+    #     'solver5',
+    #     'solver6',
+    #     'solver7',
+    #     'solver8',
+    # ]
+    # NOTE: THE BELOW FOR SD GRANULAR
+    solver_names = [
+        # '5.5.0',
+        # '5.5.2',
+        # '5.5.5',
+        # '5.5.10',
+        # '5.5.20', # ---...perhaps best of the fives
+        # '5.5.40',
+        '10.10.0',
+        '10.10.5',
+        '10.10.10', # perhaps best of the tens
+        '10.10.20',
+        # '20.20.0',
+        # '20.20.5',
+        # '20.20.10', # perhaps best of the twenties
+        # '20.20.20',
     ]
-    CONFIG_PATH_LIST = [[order, experiment_str, f'solver{i}'] for i in solver_numbers]
+    CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
 
-    PASSABLE_NAME = 'default_data_profiles'
+    # CONFIG_PATH_LIST = [
+    #     [order, 'orth_Pk', 'solver1'],
+    #     [order, 'orth_Pk', 'solver2'],
+    #     [order, 'orth_Pk', 'solver3'],
+    #     [order, 'orth_Pk', 'solver4'],
+    #     [order, 'haar_gauss', 'solver1'],
+    #     [order, 'haar_gauss', 'solver2'],
+    #     [order, 'haar_gauss', 'solver3'],
+    #     [order, 'haar_gauss', 'solver4'],
+    # ]
+
+    PASSABLE_NAME = 'default_data_profiles_sd'
 
 ################################################################################
 ################################################################################
@@ -72,13 +106,18 @@ def main():
                                                                     max_equiv_grad=PLOT_MAX_EQUIV_GRAD)
         fig = plotting.plotting.plot_data_profiles(success_dict,
                                                    include_Pk_orth=False,
-                                                   include_sketch_size=True,
+                                                   include_sketch_size=False,
                                                    include_ensemble=False,
                                                    figsize=FIGSIZE,
                                                    label_ncol=LABEL_NCOL)
         plt.show()
         if SAVE_FIG:
-            file_path = results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, plot_type='small_profile', accuracy=ACCURACY, for_appendix=FOR_APPENDIX)
+            file_path = results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST,
+                                                                     plot_type='small_profile',
+                                                                     accuracy=ACCURACY,
+                                                                     for_appendix=FOR_APPENDIX,
+                                                                     include_solver_names=INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH,
+                                                                     solver_name_list=solver_names)
             
             # Ensure the directory exists
             os.makedirs(os.path.dirname(file_path), exist_ok=True)

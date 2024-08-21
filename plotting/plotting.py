@@ -54,9 +54,15 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
                  include_ensemble: bool=False):
 
     # NOTE: edge case --- full-space method
-    if config.subspace_frac_grads == 1 or config.subspace_frac_updates == 1 or config.subspace_frac_random == 1 or (config.subspace_frac_grads is None and config.subspace_frac_updates is None and config.subspace_frac_random is None):
-        full_space_method = True
-    else:
+    # NOTE: exception may be raised by config not having been specified with
+    # direction numbers as fractions of ambient dimension, in which case we
+    # assume the spec was not for a full space anyway.
+    try:
+        if config.subspace_frac_grads == 1 or config.subspace_frac_updates == 1 or config.subspace_frac_random == 1 or (config.subspace_frac_grads is None and config.subspace_frac_updates is None and config.subspace_frac_random is None):
+            full_space_method = True
+        else:
+            full_space_method = False
+    except:
         full_space_method = False
     
     # NOTE: edge case --- Lee2022's CommonDirections
@@ -70,10 +76,16 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
     lee_common_method = False
     
     # NOTE: edge case --- randomised subspace method
-    if config.subspace_frac_grads == 0 and config.subspace_frac_updates == 0:
-        random_subspace_method = True
-    else:
-        random_subspace_method = False
+    try:
+        if config.subspace_frac_grads == 0 and config.subspace_frac_updates == 0:
+            random_subspace_method = True
+        else:
+            random_subspace_method = False
+    except: # NOTE: if these directions were given as numbers instead
+        if config.subspace_no_grads == 0 and config.subspace_no_updates == 0:
+            random_subspace_method = True
+        else:
+            random_subspace_method = False
 
     if full_space_method:
         if config.direction_str == 'newton':
@@ -88,18 +100,6 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
         
         return new_label
 
-    frac_sub_grads   = config.subspace_frac_grads
-    frac_sub_updates = config.subspace_frac_updates
-    frac_sub_random  = config.subspace_frac_random
-
-
-    # frac_sub_grads_str   = f'${frac_sub_grads*100:.0f}\%$'
-    # frac_sub_grads_eq    = '$=$' if frac_sub_grads == np.round(frac_sub_grads, 2) else r'$\approx$'
-    # frac_sub_updates_str = f'${frac_sub_updates*100:.0f}\%$'
-    # frac_sub_updates_eq  = '$=$' if frac_sub_updates == np.round(frac_sub_updates, 2) else r'$\approx$'
-    # frac_sub_random_str  = f'${frac_sub_random*100:.0f}\%$'
-    # frac_sub_random_eq   = '$=$' if frac_sub_random == np.round(frac_sub_random, 2) else r'$\approx$'
-
     S_k_dim_frac = config.random_proj_dim_frac
     S_k_dim_str = f'$m_s = {S_k_dim_frac*100:.0f}\%$'
     S_k_eq = '$=$'if S_k_dim_frac == np.round(S_k_dim_frac, 2) else r'$\approx$'
@@ -108,9 +108,9 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
 
     if lee_common_method:
         if config.direction_str == 'sd':
-            label_lines = [r"""\verb|L-CommDir-SD-{grad_frac_str}.{update_frac_str}.{random_frac_str}|"""]
+            label_lines = [r"""\verb|L-CommDir-SD-{grad_str}.{update_str}.{random_str}|"""]
         elif config.direction_str == 'newton':
-            label_lines = [r"""\verb|L-CommDir-N-{grad_frac_str}.{update_frac_str}.{random_frac_str}|"""]
+            label_lines = [r"""\verb|L-CommDir-N-{grad_str}.{update_str}.{random_str}|"""]
     elif random_subspace_method:
         grad_dirs_str  = None
         if config.direction_str == 'sd':
@@ -119,14 +119,23 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
             label_lines = [r"""RS-N"""]
     else:
         if config.direction_str == 'sd':
-            label_lines = [r"""\verb|L-HS-SD-{grad_frac_str}.{update_frac_str}.{random_frac_str}|"""]
+            label_lines = [r"""\verb|L-HS-SD-{grad_str}.{update_str}.{random_str}|"""]
         elif config.direction_str == 'newton':
-            label_lines = [r"""\verb|L-HS-N-{grad_frac_str}.{update_frac_str}.{random_frac_str}|"""]
+            label_lines = [r"""\verb|L-HS-N-{grad_str}.{update_str}.{random_str}|"""]
     
     if not random_subspace_method:
-        format_args.update({'grad_frac_str': str(int(config.subspace_frac_grads * 100)),
-                            'update_frac_str': str(int(config.subspace_frac_updates * 100)),
-                            'random_frac_str': str(int(config.subspace_frac_random * 100))})
+        if config.subspace_frac_grads is None:
+            format_args.update({'grad_str': f'{str(int(config.subspace_no_grads))}d'})
+        else:
+            format_args.update({'grad_str': str(int(config.subspace_frac_grads * 100))})
+        if config.subspace_frac_updates is None:
+            format_args.update({'update_str': f'{str(int(config.subspace_no_updates))}d'})
+        else:
+            format_args.update({'update_str': str(int(config.subspace_frac_updates * 100))})
+        if config.subspace_frac_random is None:
+            format_args.update({'random_str': f'{str(int(config.subspace_no_random))}d'})
+        else:
+            format_args.update({'random_str': str(int(config.subspace_frac_random * 100))})
         
     if include_Pk_orth and (not full_space_method):
         if config.orth_P_k:

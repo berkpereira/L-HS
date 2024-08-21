@@ -34,6 +34,11 @@ class ProjectedCommonDirectionsConfig:
     subspace_no_grads: int = None
     subspace_no_updates: int = None
     subspace_no_random: int = None
+
+    subspace_no_grads_given_as_frac: bool = None
+    subspace_no_updates_given_as_frac: bool = None
+    subspace_no_random_given_as_frac: bool = None
+
     subspace_frac_grads: float = None
     subspace_frac_updates: float = None
     subspace_frac_random: float = None
@@ -62,8 +67,7 @@ class ProjectedCommonDirectionsConfig:
     alpha_max: float = 100 # Ceiling on step size parameter
     p_const: int = 1       # POSITIVE integer, used in setting initial alpha
 
-    
-    # Passable attributes
+    # 'Passable' attributes
     tol: float = 1e-6
     max_iter: int = 1000
     deriv_budget: int = None
@@ -91,6 +95,22 @@ class ProjectedCommonDirectionsConfig:
             (self.subspace_frac_random is not None and self.subspace_no_random is not None) or
             (self.random_proj_dim_frac is not None and self.random_proj_dim is not None)):
             raise Exception('Cannot specify numbers of directions directly and as fractions of ambient dimension simultaneously!')
+        
+        # NOTE: Determine whether the number of subspace directions of each kind
+        # was user-specified as a number or as a fraction ('frac') of the
+        # problem ambient dimension.
+        if self.subspace_no_grads is None:
+            self.subspace_no_grads_given_as_frac = True
+        else:
+            self.subspace_no_grads_given_as_frac = False
+        if self.subspace_no_updates is None:
+            self.subspace_no_updates_given_as_frac = True
+        else:
+            self.subspace_no_updates_given_as_frac = False
+        if self.subspace_no_random is None:
+            self.subspace_no_random_given_as_frac = True
+        else:
+            self.subspace_no_random_given_as_frac = False
 
         # If fractions are specified, use them to set the integer attributes
         # NOTE: This only goes for cases where a solver is then to be run.
@@ -159,8 +179,25 @@ class ProjectedCommonDirectionsConfig:
         # These attributes should play no role for our purposes (consistent line plot colouring)
         passable_attrs = ['obj', 'verbose', 'deriv_budget', 'equiv_grad_budget',
                           'iter_print_gap', 'random_proj_dim', 'max_iter',
-                          'tol', 'subspace_no_grads','subspace_no_updates',
-                          'subspace_no_random', 'timeout_secs']
+                          'tol', 'timeout_secs',
+                          'subspace_no_grads_given_as_frac',
+                          'subspace_no_updates_given_as_frac',
+                          'subspace_no_random_given_as_frac']
+        
+        if self.subspace_no_grads_given_as_frac:
+            passable_attrs.append('subspace_no_grads')
+        else:
+            passable_attrs.append('subspace_frac_grads')
+        if self.subspace_no_updates_given_as_frac:
+            passable_attrs.append('subspace_no_updates')
+        else:
+            passable_attrs.append('subspace_frac_updates')
+        if self.subspace_no_random_given_as_frac:
+            passable_attrs.append('subspace_no_random')
+        else:
+            passable_attrs.append('subspace_frac_random')
+
+
         if self.subspace_no_grads == 0: # 'tilde projections' do not come up
             passable_attrs.extend(['random_proj_dim_frac', 'ensemble'])
         if self.direction_str != 'newton':
@@ -176,19 +213,37 @@ class ProjectedCommonDirectionsConfig:
             passable_attrs.append('ensemble') # ensemble plays no role
 
         # NOTE: edge case --- full-space/classical linesearch method.
-        if ((self.subspace_frac_grads is None and self.subspace_frac_updates is None and self.subspace_frac_random is None) or
-            (self.subspace_frac_grads + self.subspace_frac_updates + self.subspace_frac_random) == 1):
+        full_space = False
+        try:
+            if ((self.subspace_frac_grads is None and self.subspace_frac_updates is None and self.subspace_frac_random is None)):
+                full_space = True
+            
+            # NOTE: this condition may raise exception if not all of these were
+            # specified as fractions of the ambient dimension!
+            elif (self.subspace_frac_grads + self.subspace_frac_updates + self.subspace_frac_random) == 1:
+                full_space = True
+        except:
+            full_space = False
+
+        if full_space:
             passable_attrs.extend(['random_proj_dim_frac', 'subspace_frac_grads',
                                 'subspace_frac_updates', 'subspace_frac_random',
                                 'random_proj', 'ensemble', 'inner_use_full_grad',
                                 'orth_P_k', 'reproject_grad'])
         else: # usual, not-full-space-method cases
-            if self.subspace_frac_grads > 0: # projections 'make sense'
+            uses_projections = False
+            try:
+                if self.subspace_frac_grads > 0:
+                    uses_projections = True
+            except:
+                if self.subspace_no_grads > 0:
+                    uses_projections = True
+            if uses_projections: # projections 'make sense'
                 if self.random_proj:
                     passable_attrs.append('reproject_grad')
                 else:
                     passable_attrs.append('ensemble')
-            else: # no tilde projections are ever computed
+            else: # no "tilde projections" are ever computed
                 passable_attrs.extend(['ensemble', 'reproject_grad', 'random_proj'])
         
         attributes = []
@@ -309,7 +364,7 @@ class ProjectedCommonDirections:
     def regularise_hessian(self, B):
         lambda_min = np.min(np.linalg.eigh(B)[0])
         if lambda_min < self.reg_lambda: # Regularise
-            # print('USING HESSIAN REGULARISATION!') # Notify
+            # print('USING REGULARISATION!') # Notify
             B = B + (self.reg_lambda - lambda_min) * np.identity(self.subspace_dim)
             
         return B
@@ -360,7 +415,7 @@ class ProjectedCommonDirections:
         proj_grad = W @ np.transpose(W) @ full_grad
         return proj_grad
 
-    # Which basis of subspace to use in the method
+    # Which basis of subspace to use in the method?
     def update_subspace(self, **kwargs):
         # method: str. Options:
         # method == 'grads', retain m past gradient vectors
@@ -393,7 +448,7 @@ class ProjectedCommonDirections:
             # Add orthogonal random directions as necessary
             Q = append_dirs(curr_mat=P,
                                 ambient_dim=self.obj.input_dim,
-                                no_dirs=self.subspace_dim - P.shape[1],
+                                no_dirs=self.subspace_dim - P.shape[1], # NOTE how we fill in extra random directions if not enough problem history has been accumulated yet!
                                 curr_is_orth=False,
                                 orthogonalise=self.orth_P_k,
                                 normalise_cols=self.normalise_P_k_cols)

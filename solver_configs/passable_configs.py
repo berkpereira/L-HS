@@ -22,6 +22,7 @@ passable_variants_dict = {
         "equiv_grad_budget": 3_000,
         "iter_print_gap": 500,
         "verbose": True,
+        "timeout_secs": 30,
     },
     "default_illustrations": {
         "tol": 0,

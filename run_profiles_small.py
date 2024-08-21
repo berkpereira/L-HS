@@ -16,18 +16,18 @@ def main():
     PLOT_PROFILE = True
     SAVE_FIG = False
     FOR_APPENDIX = False
-    INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = True
+    INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = False
 
     ACCURACY = 1e-2
-    PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
-    # PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
+    # PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
+    PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
     LABEL_NCOL = 2
     FIGSIZE = (5.9, 2.2)
 
 ################################################################################
 ################################################################################
-    order = 'sd'
-    experiment_str = 'granular'
+    order = 'newton'
+    experiment_str = 'sketch_size'
     # solver_names = [ # NOTE: select solvers
     #     'solver1',
     #     'solver2',
@@ -39,36 +39,34 @@ def main():
     #     'solver8',
     # ]
     # NOTE: THE BELOW FOR SD GRANULAR
-    solver_names = [
+    # solver_names = [
         # '5.5.0',
         # '5.5.2',
         # '5.5.5',
         # '5.5.10',
         # '5.5.20', # ---...perhaps best of the fives
         # '5.5.40',
-        '10.10.0',
-        '10.10.5',
-        '10.10.10', # perhaps best of the tens
-        '10.10.20',
-        # '20.20.0',
-        # '20.20.5',
-        # '20.20.10', # perhaps best of the twenties
-        # '20.20.20',
-    ]
-    CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
-
-    # CONFIG_PATH_LIST = [
-    #     [order, 'orth_Pk', 'solver1'],
-    #     [order, 'orth_Pk', 'solver2'],
-    #     [order, 'orth_Pk', 'solver3'],
-    #     [order, 'orth_Pk', 'solver4'],
-    #     [order, 'haar_gauss', 'solver1'],
-    #     [order, 'haar_gauss', 'solver2'],
-    #     [order, 'haar_gauss', 'solver3'],
-    #     [order, 'haar_gauss', 'solver4'],
+        # '10.10.0',
+        # '10.10.5',
+        # '10.10.10', # perhaps best of the tens
+        # '10.10.20',
+    #     '20.20.0',
+    #     '20.20.5',
+    #     '20.20.10', # perhaps best of the twenties
+    #     '20.20.20',
     # ]
+    # CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
 
-    PASSABLE_NAME = 'default_data_profiles_sd'
+    CONFIG_PATH_LIST = [
+        [order, experiment_str, 'solver1'],
+        [order, experiment_str, 'solver2'],
+        [order, experiment_str, 'solver3'],
+        [order, experiment_str, 'solver4'],
+        [order, experiment_str, 'solver5'],
+        [order, experiment_str, 'solver6'],
+    ]
+
+    PASSABLE_NAME = 'default_data_profiles_newton'
 
 ################################################################################
 ################################################################################
@@ -106,7 +104,7 @@ def main():
                                                                     max_equiv_grad=PLOT_MAX_EQUIV_GRAD)
         fig = plotting.plotting.plot_data_profiles(success_dict,
                                                    include_Pk_orth=False,
-                                                   include_sketch_size=False,
+                                                   include_sketch_size=True,
                                                    include_ensemble=False,
                                                    figsize=FIGSIZE,
                                                    label_ncol=LABEL_NCOL)
@@ -117,7 +115,8 @@ def main():
                                                                      accuracy=ACCURACY,
                                                                      for_appendix=FOR_APPENDIX,
                                                                      include_solver_names=INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH,
-                                                                     solver_name_list=solver_names)
+                                                                     #solver_name_list=solver_names
+                                                                     )
             
             # Ensure the directory exists
             os.makedirs(os.path.dirname(file_path), exist_ok=True)

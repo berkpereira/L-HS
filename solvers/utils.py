@@ -186,8 +186,11 @@ def normalise_matrix_columns(mat: np.ndarray) -> np.ndarray:
     # Iterate over each column to normalise
     for i in range(mat_copy.shape[1]):
         col_norm = np.linalg.norm(mat_copy[:, i])
-        if col_norm == 0: # usually because an update vector was very very small. Benign.
-            continue
-        mat_copy[:, i] /= col_norm
+        if col_norm == 0: # usually because an update vector was very very small,
+            # numerically may as well essentially have been random. 
+            temp = np.random.randn(mat_copy.shape[0])
+            mat_copy[:, i] = temp / (np.linalg.norm(temp))
+        else:
+            mat_copy[:, i] /= col_norm
     
     return mat_copy

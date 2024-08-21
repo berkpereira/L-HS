@@ -332,8 +332,8 @@ def process_run_data(run_data, equiv_grad_list, success_list, f_sol, accuracy):
     # does not matter either way, hence the second condition below!
     max_equiv_grad_list = max(equiv_grad_list)
     max_run_data_equiv_grad_evals = max(float(row['equiv_grad_evals']) for row in run_data)
-    if max_equiv_grad_list > max_run_data_equiv_grad_evals and success_grad_evals is None:
-        raise ValueError("Placeholder error message: equiv_grad_list has larger values than run_data equiv_grad_evals")
+    # if max_equiv_grad_list > max_run_data_equiv_grad_evals and success_grad_evals is None:
+    #     raise ValueError("Placeholder error message: equiv_grad_list has larger values than run_data equiv_grad_evals")
 
     # If a success is found, update success_list
     if success_grad_evals is not None:

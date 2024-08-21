@@ -7,26 +7,27 @@ import json
 import os
 
 def main():
+    os.system('clear')
     # RUNNING
-    RUN = False
+    RUN = True
     SAVE_RESULTS = False
     NO_RUNS = 10
     
     # PLOTTING
-    PLOT_PROFILE = True
+    PLOT_PROFILE = False
     SAVE_FIG = False
     FOR_APPENDIX = False
     INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = False
 
     ACCURACY = 1e-2
-    # PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
-    PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
+    PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
+    # PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
     LABEL_NCOL = 2
     FIGSIZE = (5.9, 2.2)
 
 ################################################################################
 ################################################################################
-    order = 'newton'
+    order = 'sd'
     experiment_str = 'sketch_size'
     # solver_names = [ # NOTE: select solvers
     #     'solver1',
@@ -58,15 +59,16 @@ def main():
     # CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
 
     CONFIG_PATH_LIST = [
-        [order, experiment_str, 'solver1'],
-        [order, experiment_str, 'solver2'],
-        [order, experiment_str, 'solver3'],
-        [order, experiment_str, 'solver4'],
-        [order, experiment_str, 'solver5'],
-        [order, experiment_str, 'solver6'],
+        ['sample_solvers', 'solver0']
+        # [order, experiment_str, 'solver1'],
+        # [order, experiment_str, 'solver2'],
+        # [order, experiment_str, 'solver3'],
+        # [order, experiment_str, 'solver4'],
+        # [order, experiment_str, 'solver5'],
+        # [order, experiment_str, 'solver6'],
     ]
 
-    PASSABLE_NAME = 'default_data_profiles_newton'
+    PASSABLE_NAME = 'default_data_profiles_sd'
 
 ################################################################################
 ################################################################################

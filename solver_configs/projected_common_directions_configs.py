@@ -584,8 +584,8 @@ solver_config_tree = {
     
     "sample_solvers": {
         "solver0": {
-            "subspace_frac_grads": 0.1,
-            "subspace_frac_updates": 0.1,
+            "subspace_no_grads": 1,
+            "subspace_no_updates": 1,
             "subspace_frac_random": 0.1,
             "random_proj_dim_frac": 0.2,
             "direction_str": 'sd',

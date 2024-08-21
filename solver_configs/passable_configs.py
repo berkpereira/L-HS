@@ -10,7 +10,7 @@ import autograd.numpy as np
 
 passable_variants_dict = {
     "default_data_profiles_sd": {
-        "tol": 0,
+        "tol": 1e-5,
         "max_iter": np.inf,
         "equiv_grad_budget": 180,
         "iter_print_gap": 500,

@@ -221,6 +221,42 @@ solver_config_tree = {
             },
         },
         'use_momentum': {
+            '1d.0.0': {
+                "subspace_no_grads":   1,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  0,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "alpha_max": 100,
+            },
+            '1d.1d.0': {
+                "subspace_no_grads":   1,
+                "subspace_no_updates": 1,
+                "subspace_frac_random":  0,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "alpha_max": 100,
+            },
+            '1d.0.5': {
+                "subspace_no_grads":   1,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  0.05,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "alpha_max": 100,
+            },
+            '1d.1d.5': {
+                "subspace_no_grads":   1,
+                "subspace_no_updates": 1,
+                "subspace_frac_random":  0.05,
+                "random_proj_dim_frac": 0.2,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "alpha_max": 100,
+            },
             'solver1': {
                 "subspace_frac_grads":   0.18,
                 "subspace_frac_updates": 0,
@@ -768,5 +804,5 @@ solver_config_tree = {
 
 # Function to create a configuration object for a given variant name
 def create_config(obj, variant_name):
-    variant = solver_variants_dict[variant_name]
+    variant = solver_config_tree[variant_name]
     return ProjectedCommonDirectionsConfig(obj=obj, **variant)

@@ -9,12 +9,12 @@ import os
 def main():
     os.system('clear')
     # RUNNING
-    RUN = True
+    RUN = False
     SAVE_RESULTS = False
     NO_RUNS = 10
     
     # PLOTTING
-    PLOT_PROFILE = False
+    PLOT_PROFILE = True
     SAVE_FIG = False
     FOR_APPENDIX = False
     INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = False
@@ -28,17 +28,7 @@ def main():
 ################################################################################
 ################################################################################
     order = 'sd'
-    experiment_str = 'sketch_size'
-    # solver_names = [ # NOTE: select solvers
-    #     'solver1',
-    #     'solver2',
-    #     'solver3',
-    #     'solver4',
-    #     'solver5',
-    #     'solver6',
-    #     'solver7',
-    #     'solver8',
-    # ]
+    experiment_str = 'use_momentum'
     # NOTE: THE BELOW FOR SD GRANULAR
     # solver_names = [
         # '5.5.0',
@@ -58,14 +48,14 @@ def main():
     # ]
     # CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
 
+    # NOTE: more manual option
     CONFIG_PATH_LIST = [
-        ['sample_solvers', 'solver0']
+        # ['sample_solvers', 'solver0']
         # [order, experiment_str, 'solver1'],
-        # [order, experiment_str, 'solver2'],
-        # [order, experiment_str, 'solver3'],
-        # [order, experiment_str, 'solver4'],
-        # [order, experiment_str, 'solver5'],
-        # [order, experiment_str, 'solver6'],
+        [order, experiment_str, '1d.0.0'],
+        [order, experiment_str, '1d.1d.0'],
+        [order, experiment_str, '1d.0.5'],
+        [order, experiment_str, '1d.1d.5'],
     ]
 
     PASSABLE_NAME = 'default_data_profiles_sd'

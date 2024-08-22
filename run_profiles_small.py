@@ -10,7 +10,7 @@ def main():
     os.system('clear')
 
     # NOTE: WHICH PROFILE problem set?
-    PROFILE = 'LARGE' # in {'SMALL', 'LARGE'}
+    PROFILE = 'SMALL' # in {'SMALL', 'LARGE'}
 
     # RUNNING
     RUN = False
@@ -35,9 +35,13 @@ def main():
     experiment_str = 'granular'
     # NOTE: THE BELOW IS FOR SD GRANULAR
     solver_names = [
-        'full-space-SD',
-        # '1d.0.0',
-        # '1d.0.10',
+        # 'full-space-SD',
+        '1d.0.0',
+        '1d.0.1',
+        '1d.0.2',
+        '1d.0.5',
+        '1d.0.7',
+        '1d.0.10',
         # '1d.1d.0',
         # '1d.1d.10',
         # '2.0.0',
@@ -63,7 +67,7 @@ def main():
         # '10.0.0',
         # '10.0.10',
         # '10.10.0',
-        '10.10.10',
+        # '10.10.10',
         # '15.0.0',
         # '15.0.10',
         # '15.15.0',
@@ -131,8 +135,9 @@ def main():
                                                    label_ncol=LABEL_NCOL)
         plt.show()
         if SAVE_FIG:
+            plot_type = f'{PROFILE}_profile'
             file_path = results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST,
-                                                                     plot_type='small_profile',
+                                                                     plot_type=plot_type,
                                                                      accuracy=ACCURACY,
                                                                      for_appendix=FOR_APPENDIX,
                                                                      include_solver_names=INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH,

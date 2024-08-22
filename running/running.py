@@ -103,6 +103,7 @@ def run_solvers_multiple_prob(extended_problem_name_list, config_path_list,
                     results.results_utils.save_solver_output(solver.obj.name,
                                                              str(solver.config),
                                                              output)
+        print('\a')
 
 def plot_run_solvers(output_dict, normalise_loss,
                      include_Pk_orth: bool=False,

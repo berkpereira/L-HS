@@ -44,7 +44,7 @@ def generate_chosen_dict():
     return suitable_name_dim_dict, no_suitable
 
 def select_random_combinations(input_dict, num_combinations):
-    # Select 5 keys uniformly at random from the dictionary
+    # Select num_combinations keys uniformly at random from the dictionary
     selected_keys = random.sample(list(input_dict.keys()), num_combinations)
     
     # For each selected key, select one of the elements in the corresponding list value uniformly at random
@@ -62,7 +62,7 @@ def main():
     # print(suitable_name_dim_dict)
 
     WRITE_TO_FILE = False
-
+    
     chosen_problems = select_random_combinations(suitable_name_dim_dict, 20)
     print(chosen_problems)
 

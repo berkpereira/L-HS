@@ -362,7 +362,7 @@ def generate_pdf_file_name(config_path_list, plot_type: str,
     solver_names_str = ''
     if include_solver_names:
         for solver_name in solver_name_list:
-            solver_names_str += solver_name
+            solver_names_str += f'{solver_name}-'
 
     # Add the suffix for the profile type
     file_name = '/Users/gabrielpereira/Library/CloudStorage/OneDrive-Nexus365/ox-mmsc-cloud/dissertation/mmsc-thesis/images/python-figures/' + middle_name + '/' + solver_names_str + plot_type + '_accuracy_' + accuracy_str + appendix_str + '.pdf'

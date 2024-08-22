@@ -13,12 +13,12 @@ def main():
     PROFILE = 'LARGE' # in {'SMALL', 'LARGE'}
 
     # RUNNING
-    RUN = True
+    RUN = False
     SAVE_RESULTS = False
     NO_RUNS = 10
     
     # PLOTTING
-    PLOT_PROFILE = False
+    PLOT_PROFILE = True
     SAVE_FIG = False
     FOR_APPENDIX = False
     INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = True
@@ -35,6 +35,7 @@ def main():
     experiment_str = 'granular'
     # NOTE: THE BELOW IS FOR SD GRANULAR
     solver_names = [
+        'full-space-SD',
         # '1d.0.0',
         # '1d.0.10',
         # '1d.1d.0',
@@ -52,21 +53,21 @@ def main():
         # '4.4.0',
         # '4.4.10',
         # '5.0.0',
-        '5.0.10',
+        # '5.0.10',
         # '5.5.0',
-        '5.5.10',
+        # '5.5.10',
         # '7.0.0',
-        '7.0.10',
+        # '7.0.10',
         # '7.7.0',
-        '7.7.10',
+        # '7.7.10',
         # '10.0.0',
-        '10.0.10',
+        # '10.0.10',
         # '10.10.0',
         '10.10.10',
         # '15.0.0',
-        '15.0.10',
+        # '15.0.10',
         # '15.15.0',
-        '15.15.10',
+        # '15.15.10',
     ]
     CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
 
@@ -93,8 +94,6 @@ def main():
             problem_name_list = json.load(f)
     else:
         raise Exception("Profile problem set not recognised! (must be either 'SMALL' or 'LARGE')")
-    
-    problem_name_list.sort() # sort alphabetically, makes it easier to check progress within results directories
 
     if RUN and PLOT_PROFILE:
         raise Exception('Cannot have both RUN and PLOT_PROFILE at the same time!')

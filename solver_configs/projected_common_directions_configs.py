@@ -147,7 +147,7 @@ solver_config_tree = {
                 "orth_P_k": True,
                 "alpha_max": 100,
             },
-            'solver6': {
+            'full-space-SD': {
                 "subspace_frac_grads": 0,
                 "subspace_frac_updates": 0,
                 "subspace_frac_random": 1,
@@ -295,6 +295,17 @@ solver_config_tree = {
             },
         },
         'granular': {
+            'full-space-SD': {
+                "subspace_frac_grads": 0,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random": 1,
+                "random_proj_dim_frac": 1,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+
             '1d.0.0': {
                 "subspace_no_grads":   1,
                 "subspace_frac_updates": 0,

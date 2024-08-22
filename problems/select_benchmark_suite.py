@@ -72,18 +72,20 @@ def main():
 
     # NOTE: below for small suite selection (20 problems)
     # chosen_problems = select_random_combinations(suitable_name_dim_dict, 20)
-    # print(chosen_problems)
+
 
     # NOTE: below for large problem suite selection
-    chosen_problems = all_problems_into_list(suitable_name_dim_dict)
-    print(suitable_name_dim_dict)
-    print(chosen_problems)
-    print(len(chosen_problems))
+    # chosen_problems = all_problems_into_list(suitable_name_dim_dict)
+    # print(suitable_name_dim_dict)
+    # chosen_problems.sort()
+    # print()
+    # print(chosen_problems)
+    # print(len(chosen_problems))
 
     if WRITE_TO_FILE:
         raise Exception('This has been done, do not write over things...')
         # JSON_FILE_NAME = 'problems/large_profile_problems.json'
-        # write_json_file('problems/large_profile_problems.json', chosen_problems)
+        # write_json_file(JSON_FILE_NAME, chosen_problems)
     
 
 if __name__ == '__main__':

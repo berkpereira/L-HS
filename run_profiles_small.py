@@ -8,13 +8,17 @@ import os
 
 def main():
     os.system('clear')
+
+    # NOTE: WHICH PROFILE problem set?
+    PROFILE = 'LARGE' # in {'SMALL', 'LARGE'}
+
     # RUNNING
-    RUN = False
+    RUN = True
     SAVE_RESULTS = False
     NO_RUNS = 10
     
     # PLOTTING
-    PLOT_PROFILE = True
+    PLOT_PROFILE = False
     SAVE_FIG = False
     FOR_APPENDIX = False
     INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = True
@@ -81,8 +85,16 @@ def main():
 ################################################################################
 ################################################################################
     # Read in the 20 problems selected for small data profiles.
-    with open('problems/small_profile_problems.json', 'r') as f:
-        problem_name_list = json.load(f)
+    if PROFILE == 'SMALL':
+        with open('problems/small_profile_problems.json', 'r') as f:
+            problem_name_list = json.load(f)
+    elif PROFILE == 'LARGE':
+        with open('problems/large_profile_problems.json', 'r') as f:
+            problem_name_list = json.load(f)
+    else:
+        raise Exception("Profile problem set not recognised! (must be either 'SMALL' or 'LARGE')")
+    
+    problem_name_list.sort() # sort alphabetically, makes it easier to check progress within results directories
 
     if RUN and PLOT_PROFILE:
         raise Exception('Cannot have both RUN and PLOT_PROFILE at the same time!')

@@ -15,6 +15,7 @@ passable_variants_dict = {
         "equiv_grad_budget": 180,
         "iter_print_gap": 500,
         "verbose": True,
+        "timeout_secs": 10,
     },
     "default_data_profiles_newton": {
         "tol": 1e-6,

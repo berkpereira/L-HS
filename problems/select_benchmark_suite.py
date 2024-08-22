@@ -33,7 +33,7 @@ def generate_chosen_dict():
     for extended_name in results_dict:
         name, input_dim = solvers.utils.problem_name_dim_tuple_from_json_name(extended_name)
         best_sol = results_dict[extended_name]
-        if 50 <= input_dim <= 200 and best_sol < 1e4:
+        if 100 <= input_dim <= 200 and best_sol < 1e4:
             # print(f'Name: {name}, dim: {input_dim}')
             # print(f'Best sol.: {results_dict[extended_name]}')
             if name in suitable_name_dim_dict:
@@ -55,6 +55,13 @@ def select_random_combinations(input_dict, num_combinations):
     
     return combinations
 
+def all_problems_into_list(input_dict):
+    out_list = []
+    for k in input_dict:
+        for dim in input_dict[k]:
+            out_list.append(f'{k}_n{dim}')
+    return out_list
+
 def main():
     os.system('clear')
     suitable_name_dim_dict, no_suitable = generate_chosen_dict()
@@ -62,14 +69,21 @@ def main():
     # print(suitable_name_dim_dict)
 
     WRITE_TO_FILE = False
-    
-    chosen_problems = select_random_combinations(suitable_name_dim_dict, 20)
+
+    # NOTE: below for small suite selection (20 problems)
+    # chosen_problems = select_random_combinations(suitable_name_dim_dict, 20)
+    # print(chosen_problems)
+
+    # NOTE: below for large problem suite selection
+    chosen_problems = all_problems_into_list(suitable_name_dim_dict)
+    print(suitable_name_dim_dict)
     print(chosen_problems)
+    print(len(chosen_problems))
 
     if WRITE_TO_FILE:
-        raise Exception('This should no longer be used! Turn WRITE_TO_FILE to False.')
-        JSON_FILE_NAME = 'problems/small_profile_problems.json'
-        # write_json_file()
+        raise Exception('This has been done, do not write over things...')
+        # JSON_FILE_NAME = 'problems/large_profile_problems.json'
+        # write_json_file('problems/large_profile_problems.json', chosen_problems)
     
 
 if __name__ == '__main__':

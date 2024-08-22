@@ -1,3 +1,4 @@
+import running.running
 import matplotlib.pyplot as plt
 import autograd.numpy as np
 import results.results_utils
@@ -124,15 +125,33 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
             label_lines = [r"""\verb|L-HS-N-{grad_str}.{update_str}.{random_str}|"""]
     
     if not random_subspace_method:
-        if config.subspace_frac_grads is None:
+        grads_int =   False
+        updates_int = False
+        random_int =  False
+        try:
+            if not config.subspace_no_grads_given_as_frac:
+                grads_int = True
+            if not config.subspace_no_updates_given_as_frac:
+                updates_int = True
+            if not config.subspace_no_random_given_as_frac:
+                random_int = True
+        except:
+            if config.subspace_frac_grads is None:
+                grads_int = True
+            if config.subspace_frac_updates is None:
+                updates_int = True
+            if config.subspace_frac_random is None:
+                random_int = True
+        
+        if grads_int:
             format_args.update({'grad_str': f'{str(int(config.subspace_no_grads))}d'})
         else:
             format_args.update({'grad_str': str(int(config.subspace_frac_grads * 100))})
-        if config.subspace_frac_updates is None:
+        if updates_int:
             format_args.update({'update_str': f'{str(int(config.subspace_no_updates))}d'})
         else:
             format_args.update({'update_str': str(int(config.subspace_frac_updates * 100))})
-        if config.subspace_frac_random is None:
+        if random_int:
             format_args.update({'random_str': f'{str(int(config.subspace_no_random))}d'})
         else:
             format_args.update({'random_str': str(int(config.subspace_frac_random * 100))})
@@ -183,9 +202,9 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
 # This function plots the loss vs iteration (or vs directional derivatives
 # evaluated) for a number of solver output objects.
 def plot_loss_vs_iteration(solver_outputs: list,
-                           deriv_evals_axis: bool=False,
-                           normalise_deriv_evals_vs_dimension: bool=False,
-                           normalise_loss_data: bool=False,
+                           deriv_evals_axis: bool=True,
+                           normalise_deriv_evals_vs_dimension: bool=True,
+                           normalise_loss_data: bool=True,
                            labels=None,
                            include_Pk_orth: bool=False,
                            include_sketch_size: bool=False,

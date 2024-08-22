@@ -4,10 +4,13 @@ import csv
 import numpy as np
 from ast import literal_eval
 import hashlib
+from problems.test_problems import select_problem
 from datetime import datetime
 from solvers.utils import SolverOutput, problem_name_dim_tuple_from_json_name
 from solvers.projected_common_directions import ProjectedCommonDirections, ProjectedCommonDirectionsConfig
 import problems.test_problems
+from solver_configs.projected_common_directions_configs import solver_config_tree
+import running.running
 
 MAPPING_FILE = 'results/config_mapping.json'
 
@@ -111,7 +114,6 @@ def create_config_from_config_string(config_str: str, objective_instance) -> Pro
     config = ProjectedCommonDirectionsConfig(**config_dict)
     
     return config
-
 
 # NOTE: this functions keeps only KEEP_NO solver runs' data.
 # These are prioritised vs any incoming data by the equivalent gradient
@@ -236,6 +238,86 @@ def get_best_known_sol(extended_problem_name: str):
         return f_sol
     except:
         raise Exception('Could not retrieve best known problem objective value!')
+
+def generate_illustrations(config_path_list: list,
+                           extended_problem_name: str,
+                           no_runs: int,
+                           passable_config_name: str) -> dict:
+    objective = select_problem(problem_name=extended_problem_name,
+                               extended_name=True)[1]
+    solvers_list = []
+    for config_path in config_path_list:
+        # config_dict = solver_config_tree
+        # for key in config_path:
+        #     config_dict = config_dict[key]
+
+        
+        # raw_config = running.running.combine_configs(extended_problem_name,
+        #                                              config_path,
+        #                                              passable_config_name)
+        # hash = get_hashed_filename(str(raw_config))
+        # config_str = hash_to_config_str(hash)
+        # config = create_config_from_config_string(config_str,objective)
+
+        config = running.running.combine_configs(extended_problem_name,
+                                                 config_path,
+                                                 passable_config_name)
+        
+        # config_dict_with_objective = {'obj': objective, **config_dict}
+        # config = ProjectedCommonDirectionsConfig(**config_dict_with_objective)
+        solvers_list.append(ProjectedCommonDirections(config))
+    
+    solver_outputs_list = []
+
+    for solver in solvers_list:
+        solver_output_runs = []
+
+        # Load the results for the current solver
+        results = load_solver_results(extended_problem_name, solver.config)
+
+        current_run_id = None
+        current_run_data = []
+
+        run_counter = 0  # To keep track of the number of runs processed
+
+        for row in results:
+            run_id = row['run_id']
+
+            if run_id != current_run_id:
+                if current_run_data:
+                    # Process the completed run data
+                    f_vals = [float(r['f_vals']) for r in current_run_data]
+                    deriv_evals = [int(r['deriv_evals']) for r in current_run_data]
+                    
+                    solver_output = SolverOutput(solver=solver,
+                                                 f_vals=np.array(f_vals),
+                                                 deriv_evals=np.array(deriv_evals))
+                    solver_output_runs.append(solver_output)
+                    
+                    run_counter += 1
+                    current_run_data = []
+
+                    if run_counter >= no_runs:
+                        break
+
+                current_run_id = run_id
+
+            current_run_data.append(row)
+
+        # Don't forget to process the last run data
+        if run_counter < no_runs and current_run_data:
+            f_vals = [float(r['f_vals']) for r in current_run_data]
+            deriv_evals = [int(r['deriv_evals']) for r in current_run_data]
+
+            solver_output = SolverOutput(solver=solver,
+                                         f_vals=np.array(f_vals),
+                                         deriv_evals=np.array(deriv_evals))
+            solver_output_runs.append(solver_output)
+
+        solver_outputs_list.extend(solver_output_runs)
+
+    return solver_outputs_list
+
 
 
 def generate_data_profiles(problem_name_list: list, solver_config_list: list,

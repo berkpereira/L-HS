@@ -1,4 +1,5 @@
 import problems.test_problems
+from solvers.utils import SolverOutput
 import autograd.numpy as np
 from solvers.projected_common_directions import ProjectedCommonDirections, ProjectedCommonDirectionsConfig
 from solver_configs.projected_common_directions_configs import solver_config_tree

@@ -4,7 +4,7 @@ import json
 import re
 
 class SolverOutput():
-    def __init__(self, solver, final_f_val, final_x, final_k, f_vals, update_norms=None, **kwargs):
+    def __init__(self, solver, final_f_val=None, final_x=None, final_k=None, f_vals=None, update_norms=None, **kwargs):
         self.solver = solver
         self.final_f_val = final_f_val
         self.final_x = final_x

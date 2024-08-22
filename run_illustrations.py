@@ -1,4 +1,5 @@
 import os
+import plotting.plotting
 from running import running
 import results.results_utils
 from solvers.projected_common_directions import ProjectedCommonDirections, ProjectedCommonDirectionsConfig
@@ -30,24 +31,26 @@ def main():
 ################################################################################
 ################################################################################
     order = 'sd'
-    experiment_str = 'use_momentum'
+    experiment_str = 'granular'
     solver_names = [ # NOTE: select solvers
-        'solver1',
-        'solver2',
-        'solver3',
-        'solver4',
-        'solver5',
-        'solver6',
-        'solver7',
-        'solver8',
+        '1d.0.0',
+        # '1d.0.1',
+        # '1d.0.2',
+        # '1d.0.5',
+        # '1d.0.7',
+        # '1d.0.10',
     ]
     CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
     
     NO_RUNS = 5
     
+    RUN = False
     SAVE_RESULTS = False
+
+    PLOT = True
     
     SAVE_FIG = False
+    INCLUDE_SOLVER_NAMES = True
     FOR_APPENDIX = False
     FIGSIZE = (5.9, 2.4)
     # FIGSIZE = (5.9, 2.5) # NOTE: if a bit more (vertical) space is required
@@ -60,32 +63,43 @@ def main():
 
     configs_list = []
     for config_path in CONFIG_PATH_LIST:
-        configs_list.append(running.combine_configs(extended_problem_name, config_path=config_path, passable_name=passable_name))
+        config = running.combine_configs(extended_problem_name,
+                                         config_path=config_path,
+                                         passable_name=passable_name)
+        configs_list.append(config)
                     
     solvers_list = [ProjectedCommonDirections(config) for config in configs_list]
 
     # Run and store results
     results_attrs = ['final_f_val']
-    results_dict = running.run_solvers_single_prob(problem_tup, solvers_list,
-                                                   no_runs=NO_RUNS,
-                                                   result_attrs=results_attrs, save_results=SAVE_RESULTS)
+    if RUN:
+        results_dict = running.run_solvers_single_prob(problem_tup, solvers_list,
+                                                    no_runs=NO_RUNS,
+                                                    result_attrs=results_attrs,
+                                                    save_results=SAVE_RESULTS)
 
-    # Plot
-    # plotting.plotting.plot_solver_averages(results_dict, ['final_f_val'])
-    # plotting.plotting.plot_run_histograms(results_dict['raw_results'],
-    #                                       attr_names=results_attrs)
+    if PLOT:
+        outputs_list = results.results_utils.generate_illustrations(config_path_list=CONFIG_PATH_LIST,
+                                                                    extended_problem_name=extended_problem_name,
+                                                                    no_runs=NO_RUNS,
+                                                                    passable_config_name=passable_name)
+        
+        fig = plotting.plotting.plot_loss_vs_iteration(solver_outputs=outputs_list,
+                                                       include_Pk_orth=False,
+                                                       include_sketch_size=False,
+                                                       include_ensemble=False,
+                                                       figsize=FIGSIZE,
+                                                       label_ncol=LABEL_NCOL)
+        plt.show()
 
-    # (detailed plots, each individual run represented)
-    fig = running.plot_run_solvers(results_dict, normalise_loss=True,
-                                   include_Pk_orth=False,
-                                   include_sketch_size=False,
-                                   include_ensemble=False,
-                                   figsize=FIGSIZE,
-                                   label_ncol=LABEL_NCOL)
-
-    plt.show()
     if SAVE_FIG:
-        file_path = results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST, plot_type='illustration', for_appendix=FOR_APPENDIX)
+        if not PLOT:
+            raise Exception('Trying to save plot but none has been created!')
+        file_path = results.results_utils.generate_pdf_file_name(CONFIG_PATH_LIST,
+                                                                 plot_type='illustration',
+                                                                 for_appendix=FOR_APPENDIX,
+                                                                 include_solver_names=INCLUDE_SOLVER_NAMES,
+                                                                 solver_name_list=solver_names)
         
         # Ensure the directory exists
         os.makedirs(os.path.dirname(file_path), exist_ok=True)

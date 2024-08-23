@@ -8,18 +8,19 @@ import os
 
 def main():
     os.system('clear')
+    NO_RUNS = 10
+
 
     # NOTE: WHICH PROFILE problem set?
-    PROFILE = 'SMALL' # in {'SMALL', 'LARGE'}
+    PROFILE = 'LARGE' # \in {'SMALL', 'LARGE'}
 
     # RUNNING
-    RUN = False
+    RUN          = True
     SAVE_RESULTS = False
-    NO_RUNS = 10
     
     # PLOTTING
-    PLOT_PROFILE = True
-    SAVE_FIG = False
+    PLOT_PROFILE = False
+    SAVE_FIG     = False
     FOR_APPENDIX = False
     INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = True
 
@@ -32,58 +33,30 @@ def main():
 ################################################################################
 ################################################################################
     order = 'sd'
-    experiment_str = 'granular'
-    # NOTE: THE BELOW IS FOR SD GRANULAR
+    experiment_str = 'benchmarks'
+    # NOTE: THE BELOW IS FOR SD GRANULAR/BENCHMARKS
     solver_names = [
         # 'full-space-SD',
-        '1d.0.0',
-        '1d.0.1',
-        '1d.0.2',
-        '1d.0.5',
-        '1d.0.7',
-        '1d.0.10',
-        # '1d.1d.0',
-        # '1d.1d.10',
-        # '2.0.0',
-        # '2.0.10',
-        # '2.2.0',
-        # '2.2.10',
-        # '3.0.0',
-        # '3.0.10',
-        # '3.3.0',
-        # '3.3.10',
-        # '4.0.0',
-        # '4.0.10',
-        # '4.4.0',
-        # '4.4.10',
-        # '5.0.0',
-        # '5.0.10',
-        # '5.5.0',
+        # '1d.0.2',
+        '1d.0.2-SMALL-SKETCH',
         # '5.5.10',
-        # '7.0.0',
-        # '7.0.10',
-        # '7.7.0',
-        # '7.7.10',
-        # '10.0.0',
-        # '10.0.10',
-        # '10.10.0',
+        # # '5.5.20',
         # '10.10.10',
-        # '15.0.0',
-        # '15.0.10',
-        # '15.15.0',
-        # '15.15.10',
+        # # '20.20.5',
+        # '20.20.10',
+        # # 'lee-1d.0.2',
+        # # 'lee-5.5.10',
+        # # 'lee-5.5.20',
+        # # 'lee-10.10.10',
+        # # 'lee-20.20.5',
+        # # 'lee-20.20.10',
+        # '0.0.5',
+        # # '0.0.10',
+        # '0.0.20',
+        # # '0.0.30',
+        # '0.0.50',
     ]
     CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
-
-    # NOTE: more manual option
-    # CONFIG_PATH_LIST = [
-    #     ['sample_solvers', 'solver0']
-    #     [order, experiment_str, 'solver1'],
-    #     [order, experiment_str, '1d.0.0'],
-    #     [order, experiment_str, '1d.1d.0'],
-    #     [order, experiment_str, '1d.0.5'],
-    #     [order, experiment_str, '1d.1d.5'],
-    # ]
 
     PASSABLE_NAME = 'default_data_profiles_sd'
 
@@ -132,7 +105,8 @@ def main():
                                                    include_sketch_size=False,
                                                    include_ensemble=False,
                                                    figsize=FIGSIZE,
-                                                   label_ncol=LABEL_NCOL)
+                                                   label_ncol=LABEL_NCOL,
+                                                   log_axis=False)
         plt.show()
         if SAVE_FIG:
             plot_type = f'{PROFILE}_profile'

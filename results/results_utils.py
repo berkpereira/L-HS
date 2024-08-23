@@ -201,11 +201,13 @@ def load_solver_results(problem_name: str, solver_config, output_dir='results'):
     """
     # Get the hashed file name
     # hashed_filename = config_to_mapping_hash(solver_config)
+    
+    # TODO: THINGS GOING WRONG HERE
     hashed_filename = get_hashed_filename(str(solver_config))
     file_path = os.path.join(output_dir, problem_name, f'{hashed_filename}.csv')
 
     if not os.path.exists(file_path):
-        raise Exception('Result file does not exist.')
+        raise Exception(f'Result file {file_path} does not exist!')
 
     # Load the results from the CSV file
     with open(file_path, mode='r', newline='') as file:

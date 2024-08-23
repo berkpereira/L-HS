@@ -197,7 +197,6 @@ class ProjectedCommonDirectionsConfig:
         else:
             passable_attrs.append('subspace_frac_random')
 
-
         if self.subspace_no_grads == 0: # 'tilde projections' do not come up
             passable_attrs.extend(['random_proj_dim_frac', 'ensemble'])
         if self.direction_str != 'newton':
@@ -244,7 +243,7 @@ class ProjectedCommonDirectionsConfig:
                 else:
                     passable_attrs.append('ensemble')
             else: # no "tilde projections" are ever computed
-                passable_attrs.extend(['ensemble', 'reproject_grad', 'random_proj'])
+                passable_attrs.extend(['ensemble', 'reproject_grad', 'random_proj', 'random_proj_dim_frac'])
         
         attributes = []
         for field in fields(self):

@@ -101,6 +101,7 @@ def run_solvers_multiple_prob(extended_problem_name_list, config_path_list,
                 
                 # Save results if requested
                 if save_results:
+                    # TODO: GOING WRONG HERE
                     results.results_utils.save_solver_output(solver.obj.name,
                                                              str(solver.config),
                                                              output)

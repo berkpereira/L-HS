@@ -26,7 +26,7 @@ def main():
     input_dim = 100
     extended_problem_name = problem_name + '_n' + str(input_dim)
     problem_tup = running.get_problem(problem_name, input_dim)
-
+    NO_RUNS = 5
 
 ################################################################################
 ################################################################################
@@ -42,16 +42,15 @@ def main():
     ]
     CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
     
-    NO_RUNS = 5
-    
+
     RUN = False
     SAVE_RESULTS = False
 
     PLOT = True
-    
     SAVE_FIG = False
     INCLUDE_SOLVER_NAMES = True
     FOR_APPENDIX = False
+    
     FIGSIZE = (5.9, 2.4)
     # FIGSIZE = (5.9, 2.5) # NOTE: if a bit more (vertical) space is required
     LABEL_NCOL = 2

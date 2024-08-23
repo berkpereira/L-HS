@@ -43,6 +43,9 @@ class ProjectedCommonDirectionsConfig:
     subspace_frac_updates: float = None
     subspace_frac_random: float = None
 
+    # NOTE: the below only in use if direction_str == 'newton' and use_hess is False.
+    no_secant_pairs: int = None
+
     direction_str: str = 'sd' # options are {'newton', 'sd'}
     use_hess: bool = True
     random_proj: bool = True
@@ -111,6 +114,12 @@ class ProjectedCommonDirectionsConfig:
             self.subspace_no_random_given_as_frac = True
         else:
             self.subspace_no_random_given_as_frac = False
+
+        # Shorthand for quasi-Newton methods
+        if self.direction_str == 'newton' and (not self.use_hess):
+            self.quasi_newton = True
+        else:
+            self.quasi_newton = False
 
         # If fractions are specified, use them to set the integer attributes
         # NOTE: This only goes for cases where a solver is then to be run.
@@ -182,7 +191,8 @@ class ProjectedCommonDirectionsConfig:
                           'tol', 'timeout_secs',
                           'subspace_no_grads_given_as_frac',
                           'subspace_no_updates_given_as_frac',
-                          'subspace_no_random_given_as_frac']
+                          'subspace_no_random_given_as_frac',
+                          'quasi_newton']
         
         if self.subspace_no_grads_given_as_frac:
             passable_attrs.append('subspace_no_grads')
@@ -200,7 +210,10 @@ class ProjectedCommonDirectionsConfig:
         if self.subspace_no_grads == 0: # 'tilde projections' do not come up
             passable_attrs.extend(['random_proj_dim_frac', 'ensemble'])
         if self.direction_str != 'newton':
-            passable_attrs.extend(['reg_lambda', 'use_hess']) # only comes in for Newton-like searches
+            passable_attrs.extend(['reg_lambda', 'use_hess', 'no_secant_pairs']) # only comes in for Newton-like searches
+        else: # in Newton-like methods...
+            if self.use_hess: # NOT using quasi-Newton method
+                passable_attrs.append('no_secant_pairs')
 
         # If we are orthogonalising P_k, then the column-wise normalisation
         # setting is redundant.
@@ -421,9 +434,9 @@ class ProjectedCommonDirections:
         # method == 'iterates_grads', (34) from Lee et al., 2022
         # method == 'iterates_grads_diagnewtons', (35) from Lee et al., 2022
 
-        # G should store some past PROJECTED gradient vectors.
-        # X should store some past iterate update vectors.
-        # D should store some past crude Newton direction
+        # G_subspace should store some past PROJECTED gradient vectors.
+        # X_subspace should store some past iterate update vectors.
+        # D_subspace should store some past crude Newton direction
         # approximations (obtained by multiplying the inverse of the
         # diagonal of Hessian diagonal by the gradient).
 
@@ -437,11 +450,11 @@ class ProjectedCommonDirections:
                                 normalise_cols=self.normalise_P_k_cols)
             return Q
         else:
-            G = kwargs['grads_matrix']
-            X = kwargs['updates_matrix']
-            D = kwargs['hess_diag_dirs_matrix']
+            G_subspace = kwargs['grads_matrix']
+            X_subspace = kwargs['updates_matrix']
+            D_subspace = kwargs['hess_diag_dirs_matrix']
             
-            arrays = [arr for arr in [G, X, D] if arr is not None]
+            arrays = [arr for arr in [G_subspace, X_subspace, D_subspace] if arr is not None]
             P = np.hstack(arrays)
             
             # Add orthogonal random directions as necessary
@@ -454,26 +467,36 @@ class ProjectedCommonDirections:
             return Q
             
     # Initialise the vectors to be stored throughout the algorithm (if any)
-    def init_stored_vectors(self, grad_vec):
+    def init_stored_vectors_subspace(self, grad_vec):
         # At iteration 0 we do not have any update vectors yet
-        X = None
+        X_subspace = None
         
         # Not implemented
-        D = None
+        D_subspace = None
 
         if self.subspace_no_grads > 0:
-            G = np.array(grad_vec, ndmin=2)
-            G = G.reshape(-1, 1)
+            G_subspace = np.array(grad_vec, ndmin=2)
+            G_subspace = G_subspace.reshape(-1, 1)
         else:
-            G = None
+            G_subspace = None
         
-        return G, X, D
+        return G_subspace, X_subspace, D_subspace
+    
+    def init_stored_vectors_lsr1(self):
+        # At iteration 0 we have none of the elements of a secant pair!
+        # NOTE that this differs from the situation in the vectors stored for
+        # subspace construction purposes, where the first projected gradient
+        # is there right away.
+        Y_lsr1 = None
+        X_lsr1 = None
+        return Y_lsr1, X_lsr1
+
 
     # Update stored vectors required for subspace constructions.
-    def update_stored_vectors(self, x_update, proj_grad, full_grad_prev, Q_prev,
-                              grads_matrix,
-                              updates_matrix,
-                              hess_diag_dirs_matrix,
+    def update_stored_vectors_subspace(self, new_X_vec, new_G_vec, full_grad_prev, Q_prev,
+                              G, X, D,
+                              no_grads_stored: int,
+                              no_updates_stored: int,
                               reassigning_latest_proj_grad=False):
         """
         NOTE: reassigning_latest_proj_grad is a boolean meant to address
@@ -483,38 +506,103 @@ class ProjectedCommonDirections:
         This situation is quite different from other instances of updating
         these vectors
         """
-        
-        G = grads_matrix
-        X = updates_matrix
-        D = hess_diag_dirs_matrix
+
 
         if not reassigning_latest_proj_grad:        
             if G is not None:
-                if G.shape[1] == self.subspace_no_grads:
+                if G.shape[1] == no_grads_stored:
                     G = np.delete(G, 0, 1) # delete first (oldest) column
                 if (not self.random_proj) and self.reproject_grad:
+                    raise Exception('No longer using deterministic projections.')
                     reproj_grad = Q_prev @ np.transpose(Q_prev) @ full_grad_prev
                     G[:, -1] = reproj_grad # re-assign last projected gradient
-                G = np.hstack((G, proj_grad.reshape(-1, 1))) # append newest
+                G = np.hstack((G, new_G_vec.reshape(-1, 1))) # append newest
+            
+            # NOTE: now the other case; in secant pair matrices, we have
+            # the initial 'gradient differences' matrix equal to None, 
+            # similarly to how the X matrix is ALWAYS None in the
+            # first iteration.
+            else:
+                if no_grads_stored > 0: # Initial secant pair
+                    G = np.array(new_G_vec.reshape(-1, 1)).reshape(-1, 1)
+                else: # G is None and should simply stay that way
+                    pass
 
             if X is not None:
-                if X.shape[1] == self.subspace_no_updates:
+                if X.shape[1] == no_updates_stored:
                     X = np.delete(X, 0, 1) # delete first (oldest) column
-                X = np.hstack((X, x_update.reshape(-1, 1))) # append newest
+                X = np.hstack((X, new_X_vec.reshape(-1, 1))) # append newest
             else:
-                if self.subspace_no_updates > 0: # Initial update
-                    X = np.array(x_update.reshape(-1, 1)).reshape(-1, 1)
-                else: # X is None and should stay that way
+                if no_updates_stored > 0: # Initial update
+                    X = np.array(new_X_vec.reshape(-1, 1)).reshape(-1, 1)
+                else: # X is None and should simply stay that way
                     pass
         else: # in this case we simply reassign the final column of G, nothing else
             if G is not None:
-                G[:, -1] = proj_grad
+                G[:, -1] = new_G_vec
 
         if D is not None:
             raise NotImplementedError('Not yet implemented.')
         
         # Return updated matrices
         return G, X, D
+
+    def update_stored_vectors_lsr1(self, new_X_vec, new_Y_vec, Y, X,
+                                   current_B, following_success: bool):
+        # NOTE: need a threshold for cut-off on the cosine of the relevant
+        # angle. See Nocedal & Wright, 1st ed. §8.2, where 1e-8 is suggested
+        lsr1_cos_min = 1e-8
+        try:
+            temp_vec = new_Y_vec - np.dot(current_B, new_X_vec)
+            abs_cos = np.abs(np.dot(new_X_vec, temp_vec)) / (np.linalg.norm(new_X_vec) * np.linalg.norm(temp_vec))
+            if abs_cos >= lsr1_cos_min:
+                lsr1_update = True
+            else:
+                lsr1_update = False
+        except:
+            lsr1_update = False
+        
+        if not lsr1_update: # NOT taking this secant pair onboard; skip!
+            return Y, X
+
+        if Y is not None:
+            if Y.shape[1] == self.no_secant_pairs:
+                if following_success:
+                    Y = np.delete(Y, 0, 1) # delete first (oldest) column
+                else:
+                    Y = np.delete(Y, Y.shape[1] - 1, 1) # delete last (most RECENT) column
+            if (not self.random_proj) and self.reproject_grad:
+                raise Exception('No longer using deterministic projections.')
+                reproj_grad = Q_prev @ np.transpose(Q_prev) @ full_grad_prev
+                Y[:, -1] = reproj_grad # re-assign last projected gradient    
+            Y = np.hstack((Y, new_Y_vec.reshape(-1, 1))) # append to right-hand end
+        
+        # NOTE: now the other case; in secant pair matrices, we have
+        # the initial 'gradient differences' matrix equal to None, 
+        # similarly to how the X matrix is ALWAYS None in the
+        # first iteration.
+        else:
+            if self.no_secant_pairs > 0: # Initial secant pair
+                Y = np.array(new_Y_vec.reshape(-1, 1)).reshape(-1, 1)
+            else: # Y is None and should simply stay that way
+                pass
+
+        # NOTE: there is only ever a need to update the steps matrix following
+        # a successful iteration!
+        if following_success:
+            if X is not None:
+                if X.shape[1] == self.no_secant_pairs:
+                    X = np.delete(X, 0, 1) # delete first (oldest) column
+                X = np.hstack((X, new_X_vec.reshape(-1, 1))) # append newest
+            else:
+                if self.no_secant_pairs > 0: # Initial update
+                    X = np.array(new_X_vec.reshape(-1, 1)).reshape(-1, 1)
+                else: # X is None and should simply stay that way
+                    pass
+        
+        print(f'Columns in Y: {Y.shape[1]}. Columns in X: {X.shape[1]}.')
+
+        return Y, X
 
     def search_dir(self, Q, full_grad, proj_grad, proj_B):
         if self.inner_use_full_grad:
@@ -580,6 +668,7 @@ class ProjectedCommonDirections:
         # The first projected gradient takes a projection from an entirely random matrix, always
         if self.subspace_no_grads > 0:
             proj_grad = self.project_gradient(full_grad, random_proj=True)
+            old_proj_grad = proj_grad
         else:
             proj_grad = None
 
@@ -591,11 +680,17 @@ class ProjectedCommonDirections:
             else:
                 raise NotImplementedError('Have not (yet!) implemented methods with user-provided B approximations to the Hessian!')
 
-        G, X, D = self.init_stored_vectors(grad_vec=proj_grad)
+        # Initialise vectors stored for subspace construction purposes
+        G_subspace, X_subspace, D_subspace = self.init_stored_vectors_subspace(grad_vec=proj_grad)
         
-        Q = self.update_subspace(grads_matrix=G,
-                                 updates_matrix=X,
-                                 hess_diag_dirs_matrix=D)
+        # Initialise vectors stored for quasi-Newton approximation purposes,
+        # if applicable
+        if self.quasi_newton:
+            Y_lsr1, X_lsr1 = self.init_stored_vectors_lsr1()
+        
+        Q = self.update_subspace(grads_matrix=G_subspace,
+                                 updates_matrix=X_subspace,
+                                 hess_diag_dirs_matrix=D_subspace)
         
         # Project B matrix
         # Later may want to do this using Hessian actions in the case where Hessian information is used at all.
@@ -623,11 +718,6 @@ class ProjectedCommonDirections:
         j_try = 0
         terminated = False
         timed_out = False
-
-
-        #store_all_full_grads = [full_grad]
-        #store_all_proj_grads = [proj_grad]
-        #store_all_x = [x]
 
         # Start loop
         # NOTE: Not even allowing deriv evals to EVER go over self.deriv_budget.
@@ -662,7 +752,6 @@ class ProjectedCommonDirections:
                 x = x + x_update
                 alpha = np.min((self.alpha_max, self.nu * alpha))
                 j_try = 0
-                # store_all_x.append(x)
 
                 # Compute upcoming update's info:
                 last_update_norm = np.linalg.norm(x_update)
@@ -672,7 +761,9 @@ class ProjectedCommonDirections:
                 f_x = self.func(x)
                 full_grad = self.grad_func(x)
                 if self.subspace_no_grads > 0:
+                    old_proj_grad = proj_grad # The one which is left behind at a distinct iterate is the old projected gradient
                     proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
+                    grad_diff = proj_grad - old_proj_grad
 
                 if self.direction_str == 'newton':
                     if self.use_hess:
@@ -682,17 +773,26 @@ class ProjectedCommonDirections:
                         raise NotImplementedError('Quasi-Newton stuff not yet implemented!')
 
                 # Update stored vectors required for subspace constructions.
-                G, X, D = self.update_stored_vectors(x_update=x_update,
-                                                    proj_grad=proj_grad,
+                G_subspace, X_subspace, D_subspace = self.update_stored_vectors_subspace(new_X_vec=x_update,
+                                                    new_G_vec=proj_grad,
                                                     full_grad_prev=full_grad_prev,
-                                                    Q_prev=Q, grads_matrix=G,
-                                                    updates_matrix=X,
-                                                    hess_diag_dirs_matrix=D)
+                                                    Q_prev=Q,
+                                                    G=G_subspace,
+                                                    X=X_subspace,
+                                                    D=D_subspace,
+                                                    no_grads_stored=self.subspace_no_grads,
+                                                    no_updates_stored=self.subspace_no_updates)
+                
+                if self.quasi_newton:
+                    Y_lsr1, X_lsr1 = self.update_stored_vectors_lsr1(new_X_vec=x_update,
+                                                                    new_Y_vec=grad_diff,
+                                                                    current_B=full_B,
+                                                                    following_success=True)
 
                 # Update subspace basis matrix
-                Q = self.update_subspace(grads_matrix=G,
-                                         updates_matrix=X,
-                                         hess_diag_dirs_matrix=D)
+                Q = self.update_subspace(grads_matrix=G_subspace,
+                                         updates_matrix=X_subspace,
+                                         hess_diag_dirs_matrix=D_subspace)
                 
                 # Count added derivative/actions costs
                 deriv_eval_count += self.deriv_per_succ_iter
@@ -710,18 +810,28 @@ class ProjectedCommonDirections:
                     # Must reproject the current gradient
                     if self.subspace_no_grads > 0:
                         proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
+                        grad_diff = proj_grad - old_proj_grad # NOTE that old_proj_grad is a projected gradient from the last distinct iterate!
                     # Update just the last projected gradient!
-                    G, X, D = self.update_stored_vectors(x_update=x_update,
-                                                        proj_grad=proj_grad,
+                    G_subspace, X_subspace, D_subspace = self.update_stored_vectors_subspace(new_X_vec=x_update,
+                                                        new_G_vec=proj_grad,
                                                         full_grad_prev=full_grad_prev,
-                                                        Q_prev=Q, grads_matrix=G,
-                                                        updates_matrix=None,
-                                                        hess_diag_dirs_matrix=None,
-                                                        reassigning_latest_proj_grad=True)
+                                                        Q_prev=Q,
+                                                        G=G_subspace,
+                                                        X=None,
+                                                        D=None,
+                                                        reassigning_latest_proj_grad=True,
+                                                        no_grads_stored=self.subspace_no_grads,
+                                                        no_updates_stored=self.subspace_no_updates)
+                    
+                    if self.quasi_newton:
+                        Y_lsr1, X_lsr1 = self.update_stored_vectors_lsr1(new_X_vec=None,
+                                                                        new_Y_vec=grad_diff,
+                                                                        current_B=full_B,
+                                                                        following_success=True)
                     # Update subspace basis matrix
-                    Q = self.update_subspace(grads_matrix=G,
-                                             updates_matrix=X,
-                                             hess_diag_dirs_matrix=D)
+                    Q = self.update_subspace(grads_matrix=G_subspace,
+                                             updates_matrix=X_subspace,
+                                             hess_diag_dirs_matrix=D_subspace)
                     
                     # Update derivative evals count
                     deriv_eval_count += self.deriv_per_unsucc_iter

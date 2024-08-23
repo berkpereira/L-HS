@@ -15,11 +15,11 @@ def main():
     PROFILE = 'LARGE' # \in {'SMALL', 'LARGE'}
 
     # RUNNING
-    RUN          = True
+    RUN          = False
     SAVE_RESULTS = False
     
     # PLOTTING
-    PLOT_PROFILE = False
+    PLOT_PROFILE = True
     SAVE_FIG     = False
     FOR_APPENDIX = False
     INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = True
@@ -36,9 +36,10 @@ def main():
     experiment_str = 'benchmarks'
     # NOTE: THE BELOW IS FOR SD GRANULAR/BENCHMARKS
     solver_names = [
-        # 'full-space-SD',
+        'full-space-SD',
         # '1d.0.2',
-        '1d.0.2-SMALL-SKETCH',
+        '1d.0.2-5%-SKETCH',
+        '1d.0.2-10%-SKETCH',
         # '5.5.10',
         # # '5.5.20',
         # '10.10.10',
@@ -50,7 +51,7 @@ def main():
         # # 'lee-10.10.10',
         # # 'lee-20.20.5',
         # # 'lee-20.20.10',
-        # '0.0.5',
+        '0.0.5',
         # # '0.0.10',
         # '0.0.20',
         # # '0.0.30',

@@ -786,11 +786,20 @@ solver_config_tree = {
             },
 
 
-            '1d.0.2-SMALL-SKETCH': {
+            '1d.0.2-5%-SKETCH': {
                 "subspace_no_grads":   1,
                 "subspace_frac_updates": 0,
                 "subspace_frac_random":  0.02,
                 "random_proj_dim_frac": 0.05,
+                "direction_str": 'sd',
+                "ensemble": 'haar',
+                "alpha_max": 100,
+            },
+            '1d.0.2-10%-SKETCH': {
+                "subspace_no_grads":   1,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  0.02,
+                "random_proj_dim_frac": 0.10,
                 "direction_str": 'sd',
                 "ensemble": 'haar',
                 "alpha_max": 100,

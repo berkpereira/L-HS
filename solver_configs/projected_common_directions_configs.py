@@ -786,7 +786,7 @@ solver_config_tree = {
             },
 
 
-            '1d.0.2-5%-SKETCH': {
+            '1d.0.2.5': {
                 "subspace_no_grads":   1,
                 "subspace_frac_updates": 0,
                 "subspace_frac_random":  0.02,
@@ -795,7 +795,7 @@ solver_config_tree = {
                 "ensemble": 'haar',
                 "alpha_max": 100,
             },
-            '1d.0.2-10%-SKETCH': {
+            '1d.0.2.10': {
                 "subspace_no_grads":   1,
                 "subspace_frac_updates": 0,
                 "subspace_frac_random":  0.02,
@@ -965,27 +965,6 @@ solver_config_tree = {
         }
     },
     
-    "quasi-newton": {
-        'try': {
-            'solver1': {
-                "subspace_frac_grads": 0.1,
-                "subspace_frac_updates": 0.1,
-                "subspace_frac_random": 0.1,
-                "random_proj_dim_frac": 0.3,
-                "direction_str": 'newton',
-                'use_hess': False,
-                'no_secant_pairs': 10,
-                "reg_lambda": 0.01,
-                "ensemble": 'haar',
-                "orth_P_k": True,
-                "alpha_max": 100,
-                "tau": 0.5,
-                "c_const": 1,
-                "N_try": 200,
-            }
-        }
-    },
-    
     "newton": {
         'orth_Pk': { # orthogonalise Pk ?
             'solver1': {
@@ -1137,8 +1116,141 @@ solver_config_tree = {
                 "alpha_max": 1,
             },
         },
+        'benchmarks': {
+            '1d.0.2.20': {
+                "subspace_no_grads":     1,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  0.02,
+                "random_proj_dim_frac":  0.20,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            '1d.0.2.40': {
+                "subspace_no_grads":     1,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  0.02,
+                "random_proj_dim_frac":  0.40,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            '5.5.10.20': {
+                "subspace_frac_grads":   0.05,
+                "subspace_frac_updates": 0.05,
+                "subspace_frac_random":  0.10,
+                "random_proj_dim_frac":  0.20,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            '5.5.10.40': {
+                "subspace_frac_grads":   0.05,
+                "subspace_frac_updates": 0.05,
+                "subspace_frac_random":  0.10,
+                "random_proj_dim_frac":  0.40,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            '10.10.10.20': {
+                "subspace_frac_grads":   0.10,
+                "subspace_frac_updates": 0.10,
+                "subspace_frac_random":  0.10,
+                "random_proj_dim_frac":  0.20,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            '10.10.10.40': {
+                "subspace_frac_grads":   0.10,
+                "subspace_frac_updates": 0.10,
+                "subspace_frac_random":  0.10,
+                "random_proj_dim_frac": 0.4,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            '0.0.5': {
+                "subspace_frac_grads":   0,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  0.05,
+                "random_proj_dim_frac":  1,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            '0.0.10': {
+                "subspace_frac_grads":   0,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  0.10,
+                "random_proj_dim_frac":  1,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            '0.0.20': {
+                "subspace_frac_grads":   0,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  0.20,
+                "random_proj_dim_frac":  1,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            '0.0.50': {
+                "subspace_frac_grads":   0,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  0.50,
+                "random_proj_dim_frac":  1,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            'full_space_Newton': {
+                "subspace_frac_grads":   0,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  1,
+                "random_proj_dim_frac":  1,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+
+        }
     },
     
+    "quasi-newton": {
+        'try': {
+            'solver1': {
+                "subspace_frac_grads": 0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random": 0.1,
+                "random_proj_dim_frac": 0.3,
+                "direction_str": 'newton',
+                'use_hess': False,
+                'no_secant_pairs': 10,
+                "reg_lambda": 0.01,
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+                "tau": 0.5,
+                "c_const": 1,
+                "N_try": 200,
+            }
+        }
+    },
 ################################################################################
     
     "sample_solvers": {

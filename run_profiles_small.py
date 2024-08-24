@@ -12,11 +12,11 @@ def main():
 
 
     # NOTE: WHICH PROFILE problem set?
-    PROFILE = 'LARGE' # \in {'SMALL', 'LARGE'}
+    PROFILE = 'SMALL' # \in {'SMALL', 'LARGE'}
 
     # RUNNING
     RUN          = True
-    SAVE_RESULTS = True
+    SAVE_RESULTS = False
     
     # PLOTTING
     PLOT_PROFILE = False
@@ -34,17 +34,17 @@ def main():
 ################################################################################
     # order = 'sd'
     # experiment_str = 'benchmarks'
-    # # NOTE: THE BELOW IS FOR SD GRANULAR/BENCHMARKS
+    # # # NOTE: THE BELOW IS FOR SD GRANULAR/BENCHMARKS
     # solver_names = [
     #     'full-space-SD',
     #     # '1d.0.2',
-    #     '1d.0.2-5%-SKETCH',
-    #     '1d.0.2-10%-SKETCH',
-    #     # '5.5.10',
+    #     '1d.0.2.5',
+    #     '1d.0.2.10',
+    #     '5.5.10',
     #     # # '5.5.20',
-    #     # '10.10.10',
+    #     '10.10.10',
     #     # # '20.20.5',
-    #     # '20.20.10',
+    #     '20.20.10',
     #     # # 'lee-1d.0.2',
     #     # # 'lee-5.5.10',
     #     # # 'lee-5.5.20',
@@ -53,15 +53,25 @@ def main():
     #     # # 'lee-20.20.10',
     #     '0.0.5',
     #     # # '0.0.10',
-    #     # '0.0.20',
+    #     '0.0.20',
     #     # # '0.0.30',
-    #     # '0.0.50',
+    #     '0.0.50',
     # ]
     
     order = 'newton'
     experiment_str = 'benchmarks'
     solver_names = [
-        
+    'full_space_Newton',
+    '5.5.10.20',
+    '5.5.10.40',
+    '10.10.10.20',
+    '10.10.10.40',
+    '0.0.5',
+    '0.0.10',
+    '0.0.20',
+    '0.0.50',
+    '1d.0.2.20',
+    '1d.0.2.40',
     ]
     
     

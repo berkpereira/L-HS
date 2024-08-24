@@ -90,7 +90,7 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
 
     if full_space_method:
         if config.direction_str == 'newton':
-            direction_str_formatted = 'Regularised Newton'
+            direction_str_formatted = r"""Reg.\ Newton"""
         elif config.direction_str == 'sd':
             direction_str_formatted = 'SD'
         new_label_template = """{direction_str_formatted} method"""
@@ -122,8 +122,12 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
     else:
         if config.direction_str == 'sd':
             label_lines = [r"""\verb|L-HS-SD-{grad_str}.{update_str}.{random_str}|"""]
+        elif config.quasi_newton:
+            label_lines = [r"""\verb|L-HS-QN-{grad_str}.{update_str}.{random_str}|"""]
         elif config.direction_str == 'newton':
             label_lines = [r"""\verb|L-HS-N-{grad_str}.{update_str}.{random_str}|"""]
+        else:
+            raise Exception('Could not ascertain method type!')
     
     grads_int =   False
     updates_int = False
@@ -171,7 +175,8 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
         else:
             raise Exception('Unrecognised ensemble!')
 
-    if (include_sketch_size and config.subspace_frac_grads != 0 and (not lee_common_method)):
+    if (include_sketch_size and config.subspace_frac_grads != 0 and (not lee_common_method) or
+        config.random_proj_dim_frac == 0.05): # NOTE THIS AD-HOC EDGE CASE!
         # label_lines.append(r"""Sketch size {S_k_eq} {S_k_dim_str}""")
         # format_args.update({'S_k_eq': S_k_eq,
         #                     'S_k_dim_str': S_k_dim_str})

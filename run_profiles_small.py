@@ -12,11 +12,11 @@ def main():
 
 
     # NOTE: WHICH PROFILE problem set?
-    PROFILE = 'SMALL' # \in {'SMALL', 'LARGE'}
+    PROFILE = 'LARGE' # \in {'SMALL', 'LARGE'}
 
     # RUNNING
     RUN          = True
-    SAVE_RESULTS = False
+    SAVE_RESULTS = True
     
     # PLOTTING
     PLOT_PROFILE = False
@@ -25,7 +25,7 @@ def main():
     INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = True
 
     ACCURACY = 1e-2
-    PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
+    # PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
     # PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
     LABEL_NCOL = 2
     FIGSIZE = (5.9, 2.2)
@@ -74,10 +74,9 @@ def main():
     '1d.0.2.40',
     ]
     
-    
     CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
 
-    PASSABLE_NAME = 'default_data_profiles_sd'
+    PASSABLE_NAME = 'default_data_profiles_newton'
 
 ################################################################################
 ################################################################################

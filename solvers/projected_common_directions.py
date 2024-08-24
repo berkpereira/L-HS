@@ -10,7 +10,7 @@ import warnings
 
 import autograd.numpy as np
 from autograd import grad, hessian
-from solvers.utils import SolverOutput, scaled_gaussian, haar, append_dirs
+from solvers.utils import SolverOutput, scaled_gaussian, haar, append_dirs, lsr1
 
 @dataclass
 class ProjectedCommonDirectionsConfig:
@@ -31,23 +31,23 @@ class ProjectedCommonDirectionsConfig:
     """
     obj: Any                    
     
-    subspace_no_grads: int = None
+    subspace_no_grads: int   = None
     subspace_no_updates: int = None
-    subspace_no_random: int = None
+    subspace_no_random: int  = None
 
-    subspace_no_grads_given_as_frac: bool = None
+    subspace_no_grads_given_as_frac: bool   = None
     subspace_no_updates_given_as_frac: bool = None
-    subspace_no_random_given_as_frac: bool = None
+    subspace_no_random_given_as_frac: bool  = None
 
-    subspace_frac_grads: float = None
+    subspace_frac_grads: float   = None
     subspace_frac_updates: float = None
-    subspace_frac_random: float = None
+    subspace_frac_random: float  = None
 
     # NOTE: the below only in use if direction_str == 'newton' and use_hess is False.
-    no_secant_pairs: int = None
+    no_secant_pairs: int = 0
 
     direction_str: str = 'sd' # options are {'newton', 'sd'}
-    use_hess: bool = True
+    use_hess: bool = True # if direction_str == 'newton' but this is False, the method uses a quasi-Newton approach
     random_proj: bool = True
     random_proj_dim: int = None
     random_proj_dim_frac: float = None
@@ -309,26 +309,29 @@ class ProjectedCommonDirections:
         self.grad_func = self.obj.grad_func
         self.hess_func = self.obj.hess_func # for now have it as a full Hessian; later may use autograd.hessian_vector_product
 
+        # Limited-memory Quasi-Newton initial Hessian approximation
+        self.B0 = np.eye(self.obj.input_dim) # NOTE: keeping it simple
+
         # Increment number of derivatives computed in each iteration depending on
         # algorithm variant in use
         if self.subspace_constr_method == 'random':
-            if self.direction_str == 'sd':
+            if self.direction_str == 'sd' or self.quasi_newton:
                 self.deriv_per_succ_iter = self.subspace_dim
                 self.deriv_per_unsucc_iter = self.subspace_dim
-            elif self.direction_str == 'newton':
+            elif self.direction_str == 'newton' and (not self.quasi_newton):
                 self.deriv_per_succ_iter = self.subspace_dim + (self.subspace_dim + 1) * self.obj.input_dim
                 self.deriv_per_unsucc_iter = (self.obj.input_dim + 1) * self.subspace_dim
         else:
-            if self.random_proj: # random tilde grad projection
+            if self.random_proj: # using random tilde grad projections
                 if self.inner_use_full_grad:
-                    if self.direction_str == 'sd':
+                    if self.direction_str == 'sd' or self.quasi_newton:
                         if self.subspace_dim == self.obj.input_dim or self.random_proj_dim_frac == 1: # edge case, full space method
                             self.deriv_per_succ_iter = self.obj.input_dim
                             self.deriv_per_unsucc_iter = 0
                         else: # usual cases
                             self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
                             self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
-                    elif self.direction_str == 'newton':
+                    elif self.direction_str == 'newton' and (not self.quasi_newton):
                         if self.subspace_dim == self.obj.input_dim: # edge case, full space method
                             self.deriv_per_succ_iter = (self.obj.input_dim + 1) * self.obj.input_dim
                         elif self.random_proj_dim_frac == 1:
@@ -672,14 +675,6 @@ class ProjectedCommonDirections:
         else:
             proj_grad = None
 
-        # IN FUTURE will want to implement Hessian actions product using Hessian actions (B-vector products), see autograd.hessian_vector_products
-        if self.direction_str == 'newton':
-            if self.use_hess:
-                hess_f_x = self.hess_func(x)
-                full_B = hess_f_x
-            else:
-                raise NotImplementedError('Have not (yet!) implemented methods with user-provided B approximations to the Hessian!')
-
         # Initialise vectors stored for subspace construction purposes
         G_subspace, X_subspace, D_subspace = self.init_stored_vectors_subspace(grad_vec=proj_grad)
         
@@ -687,6 +682,13 @@ class ProjectedCommonDirections:
         # if applicable
         if self.quasi_newton:
             Y_lsr1, X_lsr1 = self.init_stored_vectors_lsr1()
+
+        # IN FUTURE may want to implement Hessian actions product using Hessian actions (B-vector products), see autograd.hessian_vector_products
+        if self.direction_str == 'newton':
+            if self.use_hess:
+                full_B = self.hess_func(x)
+            else: # self.quasi_newton is True
+                full_B = lsr1(B0=self.B0, Y=Y_lsr1, X=X_lsr1)
         
         Q = self.update_subspace(grads_matrix=G_subspace,
                                  updates_matrix=X_subspace,
@@ -767,10 +769,9 @@ class ProjectedCommonDirections:
 
                 if self.direction_str == 'newton':
                     if self.use_hess:
-                        hess_f_x = self.hess_func(x)
-                        full_B = hess_f_x
-                    else:
-                        raise NotImplementedError('Quasi-Newton stuff not yet implemented!')
+                        full_B = self.hess_func(x)
+                    else: # self.quasi_newton is True
+                        full_B = lsr1(B0=self.B0, Y=Y_lsr1, X=X_lsr1)
 
                 # Update stored vectors required for subspace constructions.
                 G_subspace, X_subspace, D_subspace = self.update_stored_vectors_subspace(new_X_vec=x_update,
@@ -786,6 +787,8 @@ class ProjectedCommonDirections:
                 if self.quasi_newton:
                     Y_lsr1, X_lsr1 = self.update_stored_vectors_lsr1(new_X_vec=x_update,
                                                                     new_Y_vec=grad_diff,
+                                                                    Y=Y_lsr1,
+                                                                    X=X_lsr1,
                                                                     current_B=full_B,
                                                                     following_success=True)
 
@@ -838,8 +841,6 @@ class ProjectedCommonDirections:
 
                     # Reset backtracking counter
                     j_try = 0
-            
-
 
             # Print iteration info if applicable
             if self.verbose and k % self.iter_print_gap == 0:
@@ -849,12 +850,6 @@ class ProjectedCommonDirections:
 
             # Only keeping records if meaningful developments have happened.
             if spent_derivatives:
-                # Append info for later plotting
-                # store_all_full_grads.append(full_grad)
-                
-                # if self.subspace_no_grads > 0:
-                #     store_all_proj_grads.append(proj_grad)
-
                 direction_norms_list.append(np.linalg.norm(direction))
                 update_norms_list.append(last_update_norm)
                 angles_to_full_grad_list.append(last_angle_to_full_grad)

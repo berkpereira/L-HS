@@ -15,11 +15,11 @@ def main():
     PROFILE = 'LARGE' # \in {'SMALL', 'LARGE'}
 
     # RUNNING
-    RUN          = False
-    SAVE_RESULTS = False
+    RUN          = True
+    SAVE_RESULTS = True
     
     # PLOTTING
-    PLOT_PROFILE = True
+    PLOT_PROFILE = False
     SAVE_FIG     = False
     FOR_APPENDIX = False
     INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = True
@@ -32,31 +32,39 @@ def main():
 
 ################################################################################
 ################################################################################
-    order = 'sd'
+    # order = 'sd'
+    # experiment_str = 'benchmarks'
+    # # NOTE: THE BELOW IS FOR SD GRANULAR/BENCHMARKS
+    # solver_names = [
+    #     'full-space-SD',
+    #     # '1d.0.2',
+    #     '1d.0.2-5%-SKETCH',
+    #     '1d.0.2-10%-SKETCH',
+    #     # '5.5.10',
+    #     # # '5.5.20',
+    #     # '10.10.10',
+    #     # # '20.20.5',
+    #     # '20.20.10',
+    #     # # 'lee-1d.0.2',
+    #     # # 'lee-5.5.10',
+    #     # # 'lee-5.5.20',
+    #     # # 'lee-10.10.10',
+    #     # # 'lee-20.20.5',
+    #     # # 'lee-20.20.10',
+    #     '0.0.5',
+    #     # # '0.0.10',
+    #     # '0.0.20',
+    #     # # '0.0.30',
+    #     # '0.0.50',
+    # ]
+    
+    order = 'newton'
     experiment_str = 'benchmarks'
-    # NOTE: THE BELOW IS FOR SD GRANULAR/BENCHMARKS
     solver_names = [
-        'full-space-SD',
-        # '1d.0.2',
-        '1d.0.2-5%-SKETCH',
-        '1d.0.2-10%-SKETCH',
-        # '5.5.10',
-        # # '5.5.20',
-        # '10.10.10',
-        # # '20.20.5',
-        # '20.20.10',
-        # # 'lee-1d.0.2',
-        # # 'lee-5.5.10',
-        # # 'lee-5.5.20',
-        # # 'lee-10.10.10',
-        # # 'lee-20.20.5',
-        # # 'lee-20.20.10',
-        '0.0.5',
-        # # '0.0.10',
-        # '0.0.20',
-        # # '0.0.30',
-        # '0.0.50',
+        
     ]
+    
+    
     CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
 
     PASSABLE_NAME = 'default_data_profiles_sd'

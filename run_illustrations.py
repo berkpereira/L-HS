@@ -22,7 +22,7 @@ def main():
                           'OSCIPATH',                          # 11, n in {2, 5, 10, 25, 100, 500}
                           'YATP2LS',                           # 12, n in {2, 10, 50, 100, 200, 350}
                           'PENALTY2']                          # 13, n in {4, 10, 50, 100, 200, 500}
-    problem_name = test_problems_list[0]
+    problem_name = test_problems_list[1]
     input_dim = 100
     extended_problem_name = problem_name + '_n' + str(input_dim)
     problem_tup = running.get_problem(problem_name, input_dim)
@@ -30,21 +30,20 @@ def main():
 
 ################################################################################
 ################################################################################
-    order = 'sd'
-    experiment_str = 'granular'
-    solver_names = [ # NOTE: select solvers
-        '1d.0.0',
-        # '1d.0.1',
-        # '1d.0.2',
-        # '1d.0.5',
-        # '1d.0.7',
-        # '1d.0.10',
-    ]
-    CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
+    # order = 'sd'
+    # experiment_str = ''
+    # solver_names = [ # NOTE: select solvers
+    #     'solver1'
+    # ]
+    # CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
     
+    CONFIG_PATH_LIST = [
+        ['quasi-newton-try'],
+        # ['full_sd'],
+    ]
 
-    RUN = False
-    SAVE_RESULTS = False
+    RUN = True
+    SAVE_RESULTS = True
 
     PLOT = True
     SAVE_FIG = False
@@ -85,7 +84,7 @@ def main():
         
         fig = plotting.plotting.plot_loss_vs_iteration(solver_outputs=outputs_list,
                                                        include_Pk_orth=False,
-                                                       include_sketch_size=False,
+                                                       include_sketch_size=True,
                                                        include_ensemble=False,
                                                        figsize=FIGSIZE,
                                                        label_ncol=LABEL_NCOL)

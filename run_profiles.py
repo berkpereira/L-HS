@@ -12,52 +12,53 @@ def main():
 
 
     # NOTE: WHICH PROFILE problem set?
-    PROFILE = 'SMALL' # \in {'SMALL', 'LARGE'}
+    PROFILE = 'LARGE' # \in {'SMALL', 'LARGE'}
 
     # RUNNING
     RUN          = False
     SAVE_RESULTS = False
     
     # PLOTTING
-    PLOT_PROFILE = False
-    SAVE_FIG     = False
+    PLOT_PROFILE = True
+    SAVE_FIG     = True
     INCLUDE_SOLVER_NAMES = True
     FOR_APPENDIX = False
     
 
     ACCURACY = 1e-2
-    # PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
+    #PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
     PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
     LABEL_NCOL = 2
-    FIGSIZE = (5.9, 2.2)
+    # FIGSIZE = (5.9, 2.2) # NOTE: the most commonly used (by me) size
+    FIGSIZE = (5.9, 2.5) # NOTE: for larger stuff (maybe benchmarks), see this
 
 ################################################################################
 ################################################################################
-    order = 'sd'
+    order = 'newton'
     experiment_str = 'benchmarks'
     
     if order == 'sd':
         if experiment_str == 'benchmarks':
             solver_names = [
                 'full-space-SD',
-                '1d.0.2.20',
                 '1d.0.2.5',
+                '1d.0.2.20',
                 # '1d.0.2.10',
                 '5.5.10',
-                # # '5.5.20',
+                # '5.5.20',
                 '10.10.10',
                 # # '20.20.5',
                 '20.20.10',
-                # # 'lee-1d.0.2',
-                # # 'lee-5.5.10',
-                # # 'lee-5.5.20',
-                # # 'lee-10.10.10',
-                # # 'lee-20.20.5',
-                # # 'lee-20.20.10',
+                # 'lee-1d.0.2',
+                # 'lee-5.5.10',
+                # 'lee-5.5.20',
+                # 'lee-10.10.10',
+                # 'lee-20.20.5',
+                # 'lee-20.20.10',
                 '0.0.5',
                 '0.0.10',
                 '0.0.20',
-                # # '0.0.30',
+                # '0.0.30',
                 '0.0.50',
             ]
         PASSABLE_NAME = 'default_data_profiles_sd'
@@ -65,6 +66,8 @@ def main():
         if experiment_str == 'benchmarks':
             solver_names = [
             'full_space_Newton',
+            '1d.0.2.20',
+            '1d.0.2.40',
             '5.5.10.20',
             '5.5.10.40',
             '10.10.10.20',
@@ -73,8 +76,6 @@ def main():
             '0.0.10',
             '0.0.20',
             '0.0.50',
-            '1d.0.2.20',
-            '1d.0.2.40',
             ]
         elif experiment_str == 'haar_gauss':
             solver_names = [
@@ -132,7 +133,7 @@ def main():
         fig = plotting.plotting.plot_data_profiles(success_dict,
                                                    include_Pk_orth=False,
                                                    include_sketch_size=True,
-                                                   include_ensemble=True,
+                                                   include_ensemble=False,
                                                    figsize=FIGSIZE,
                                                    label_ncol=LABEL_NCOL,
                                                    log_axis=False)

@@ -1231,13 +1231,13 @@ solver_config_tree = {
         }
     },
     
-    "quasi-newton": {
-        'try': {
+    "quasi_newton": {
+        'sample': {
             'solver1': {
-                "subspace_frac_grads": 0.1,
+                "subspace_frac_grads":   0.1,
                 "subspace_frac_updates": 0.1,
-                "subspace_frac_random": 0.1,
-                "random_proj_dim_frac": 0.3,
+                "subspace_frac_random":  0.1,
+                "random_proj_dim_frac":  0.3,
                 "direction_str": 'newton',
                 'use_hess': False,
                 'no_secant_pairs': 10,
@@ -1248,7 +1248,55 @@ solver_config_tree = {
                 "tau": 0.5,
                 "c_const": 1,
                 "N_try": 200,
-            }
+            },
+            'solver2': {
+                "subspace_frac_grads":   0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random":  0.1,
+                "random_proj_dim_frac":  0.5,
+                "direction_str": 'newton',
+                'use_hess': False,
+                'no_secant_pairs': 10,
+                "reg_lambda": 0.01,
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+                "tau": 0.5,
+                "c_const": 1,
+                "N_try": 200,
+            },
+            'solver3': {
+                "subspace_frac_grads":   0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random":  0.1,
+                "random_proj_dim_frac":  0.7,
+                "direction_str": 'newton',
+                'use_hess': False,
+                'no_secant_pairs': 10,
+                "reg_lambda": 0.01,
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+                "tau": 0.5,
+                "c_const": 1,
+                "N_try": 200,
+            },
+            'solver4': {
+                "subspace_frac_grads":   0.1,
+                "subspace_frac_updates": 0.1,
+                "subspace_frac_random":  0.1,
+                "random_proj_dim_frac":  1,
+                "direction_str": 'newton',
+                'use_hess': False,
+                'no_secant_pairs': 10,
+                "reg_lambda": 0.01,
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+                "tau": 0.5,
+                "c_const": 1,
+                "N_try": 200,
+            },
         }
     },
 ################################################################################

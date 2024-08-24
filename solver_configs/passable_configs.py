@@ -32,6 +32,13 @@ passable_variants_dict = {
         "iter_print_gap": 500,
         "verbose": True,
     },
+    "default_illustrations_quasi_newton": {
+        "tol": 0,
+        "max_iter": np.inf,
+        "equiv_grad_budget": 300,
+        "iter_print_gap": 500,
+        "verbose": True,
+    },
     "default_illustrations_newton": {
         "tol": 0,
         "max_iter": np.inf,

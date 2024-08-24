@@ -30,8 +30,8 @@ def main():
 
 ################################################################################
 ################################################################################
-    order = 'newton'
-    experiment_str = 'haar_gauss'
+    order = 'quasi_newton'
+    experiment_str = 'sample'
     
     if order == 'sd':
         solver_names = [ # NOTE: select solvers
@@ -66,8 +66,8 @@ def main():
     INCLUDE_SOLVER_NAMES = True
     FOR_APPENDIX = False
     
-    # FIGSIZE = (5.9, 2.4)
-    FIGSIZE = (5.9, 2.5) # NOTE: if a bit more (vertical) space is required
+    FIGSIZE = (5.9, 2.4)
+    # FIGSIZE = (5.9, 2.5) # NOTE: if a bit more (vertical) space is required
     LABEL_NCOL = 1
 
 
@@ -101,7 +101,7 @@ def main():
         fig = plotting.plotting.plot_loss_vs_iteration(solver_outputs=outputs_list,
                                                        include_Pk_orth=False,
                                                        include_sketch_size=True,
-                                                       include_ensemble=True,
+                                                       include_ensemble=False,
                                                        figsize=FIGSIZE,
                                                        label_ncol=LABEL_NCOL)
         plt.show()

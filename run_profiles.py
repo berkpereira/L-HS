@@ -20,7 +20,7 @@ def main():
     
     # PLOTTING
     PLOT_PROFILE = True
-    SAVE_FIG     = True
+    SAVE_FIG     = False # TODO: A PROPER NEWTON BENCHMARK FIGURE
     INCLUDE_SOLVER_NAMES = True
     FOR_APPENDIX = False
     

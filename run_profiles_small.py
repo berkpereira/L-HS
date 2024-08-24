@@ -12,71 +12,82 @@ def main():
 
 
     # NOTE: WHICH PROFILE problem set?
-    PROFILE = 'LARGE' # \in {'SMALL', 'LARGE'}
+    PROFILE = 'SMALL' # \in {'SMALL', 'LARGE'}
 
     # RUNNING
-    RUN          = True
-    SAVE_RESULTS = True
+    RUN          = False
+    SAVE_RESULTS = False
     
     # PLOTTING
     PLOT_PROFILE = False
     SAVE_FIG     = False
+    INCLUDE_SOLVER_NAMES = True
     FOR_APPENDIX = False
-    INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH = True
+    
 
     ACCURACY = 1e-2
     # PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
-    # PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
+    PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
     LABEL_NCOL = 2
     FIGSIZE = (5.9, 2.2)
 
 ################################################################################
 ################################################################################
-    # order = 'sd'
-    # experiment_str = 'benchmarks'
-    # # # NOTE: THE BELOW IS FOR SD GRANULAR/BENCHMARKS
-    # solver_names = [
-    #     'full-space-SD',
-    #     # '1d.0.2',
-    #     '1d.0.2.5',
-    #     '1d.0.2.10',
-    #     '5.5.10',
-    #     # # '5.5.20',
-    #     '10.10.10',
-    #     # # '20.20.5',
-    #     '20.20.10',
-    #     # # 'lee-1d.0.2',
-    #     # # 'lee-5.5.10',
-    #     # # 'lee-5.5.20',
-    #     # # 'lee-10.10.10',
-    #     # # 'lee-20.20.5',
-    #     # # 'lee-20.20.10',
-    #     '0.0.5',
-    #     # # '0.0.10',
-    #     '0.0.20',
-    #     # # '0.0.30',
-    #     '0.0.50',
-    # ]
-    
-    order = 'newton'
+    order = 'sd'
     experiment_str = 'benchmarks'
-    solver_names = [
-    'full_space_Newton',
-    '5.5.10.20',
-    '5.5.10.40',
-    '10.10.10.20',
-    '10.10.10.40',
-    '0.0.5',
-    '0.0.10',
-    '0.0.20',
-    '0.0.50',
-    '1d.0.2.20',
-    '1d.0.2.40',
-    ]
     
-    CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
+    if order == 'sd':
+        if experiment_str == 'benchmarks':
+            solver_names = [
+                'full-space-SD',
+                '1d.0.2.20',
+                '1d.0.2.5',
+                # '1d.0.2.10',
+                '5.5.10',
+                # # '5.5.20',
+                '10.10.10',
+                # # '20.20.5',
+                '20.20.10',
+                # # 'lee-1d.0.2',
+                # # 'lee-5.5.10',
+                # # 'lee-5.5.20',
+                # # 'lee-10.10.10',
+                # # 'lee-20.20.5',
+                # # 'lee-20.20.10',
+                '0.0.5',
+                '0.0.10',
+                '0.0.20',
+                # # '0.0.30',
+                '0.0.50',
+            ]
+        PASSABLE_NAME = 'default_data_profiles_sd'
+    elif order == 'newton':
+        if experiment_str == 'benchmarks':
+            solver_names = [
+            'full_space_Newton',
+            '5.5.10.20',
+            '5.5.10.40',
+            '10.10.10.20',
+            '10.10.10.40',
+            '0.0.5',
+            '0.0.10',
+            '0.0.20',
+            '0.0.50',
+            '1d.0.2.20',
+            '1d.0.2.40',
+            ]
+        elif experiment_str == 'haar_gauss':
+            solver_names = [
+                'solver1',
+                'solver2',
+                'solver3',
+                'solver4',
+            ]
+        PASSABLE_NAME = 'default_data_profiles_newton'
+    else:
+        raise ValueError(f'Unrecognised order string {order}.')
 
-    PASSABLE_NAME = 'default_data_profiles_newton'
+    CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
 
 ################################################################################
 ################################################################################
@@ -120,8 +131,8 @@ def main():
                                                                     max_equiv_grad=PLOT_MAX_EQUIV_GRAD)
         fig = plotting.plotting.plot_data_profiles(success_dict,
                                                    include_Pk_orth=False,
-                                                   include_sketch_size=False,
-                                                   include_ensemble=False,
+                                                   include_sketch_size=True,
+                                                   include_ensemble=True,
                                                    figsize=FIGSIZE,
                                                    label_ncol=LABEL_NCOL,
                                                    log_axis=False)
@@ -132,7 +143,7 @@ def main():
                                                                      plot_type=plot_type,
                                                                      accuracy=ACCURACY,
                                                                      for_appendix=FOR_APPENDIX,
-                                                                     include_solver_names=INCLUDE_SOLVER_NAMES_IN_FIG_FILE_PATH,
+                                                                     include_solver_names=INCLUDE_SOLVER_NAMES,
                                                                      solver_name_list=solver_names)
             
             # Ensure the directory exists

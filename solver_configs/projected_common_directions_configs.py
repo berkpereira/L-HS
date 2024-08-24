@@ -805,7 +805,7 @@ solver_config_tree = {
                 "alpha_max": 100,
             },
 
-            '1d.0.2': {
+            '1d.0.2.20': {
                 "subspace_no_grads":   1,
                 "subspace_frac_updates": 0,
                 "subspace_frac_random":  0.02,

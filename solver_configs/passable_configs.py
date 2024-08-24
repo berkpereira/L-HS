@@ -25,10 +25,17 @@ passable_variants_dict = {
         "verbose": True,
         "timeout_secs": 30,
     },
-    "default_illustrations": {
+    "default_illustrations_sd": {
         "tol": 0,
         "max_iter": np.inf,
         "equiv_grad_budget": 300,
+        "iter_print_gap": 500,
+        "verbose": True,
+    },
+    "default_illustrations_newton": {
+        "tol": 0,
+        "max_iter": np.inf,
+        "equiv_grad_budget": 8_000,
         "iter_print_gap": 500,
         "verbose": True,
     },

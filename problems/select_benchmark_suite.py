@@ -66,7 +66,7 @@ def main():
     os.system('clear')
     suitable_name_dim_dict, no_suitable = generate_chosen_dict()
     print(f'NO. SUITABLE PROBLEMS AS FILTERED: {no_suitable}')
-    # print(suitable_name_dim_dict)
+    print(suitable_name_dim_dict)
 
     WRITE_TO_FILE = False
 

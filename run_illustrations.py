@@ -22,7 +22,7 @@ def main():
                           'OSCIPATH',                          # 11, n in {2, 5, 10, 25, 100, 500}
                           'YATP2LS',                           # 12, n in {2, 10, 50, 100, 200, 350}
                           'PENALTY2']                          # 13, n in {4, 10, 50, 100, 200, 500}
-    problem_name = test_problems_list[1]
+    problem_name = test_problems_list[0]
     input_dim = 100
     extended_problem_name = problem_name + '_n' + str(input_dim)
     problem_tup = running.get_problem(problem_name, input_dim)
@@ -30,31 +30,47 @@ def main():
 
 ################################################################################
 ################################################################################
-    # order = 'sd'
-    # experiment_str = ''
-    # solver_names = [ # NOTE: select solvers
-    #     'solver1'
-    # ]
-    # CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
+    order = 'newton'
+    experiment_str = 'haar_gauss'
     
-    CONFIG_PATH_LIST = [
-        ['quasi-newton-try'],
-        # ['full_sd'],
-    ]
+    if order == 'sd':
+        solver_names = [ # NOTE: select solvers
+            'solver1',
+        ]
+        passable_name = 'default_illustrations_sd'
+    elif order == 'newton':
+        solver_names = [
+            'solver1',
+            'solver2',
+            'solver3',
+            'solver4',
+        ]
+        passable_name = 'default_illustrations_newton'
+    elif order == 'quasi_newton':
+        solver_names = [
+            'solver1',
+            'solver2',
+            'solver3',
+            'solver4',
+        ]
+        passable_name = 'default_illustrations_quasi_newton'
+    
+    CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
+    
 
-    RUN = True
-    SAVE_RESULTS = True
+    RUN          = False
+    SAVE_RESULTS = False
 
-    PLOT = True
-    SAVE_FIG = False
+    PLOT         = False
+    SAVE_FIG     = False
     INCLUDE_SOLVER_NAMES = True
     FOR_APPENDIX = False
     
-    FIGSIZE = (5.9, 2.4)
-    # FIGSIZE = (5.9, 2.5) # NOTE: if a bit more (vertical) space is required
-    LABEL_NCOL = 2
+    # FIGSIZE = (5.9, 2.4)
+    FIGSIZE = (5.9, 2.5) # NOTE: if a bit more (vertical) space is required
+    LABEL_NCOL = 1
 
-    passable_name = 'default_illustrations'
+
 
 ################################################################################
 ################################################################################
@@ -85,7 +101,7 @@ def main():
         fig = plotting.plotting.plot_loss_vs_iteration(solver_outputs=outputs_list,
                                                        include_Pk_orth=False,
                                                        include_sketch_size=True,
-                                                       include_ensemble=False,
+                                                       include_ensemble=True,
                                                        figsize=FIGSIZE,
                                                        label_ncol=LABEL_NCOL)
         plt.show()

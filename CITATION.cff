@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+title: L-HS
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Gabriel Berk
+    family-names: Pereira
+    email: berkpereira@gmail.com
+    affiliation: Mathematical Institute, University of Oxford
+    orcid: 'https://orcid.org/0009-0009-6261-7683'
+repository-code: 'https://github.com/berkpereira/L-HS'
+abstract: >-
+  Limited-memory Hybrid Subspace methods for nonconvex
+  optimisation.
+license: GPL-3.0

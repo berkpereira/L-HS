@@ -194,3 +194,30 @@ def normalise_matrix_columns(mat: np.ndarray) -> np.ndarray:
             mat_copy[:, i] /= col_norm
     
     return mat_copy
+
+# TODO: IMPLEMENT LSR1 updates given a B0 and a matrix storing 
+# secant pairs which were already ensured to be suitable! 
+# Compact L-SR1 representation taken from Theorem 9.1,
+# Nocedal & Wright, 1st ed., §9.2.
+def lsr1(B0, Y, X):
+    if Y is None or X is None:
+        if not (X is None and Y is None):
+            raise Exception('One of X and Y is None, but not both of them!')
+        else:
+            return B0
+    k = Y.shape[1]
+    if X.shape[1] != k:
+        raise Exception(f'Number of columns in X and in Y should match! We have {X.shape[1]} in X and {Y.shape[1]} in Y.')
+    
+    # NOTE: again, using terminology of Nocedal & Wright.
+    proto_L = np.dot(X.T, Y)
+    L = np.tril(proto_L, k=-1)
+    D = np.diag(np.diag(proto_L))
+
+    mat_one = Y - np.dot(B0, X)
+    mat_two = D + L + L.T - np.dot(X.T, np.dot(B0, X))
+    to_add = np.dot(mat_one, np.dot(np.linalg.inv(mat_two) , mat_one.T))
+    B = B0 + to_add
+    return B
+    
+

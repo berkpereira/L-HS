@@ -1228,6 +1228,37 @@ solver_config_tree = {
                 "alpha_max": 1,
             },
 
+            'lee1d.0.2': {
+                "subspace_no_grads":     1,
+                "subspace_frac_updates": 0,
+                "subspace_frac_random":  0.02,
+                "random_proj_dim_frac":  1,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            'lee5.5.10': {
+                "subspace_frac_grads":   0.05,
+                "subspace_frac_updates": 0.05,
+                "subspace_frac_random":  0.10,
+                "random_proj_dim_frac":  1,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+            'lee10.10.10': {
+                "subspace_frac_grads":   0.10,
+                "subspace_frac_updates": 0.10,
+                "subspace_frac_random":  0.10,
+                "random_proj_dim_frac":  1,
+                "direction_str": 'newton',
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 1,
+            },
+
         }
     },
     

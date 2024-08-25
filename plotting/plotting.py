@@ -92,8 +92,8 @@ def solver_label(config: ProjectedCommonDirectionsConfig,
         if config.direction_str == 'newton':
             direction_str_formatted = r"""Reg.\ Newton"""
         elif config.direction_str == 'sd':
-            direction_str_formatted = 'SD'
-        new_label_template = """{direction_str_formatted} method"""
+            direction_str_formatted = 'SD method'
+        new_label_template = """{direction_str_formatted}"""
 
         new_label = new_label_template.format(
             direction_str_formatted=direction_str_formatted

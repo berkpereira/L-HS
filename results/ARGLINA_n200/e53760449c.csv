@@ -1,0 +1,31 @@
+run_id,equiv_grad_budget,row,deriv_evals,equiv_grad_evals,f_vals,update_norms,full_grad_norms,proj_grad_norms,config_str
+20baabff78,3000,0,0,0.0,999.9999999999741,14.142135623730606,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+20baabff78,3000,1,1200,6.0,400.0000000000161,14.142135623731342,28.28427124746307,28.28427124746307,
+20baabff78,3000,2,2400,12.0,200.00000000000273,,1.7912507549213993e-13,1.7912507549213993e-13,
+a837d3fb4a,3000,0,0,0.0,999.9999999999741,14.142135623730606,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+a837d3fb4a,3000,1,1200,6.0,400.00000000001603,14.142135623731347,28.28427124746307,28.28427124746307,
+a837d3fb4a,3000,2,2400,12.0,200.00000000000134,,1.5191703598156365e-13,1.5191703598156365e-13,
+d63ae99446,3000,0,0,0.0,999.9999999999741,14.142135623730606,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+d63ae99446,3000,1,1200,6.0,400.00000000001586,14.142135623731347,28.28427124746307,28.28427124746307,
+d63ae99446,3000,2,2400,12.0,200.0000000000014,,1.584293297216313e-13,1.584293297216313e-13,
+95bc39959e,3000,0,0,0.0,999.9999999999741,14.142135623730606,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+95bc39959e,3000,1,1200,6.0,400.00000000001603,14.142135623731344,28.28427124746307,28.28427124746307,
+95bc39959e,3000,2,2400,12.0,200.00000000000176,,1.9104503665878164e-13,1.9104503665878164e-13,
+d065732ade,3000,0,0,0.0,999.9999999999741,14.142135623730606,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+d065732ade,3000,1,1200,6.0,400.00000000001603,14.142135623731344,28.284271247463067,28.284271247463067,
+d065732ade,3000,2,2400,12.0,200.00000000000182,,1.9501666928333983e-13,1.9501666928333983e-13,
+608e54e0a6,3000,0,0,0.0,999.9999999999741,14.142135623730606,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+608e54e0a6,3000,1,1200,6.0,400.000000000016,14.142135623731342,28.284271247463074,28.284271247463074,
+608e54e0a6,3000,2,2400,12.0,200.00000000000213,,1.975230042846795e-13,1.975230042846795e-13,
+8a93394637,3000,0,0,0.0,999.9999999999741,14.142135623730606,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+8a93394637,3000,1,1200,6.0,400.000000000016,14.142135623731342,28.284271247463074,28.284271247463074,
+8a93394637,3000,2,2400,12.0,200.00000000000225,,1.891119440403956e-13,1.891119440403956e-13,
+8a703cef65,3000,0,0,0.0,999.9999999999741,14.142135623730606,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+8a703cef65,3000,1,1200,6.0,400.000000000016,14.142135623731344,28.284271247463074,28.284271247463074,
+8a703cef65,3000,2,2400,12.0,200.00000000000156,,1.695067367041377e-13,1.695067367041377e-13,
+56e384da25,3000,0,0,0.0,999.9999999999741,14.142135623730606,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+56e384da25,3000,1,1200,6.0,400.000000000016,14.142135623731347,28.28427124746307,28.28427124746307,
+56e384da25,3000,2,2400,12.0,200.0000000000011,,1.465991983180464e-13,1.465991983180464e-13,
+ab99bdc9a4,3000,0,0,0.0,999.9999999999741,14.142135623730606,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+ab99bdc9a4,3000,1,1200,6.0,400.00000000001586,14.142135623731342,28.28427124746307,28.28427124746307,
+ab99bdc9a4,3000,2,2400,12.0,200.00000000000165,,1.7404259266202928e-13,1.7404259266202928e-13,

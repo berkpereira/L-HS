@@ -1,0 +1,31 @@
+run_id,equiv_grad_budget,row,deriv_evals,equiv_grad_evals,f_vals,update_norms,full_grad_norms,proj_grad_norms,config_str
+3970b23aea,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+3970b23aea,3000,1,400,4.0,400.00000000001444,10.000000000000231,20.000000000000806,20.000000000000806,
+3970b23aea,3000,2,800,8.0,300.0000000000002,,1.4196549628938935e-13,1.4196549628938935e-13,
+034475f951,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+034475f951,3000,1,400,4.0,400.00000000001444,10.00000000000023,20.000000000000803,20.000000000000803,
+034475f951,3000,2,800,8.0,300.00000000000017,,1.3833317951096067e-13,1.3833317951096067e-13,
+29ac36a163,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+29ac36a163,3000,1,400,4.0,400.0000000000144,10.000000000000231,20.000000000000806,20.000000000000806,
+29ac36a163,3000,2,800,8.0,300.0000000000003,,1.4565218221404552e-13,1.4565218221404552e-13,
+16c754b991,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+16c754b991,3000,1,400,4.0,400.00000000001444,10.000000000000236,20.000000000000806,20.000000000000806,
+16c754b991,3000,2,800,8.0,300.00000000000034,,1.5077150423379912e-13,1.5077150423379912e-13,
+5c0d565993,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+5c0d565993,3000,1,400,4.0,400.00000000001444,10.000000000000234,20.000000000000806,20.000000000000806,
+5c0d565993,3000,2,800,8.0,300.0000000000003,,1.4734506986415658e-13,1.4734506986415658e-13,
+0e5bb121a7,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+0e5bb121a7,3000,1,400,4.0,400.00000000001444,10.000000000000236,20.000000000000803,20.000000000000803,
+0e5bb121a7,3000,2,800,8.0,300.00000000000034,,1.5262685462856013e-13,1.5262685462856013e-13,
+75d2a2052c,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+75d2a2052c,3000,1,400,4.0,400.0000000000144,10.000000000000231,20.000000000000803,20.000000000000803,
+75d2a2052c,3000,2,800,8.0,300.0000000000003,,1.4493871175655754e-13,1.4493871175655754e-13,
+3bba0dcb48,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+3bba0dcb48,3000,1,400,4.0,400.00000000001444,10.000000000000233,20.000000000000803,20.000000000000803,
+3bba0dcb48,3000,2,800,8.0,300.0000000000002,,1.4718375513886857e-13,1.4718375513886857e-13,
+d3845931de,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+d3845931de,3000,1,400,4.0,400.00000000001444,10.000000000000234,20.000000000000806,20.000000000000806,
+d3845931de,3000,2,800,8.0,300.00000000000034,,1.4986428286953508e-13,1.4986428286953508e-13,
+3ebc35bec6,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_no_grads=1, subspace_frac_updates=0, subspace_frac_random=0.02, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+3ebc35bec6,3000,1,400,4.0,400.00000000001444,10.000000000000234,20.000000000000806,20.000000000000806,
+3ebc35bec6,3000,2,800,8.0,300.00000000000034,,1.494950807204167e-13,1.494950807204167e-13,

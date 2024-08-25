@@ -1,0 +1,31 @@
+run_id,equiv_grad_budget,row,deriv_evals,equiv_grad_evals,f_vals,update_norms,full_grad_norms,proj_grad_norms,config_str
+309a8fdad1,3000,0,0,0.0,999.9999999999741,14.142135623730601,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+309a8fdad1,3000,1,12200,61.0,400.00000000001376,14.142135623731189,28.284271247462705,28.284271247462705,
+309a8fdad1,3000,2,24400,122.0,200.00000000000182,,2.4619761199170265e-13,2.4619761199170265e-13,
+ded45ad734,3000,0,0,0.0,999.9999999999741,14.142135623730598,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+ded45ad734,3000,1,12200,61.0,400.0000000000138,14.14213562373128,28.284271247463007,28.284271247463007,
+ded45ad734,3000,2,24400,122.0,200.0000000000033,,1.963131033149874e-13,1.963131033149874e-13,
+ffb3321bdb,3000,0,0,0.0,999.9999999999741,14.142135623730601,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+ffb3321bdb,3000,1,12200,61.0,400.0000000000138,14.142135623731278,28.284271247463014,28.284271247463014,
+ffb3321bdb,3000,2,24400,122.0,200.00000000000324,,1.8701320410225443e-13,1.8701320410225443e-13,
+19cdac2352,3000,0,0,0.0,999.9999999999741,14.1421356237306,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+19cdac2352,3000,1,12200,61.0,400.0000000000138,14.142135623731287,28.28427124746301,28.28427124746301,
+19cdac2352,3000,2,24400,122.0,200.0000000000034,,1.8836978753428628e-13,1.8836978753428628e-13,
+0158e220cf,3000,0,0,0.0,999.9999999999741,14.1421356237306,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+0158e220cf,3000,1,12200,61.0,400.0000000000156,14.142135623731324,28.284271247463046,28.284271247463046,
+0158e220cf,3000,2,24400,122.0,199.9999999999996,,6.527394485890988e-14,6.527394485890988e-14,
+e057fd5619,3000,0,0,0.0,999.9999999999741,14.1421356237306,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+e057fd5619,3000,1,12200,61.0,400.00000000001563,14.142135623731312,28.284271247463053,28.284271247463053,
+e057fd5619,3000,2,24400,122.0,200.00000000000017,,7.171863965791731e-14,7.171863965791731e-14,
+7f7f6ee61c,3000,0,0,0.0,999.9999999999741,14.1421356237306,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+7f7f6ee61c,3000,1,12200,61.0,400.0000000000138,14.142135623731187,28.284271247462705,28.284271247462705,
+7f7f6ee61c,3000,2,24400,122.0,200.00000000000182,,2.462424759361233e-13,2.462424759361233e-13,
+370d136b68,3000,0,0,0.0,999.9999999999741,14.1421356237306,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+370d136b68,3000,1,12200,61.0,400.00000000001376,14.142135623731182,28.284271247462705,28.284271247462705,
+370d136b68,3000,2,24400,122.0,200.00000000000153,,2.2199169694503322e-13,2.2199169694503322e-13,
+7c5b583d3d,3000,0,0,0.0,999.9999999999741,14.1421356237306,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+7c5b583d3d,3000,1,12200,61.0,400.0000000000136,14.142135623731185,28.284271247462698,28.284271247462698,
+7c5b583d3d,3000,2,24400,122.0,200.00000000000173,,2.2572586401727313e-13,2.2572586401727313e-13,
+8ffaddcc40,3000,0,0,0.0,999.9999999999741,14.1421356237306,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.1, subspace_frac_updates=0.1, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+8ffaddcc40,3000,1,12200,61.0,400.0000000000139,14.142135623731285,28.284271247463007,28.284271247463007,
+8ffaddcc40,3000,2,24400,122.0,200.0000000000033,,1.8655609953557934e-13,1.8655609953557934e-13,

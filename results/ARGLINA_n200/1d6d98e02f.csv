@@ -1,0 +1,31 @@
+run_id,equiv_grad_budget,row,deriv_evals,equiv_grad_evals,f_vals,update_norms,full_grad_norms,proj_grad_norms,config_str
+ddac5f7c2a,3000,0,0,0.0,999.9999999999741,14.142135623730601,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+ddac5f7c2a,3000,1,8200,41.0,400.0000000000139,14.14213562373129,28.284271247463032,28.284271247463032,
+ddac5f7c2a,3000,2,16400,82.0,200.0000000000034,,1.786183767542407e-13,1.786183767542407e-13,
+1b14403012,3000,0,0,0.0,999.9999999999741,14.142135623730601,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+1b14403012,3000,1,8200,41.0,400.00000000001563,14.142135623731328,28.28427124746305,28.28427124746305,
+1b14403012,3000,2,16400,82.0,199.99999999999898,,7.636721552232608e-14,7.636721552232608e-14,
+8161778f7a,3000,0,0,0.0,999.9999999999741,14.1421356237306,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+8161778f7a,3000,1,8200,41.0,400.00000000001376,14.142135623731184,28.284271247462694,28.284271247462694,
+8161778f7a,3000,2,16400,82.0,200.00000000000168,,2.401459763895894e-13,2.401459763895894e-13,
+cc14d43ab5,3000,0,0,0.0,999.9999999999741,14.1421356237306,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+cc14d43ab5,3000,1,8200,41.0,400.00000000001563,14.14213562373131,28.284271247463046,28.284271247463046,
+cc14d43ab5,3000,2,16400,82.0,200.00000000000026,,7.578366002578385e-14,7.578366002578385e-14,
+713a45c4d0,3000,0,0,0.0,999.9999999999741,14.142135623730603,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+713a45c4d0,3000,1,8200,41.0,400.00000000001575,14.142135623731374,28.284271247463067,28.284271247463067,
+713a45c4d0,3000,2,16400,82.0,199.9999999999975,,1.4093125189635952e-13,1.4093125189635952e-13,
+ee71851383,3000,0,0,0.0,999.9999999999741,14.142135623730601,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+ee71851383,3000,1,8200,41.0,400.00000000001404,14.142135623731301,28.28427124746304,28.28427124746304,
+ee71851383,3000,2,16400,82.0,200.00000000000207,,1.629302103807285e-13,1.629302103807285e-13,
+e48f252575,3000,0,0,0.0,999.9999999999741,14.142135623730601,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+e48f252575,3000,1,8200,41.0,400.0000000000157,14.142135623731352,28.28427124746305,28.28427124746305,
+e48f252575,3000,2,16400,82.0,199.99999999999753,,1.2505535663362517e-13,1.2505535663362517e-13,
+da9ca2b525,3000,0,0,0.0,999.9999999999741,14.142135623730598,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+da9ca2b525,3000,1,8200,41.0,400.00000000001563,14.142135623731328,28.284271247463053,28.284271247463053,
+da9ca2b525,3000,2,16400,82.0,199.9999999999992,,6.708805432477032e-14,6.708805432477032e-14,
+825985e892,3000,0,0,0.0,999.9999999999741,14.142135623730603,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+825985e892,3000,1,8200,41.0,400.0000000000156,14.142135623731303,28.284271247463042,28.284271247463042,
+825985e892,3000,2,16400,82.0,200.00000000000148,,1.3788062392501573e-13,1.3788062392501573e-13,
+2f61d84f6b,3000,0,0,0.0,999.9999999999741,14.142135623730601,56.5685424949229,56.5685424949229,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+2f61d84f6b,3000,1,8200,41.0,400.00000000001575,14.142135623731365,28.284271247463064,28.284271247463064,
+2f61d84f6b,3000,2,16400,82.0,199.99999999999747,,1.2940393591114913e-13,1.2940393591114913e-13,

@@ -1,0 +1,31 @@
+run_id,equiv_grad_budget,row,deriv_evals,equiv_grad_evals,f_vals,update_norms,full_grad_norms,proj_grad_norms,config_str
+670cae4306,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+670cae4306,3000,1,2100,21.0,400.0000000000144,10.000000000000247,20.000000000000806,20.000000000000806,
+670cae4306,3000,2,4200,42.0,300.00000000000085,,1.391927834417506e-13,1.391927834417506e-13,
+41a6b43fd4,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+41a6b43fd4,3000,1,2100,21.0,400.00000000001444,10.00000000000025,20.000000000000806,20.000000000000806,
+41a6b43fd4,3000,2,4200,42.0,300.0000000000009,,1.4394821028289667e-13,1.4394821028289667e-13,
+bc32eed5ea,3000,0,0,0.0,699.9999999999901,9.999999999999725,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+bc32eed5ea,3000,1,2100,21.0,400.0000000000145,10.000000000000245,20.000000000000803,20.000000000000803,
+bc32eed5ea,3000,2,4200,42.0,300.00000000000085,,1.3882898308711184e-13,1.3882898308711184e-13,
+c90d66aef6,3000,0,0,0.0,699.9999999999901,9.999999999999725,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+c90d66aef6,3000,1,2100,21.0,400.00000000001444,10.000000000000247,20.000000000000803,20.000000000000803,
+c90d66aef6,3000,2,4200,42.0,300.0000000000008,,1.3965279201825297e-13,1.3965279201825297e-13,
+3f2a74dc5e,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+3f2a74dc5e,3000,1,2100,21.0,400.00000000001444,10.000000000000252,20.000000000000803,20.000000000000803,
+3f2a74dc5e,3000,2,4200,42.0,300.00000000000097,,1.4793471847259675e-13,1.4793471847259675e-13,
+dde7357973,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+dde7357973,3000,1,2100,21.0,400.00000000001444,10.000000000000249,20.000000000000803,20.000000000000803,
+dde7357973,3000,2,4200,42.0,300.0000000000009,,1.4393396172003228e-13,1.4393396172003228e-13,
+ae00e69734,3000,0,0,0.0,699.9999999999901,9.999999999999725,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+ae00e69734,3000,1,2100,21.0,400.0000000000145,10.000000000000247,20.000000000000806,20.000000000000806,
+ae00e69734,3000,2,4200,42.0,300.0000000000009,,1.412469668213956e-13,1.412469668213956e-13,
+bc29b8a107,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+bc29b8a107,3000,1,2100,21.0,400.0000000000145,10.000000000000249,20.000000000000806,20.000000000000806,
+bc29b8a107,3000,2,4200,42.0,300.0000000000009,,1.408722393827144e-13,1.408722393827144e-13,
+587c44bac9,3000,0,0,0.0,699.9999999999901,9.999999999999723,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+587c44bac9,3000,1,2100,21.0,400.00000000001444,10.000000000000254,20.000000000000803,20.000000000000803,
+587c44bac9,3000,2,4200,42.0,300.0000000000009,,1.4410605998259087e-13,1.4410605998259087e-13,
+ca4087df13,3000,0,0,0.0,699.9999999999901,9.999999999999726,39.99999999999946,39.99999999999946,"ProjectedCommonDirectionsConfig(subspace_frac_grads=0.05, subspace_frac_updates=0.05, subspace_frac_random=0.1, direction_str=newton, use_hess=True, random_proj=True, random_proj_dim_frac=1, inner_use_full_grad=True, reg_lambda=0, orth_P_k=True, beta=0.001, tau=0.5, c_const=inf, N_try=200, alpha_max=1, p_const=1)"
+ca4087df13,3000,1,2100,21.0,400.00000000001444,10.000000000000249,20.000000000000803,20.000000000000803,
+ca4087df13,3000,2,4200,42.0,300.0000000000009,,1.4334940565997238e-13,1.4334940565997238e-13,

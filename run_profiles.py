@@ -15,25 +15,25 @@ def main():
     PROFILE = 'LARGE' # \in {'SMALL', 'LARGE'}
 
     # RUNNING
-    RUN          = True
-    SAVE_RESULTS = True
+    RUN          = False
+    SAVE_RESULTS = False
     
     # PLOTTING
     PLOT_PROFILE = False
-    SAVE_FIG     = False # TODO: A PROPER NEWTON benchmark figure, NEED TO INCLUDE SKETCH SIZE!
+    SAVE_FIG     = False
     INCLUDE_SOLVER_NAMES = True
     FOR_APPENDIX = False
     
     ACCURACY = 1e-2
-    #PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
-    PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
+    PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
+    # PLOT_MAX_EQUIV_GRAD = 2_800 # NOTE: for Newton
     LABEL_NCOL = 2
-    FIGSIZE = (5.9, 2.2) # NOTE: the most commonly used (by me) size
-    # FIGSIZE = (5.9, 2.5) # NOTE: for larger stuff (maybe benchmarks), see this
+    # FIGSIZE = (5.9, 2.2) # NOTE: the most commonly used (by me) size
+    FIGSIZE = (5.9, 2.5) # NOTE: for larger stuff (maybe benchmarks)
 
 ################################################################################
 ################################################################################
-    order = 'newton'
+    order = 'sd'
     experiment_str = 'benchmarks'
     
     if order == 'sd':
@@ -64,17 +64,17 @@ def main():
     elif order == 'newton':
         if experiment_str == 'benchmarks':
             solver_names = [
-            # 'full_space_Newton',
-            # '0.0.5',
-            # '0.0.10',
-            # '1d.0.2.20',
-            # '1d.0.2.40',
-            # '5.5.10.20',
-            # '5.5.10.40',
-            # '10.10.10.20',
-            # '10.10.10.40',
-            # '0.0.20',
-            # '0.0.50',
+            'full_space_Newton',
+            '0.0.5',
+            '0.0.10',
+            '1d.0.2.20',
+            '1d.0.2.40',
+            '5.5.10.20',
+            '5.5.10.40',
+            '10.10.10.20',
+            '10.10.10.40',
+            '0.0.20',
+            '0.0.50',
             'lee1d.0.2',
             'lee5.5.10',
             'lee10.10.10',
@@ -142,7 +142,7 @@ def main():
                                                                     max_equiv_grad=PLOT_MAX_EQUIV_GRAD)
         fig = plotting.plotting.plot_data_profiles(success_dict,
                                                    include_Pk_orth=False,
-                                                   include_sketch_size=True,
+                                                   include_sketch_size=False,
                                                    include_ensemble=False,
                                                    figsize=FIGSIZE,
                                                    label_ncol=LABEL_NCOL,

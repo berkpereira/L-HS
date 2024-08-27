@@ -19,10 +19,11 @@ def main():
     SAVE_RESULTS = False
     
     # PLOTTING
-    PLOT_PROFILE = False
-    SAVE_FIG     = False
+    PLOT_PROFILE = True
+    SAVE_FIG     = True
     INCLUDE_SOLVER_NAMES = True
-    FOR_APPENDIX = False
+    FOR_APPENDIX         = False
+    EARLY_ITERATIONS     = False
     
     ACCURACY = 1e-2
     PLOT_MAX_EQUIV_GRAD = 150 # NOTE: for SD
@@ -40,25 +41,49 @@ def main():
         if experiment_str == 'benchmarks':
             solver_names = [
                 'full-space-SD',
-                '1d.0.2.5',
-                '1d.0.2.20',
-                # '1d.0.2.10',
-                '5.5.10',
-                # '5.5.20',
-                '10.10.10',
-                # # '20.20.5',
-                '20.20.10',
-                # 'lee-1d.0.2',
-                # 'lee-5.5.10',
-                # 'lee-5.5.20',
-                # 'lee-10.10.10',
-                # 'lee-20.20.5',
-                # 'lee-20.20.10',
+                # '1d.0.2.5',
+                # '1d.0.2.20',
+                # # '1d.0.2.10',
+                # '5.5.10',
+                # # '5.5.20',
+                # '10.10.10',
+                # # # '20.20.5',
+                # '20.20.10',
+                # # 'lee-1d.0.2',
+                # # 'lee-5.5.10',
+                # # 'lee-5.5.20',
+                # # 'lee-10.10.10',
+                # # 'lee-20.20.5',
+                # # 'lee-20.20.10',
                 '0.0.5',
-                '0.0.10',
-                '0.0.20',
-                # '0.0.30',
-                '0.0.50',
+                # '0.0.10',
+                # '0.0.20',
+                # # '0.0.30',
+                # '0.0.50',
+
+                # Strings of the form '2.0.0.{2,3}'
+                '2.0.0.2',
+                '2.0.0.3',
+                
+                # Strings of the form '2.2.0.{2,3}'
+                '2.2.0.2',
+                '2.2.0.3',
+                
+                # Strings of the form '2.0.1.{2,3}'
+                '2.0.1.2',
+                '2.0.1.3',
+
+                # Strings of the form '2.2.1.{2,3}'
+                '2.2.1.2',
+                '2.2.1.3',
+
+                # Strings of the form '2.0.2.{2,3}'
+                '2.0.2.2',
+                '2.0.2.3',
+
+                # Strings of the form '2.2.2.{2,3}'
+                '2.2.2.2',
+                '2.2.2.3',
             ]
         PASSABLE_NAME = 'default_data_profiles_sd'
     elif order == 'newton':
@@ -156,7 +181,8 @@ def main():
                                                                      accuracy=ACCURACY,
                                                                      for_appendix=FOR_APPENDIX,
                                                                      include_solver_names=INCLUDE_SOLVER_NAMES,
-                                                                     solver_name_list=solver_names)
+                                                                     solver_name_list=solver_names,
+                                                                     early_iterations=EARLY_ITERATIONS)
             
             # Ensure the directory exists
             os.makedirs(os.path.dirname(file_path), exist_ok=True)

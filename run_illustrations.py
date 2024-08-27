@@ -90,19 +90,46 @@ def main():
                 # '5.5.40',
 
                 # Strings of the form '10.10.{0,5,10,20}'
-                '10.10.0',
-                '10.10.5',
-                '10.10.10',
-                '10.10.20',
+                # '10.10.0',
+                # '10.10.5',
+                # '10.10.10',
+                # '10.10.20',
+
+                # Strings of the form '20.20.{0,5,10,20}'
+                '20.20.0',
+                '20.20.5',
+                '20.20.10',
+                '20.20.20',
+                
+                # Strings of the form '1d.{0,1d}.{0,5,10,20,40}'
+                # '1d.0.0',
+                # '1d.1d.0',
+                # '1d.0.5',
+                # '1d.1d.5',
+                # '1d.0.10',
+                # '1d.1d.10',
+                # '1d.0.20',
+                # '1d.1d.20',
+                # '1d.0.40',
+                # '1d.1d.40',
             ]
         passable_name = 'default_illustrations_sd'
     elif order == 'newton':
-        solver_names = [
-            'solver1',
-            'solver2',
-            'solver3',
-            'solver4',
-        ]
+        if experiment_str in ['orth_Pk', 'haar_gauss']:
+            solver_names = [
+                'solver1',
+                'solver2',
+                'solver3',
+                'solver4',
+            ]
+        elif experiment_str == 'sketch_size':
+            solver_names = [
+                'solver1',
+                'solver2',
+                'solver3',
+                'solver4',
+                'solver5',
+            ]
         passable_name = 'default_illustrations_newton'
     elif order == 'quasi_newton':
         solver_names = [
@@ -116,16 +143,16 @@ def main():
     CONFIG_PATH_LIST = [[order, experiment_str, name] for name in solver_names]
     
 
-    RUN          = True
-    SAVE_RESULTS = True
+    RUN          = False
+    SAVE_RESULTS = False
 
     PLOT         = True
     SAVE_FIG     = True
     INCLUDE_SOLVER_NAMES = True
     FOR_APPENDIX = False
     
-    # FIGSIZE = (5.9, 2.4) # NOTE: the one most used
-    FIGSIZE = (5.9, 2.0)   # NOTE: if not much space is required
+    FIGSIZE = (5.9, 2.4) # NOTE: the one most used
+    # FIGSIZE = (5.9, 2.0) # NOTE: if not much space is required
     # FIGSIZE = (5.9, 2.5) # NOTE: if a bit more (vertical) space is required
     LABEL_NCOL = 1
 

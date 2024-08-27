@@ -18,7 +18,7 @@ def get_run_id():
     # Generate a unique ID based on time when running the algorithm
     return hashlib.sha256(datetime.now().isoformat().encode()).hexdigest()[:10]
 
-def get_hashed_filename(solver_config_str: str):
+def get_hashed_filename(solver_config_str: str) -> str:
     # Generate a hash of the solver configuration string
     return hashlib.sha256(solver_config_str.encode()).hexdigest()[:10]
 
@@ -320,10 +320,46 @@ def generate_illustrations(config_path_list: list,
 
     return solver_outputs_list
 
+# TODO: modify this function so that the profile loaded is a combination of the
+# JSON files for the configs in config_list.
+# For each config in config_list, load the corresponding profile and combine it
+# all into a single profile dictionary.
+def load_data_profiles(config_list: list, results_dir='results') -> dict:
+    full_profile = {}
+    prev_accuracy = None
+    prev_equig_grad_list = None
+    
+    for config in config_list:
+        hash = get_hashed_filename(str(config))
+        file_name = f'{results_dir}/profile_{hash}.json'
+        if not os.path.exists(file_name):
+            raise Exception(f'Profile file {file_name} does not exist!')
+        
+        with open(file_name, 'r') as file:
+            config_profile = json.load(file)
+        
+        if prev_accuracy is None:
+            prev_accuracy = config_profile['accuracy']
+            prev_equig_grad_list = config_profile['equiv_grad_list']
+            full_profile.update({'accuracy': config_profile['accuracy'], 'equiv_grad_list': config_profile['equiv_grad_list']})
+        else:
+            if prev_accuracy != config_profile['accuracy']:
+                raise Exception('Inconsistent accuracy values across profiles.')
+            if prev_equig_grad_list != config_profile['equiv_grad_list']:
+                raise Exception('Inconsistent equivalent gradient evaluation lists across profiles.')
+        
+        full_profile.update({hash: config_profile[hash]})
 
+    # Convert lists back to numpy arrays
+    for key, value in full_profile.items():
+        if isinstance(value, list):
+            full_profile[key] = np.array(value)
+    
+    return full_profile
 
 def generate_data_profiles(problem_name_list: list, solver_config_list: list,
-                           accuracy: float, max_equiv_grad: int):
+                           accuracy: float, max_equiv_grad: int,
+                           save_profiles: bool=False, output_dir='results'):
     """
     problem_name_list: list. Each element should be a string formatted such
     as 'ROSEN-BR_n2', where the part after the underscore specifies the
@@ -342,7 +378,7 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
         raise ValueError('Input accuracy must be in the open interval (0, 1).')
 
     LIST_STEP = 0.1
-    equiv_grad_list = np.arange(0, max_equiv_grad + 1 + LIST_STEP, LIST_STEP)
+    equiv_grad_list = list(np.arange(0, max_equiv_grad + 1 + LIST_STEP, LIST_STEP))
     
     # Need a counter for each solver.
     # As we read each run in a given solver, we increment the corresponding
@@ -357,6 +393,7 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
     # one up to the end one.
     success_dict = {}
 
+    i = 1
     for solver_config in solver_config_list:
         solver_config_str = str(solver_config)
         hash = get_hashed_filename(solver_config_str)
@@ -380,13 +417,16 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
             if current_run_data:
                 process_run_data(current_run_data, equiv_grad_list, success_dict[hash], f_sol, accuracy)
                 seen_counter_dict[hash] += 1
+        print(f'Thus far, processed {i} solvers out of {len(solver_config_list)}')
+        i += 1
     
     # Check that all counter values are the same
     counter_values = list(seen_counter_dict.values())
     if counter_values.count(counter_values[0]) != len(counter_values):
         raise Exception('Inconsistent run counts across solvers.')
     
-    # Normalise success_dict values by the seen_counter_dict values
+    # Normalise success_dict values by the seen_counter_dict values, to
+    # make this a FRACTION of problems solved.
     for hash in success_dict:
         count = seen_counter_dict[hash]
         if count > 0:
@@ -394,6 +434,21 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
     
     # Add on informative accuracy key-value pair, for later use in plotting.
     success_dict.update({'accuracy': accuracy, 'equiv_grad_list': equiv_grad_list})
+
+    # Now for each solver config in the full profile just generated, we store
+    # a distinct JSON file which can later be read and assembled back into a 
+    # profile of a different set of solvers.
+    if save_profiles:
+        # TODO: convert numpy arrays into lists so that all is JSON serialisable
+        for hash in success_dict:
+            if hash in ['accuracy', 'equiv_grad_list']: # not actually a hash
+                continue
+            file_name = os.path.join(output_dir, f'profile_{hash}.json')
+            config_dict = {'accuracy': accuracy, 'equiv_grad_list': equiv_grad_list}
+            config_dict.update({hash: list(success_dict[hash])})
+            with open(file_name, 'w') as file:
+                json.dump(config_dict, file, indent=4)
+
     return success_dict
 
 # NOTE: THIS FUNCTION FOR CHECKING WHETHER ACCURACY HAS BEEN MET,

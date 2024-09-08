@@ -324,14 +324,16 @@ def generate_illustrations(config_path_list: list,
 # JSON files for the configs in config_list.
 # For each config in config_list, load the corresponding profile and combine it
 # all into a single profile dictionary.
-def load_data_profiles(config_list: list, results_dir='results') -> dict:
+def load_data_profiles(config_list: list, results_dir='results',
+                       large: bool=False) -> dict:
     full_profile = {}
     prev_accuracy = None
     prev_equig_grad_list = None
     
     for config in config_list:
         hash = get_hashed_filename(str(config))
-        file_name = f'{results_dir}/profile_{hash}.json'
+        size_str = 'large' if large else 'small'
+        file_name = f'{results_dir}/{size_str}_profile_{hash}.json'
         if not os.path.exists(file_name):
             raise Exception(f'Profile file {file_name} does not exist!')
         
@@ -359,7 +361,8 @@ def load_data_profiles(config_list: list, results_dir='results') -> dict:
 
 def generate_data_profiles(problem_name_list: list, solver_config_list: list,
                            accuracy: float, max_equiv_grad: int,
-                           save_profiles: bool=False, output_dir='results'):
+                           save_profiles: bool=False, output_dir='results',
+                           large: bool=False) -> dict:
     """
     problem_name_list: list. Each element should be a string formatted such
     as 'ROSEN-BR_n2', where the part after the underscore specifies the
@@ -443,7 +446,8 @@ def generate_data_profiles(problem_name_list: list, solver_config_list: list,
         for hash in success_dict:
             if hash in ['accuracy', 'equiv_grad_list']: # not actually a hash
                 continue
-            file_name = os.path.join(output_dir, f'profile_{hash}.json')
+            size_str = 'large' if large else 'small'
+            file_name = os.path.join(output_dir, f'{size_str}_profile_{hash}.json')
             config_dict = {'accuracy': accuracy, 'equiv_grad_list': equiv_grad_list}
             config_dict.update({hash: list(success_dict[hash])})
             with open(file_name, 'w') as file:

@@ -11,20 +11,20 @@ def main():
     NO_RUNS = 10
 
     # NOTE: WHICH PROFILE problem set?
-    PROFILE = 'SMALL' # \in {'SMALL', 'LARGE'}
+    PROFILE = 'LARGE' # \in {'SMALL', 'LARGE'}
 
     # RUNNING TESTS
     RUN          = False
     SAVE_RESULTS = False
     
     # GENERATING DATA PROFILES
-    GENERATE_PROFILE  = False
-    READ_PROFILE      = True
-    SAVE_PROFILE_DICT = False # (Only relevant if GENERATE_PROFILE is True a profile)
+    GENERATE_PROFILE   = False
+    READ_PROFILE       = True
+    SAVE_PROFILE_DICTS = True # (Only relevant if GENERATE_PROFILE is True a profile)
 
     # PLOTTING DATA PROFILE
     PLOT_PROFILE         = True
-    SAVE_FIG             = False
+    SAVE_FIG             = True
     INCLUDE_SOLVER_NAMES = True
     FOR_APPENDIX         = False
     EARLY_ITERATIONS     = False
@@ -60,35 +60,35 @@ def main():
                 # # 'lee-10.10.10',
                 # # 'lee-20.20.5',
                 # # 'lee-20.20.10',
-                # '0.0.5',
+                '0.0.5',
                 # '0.0.10',
                 # '0.0.20',
                 # # '0.0.30',
-                # '0.0.50',
+                # # '0.0.50',
 
                 # Strings of the form '2.0.0.{2,3}'
-                # '2.0.0.2',
-                # '2.0.0.3',
+                '2.0.0.2',
+                '2.0.0.3',
                 
-                # # Strings of the form '2.2.0.{2,3}'
-                # '2.2.0.2',
-                # '2.2.0.3',
+                # Strings of the form '2.2.0.{2,3}'
+                '2.2.0.2',
+                '2.2.0.3',
                 
-                # # Strings of the form '2.0.1.{2,3}'
-                # '2.0.1.2',
-                # '2.0.1.3',
+                # Strings of the form '2.0.1.{2,3}'
+                '2.0.1.2',
+                '2.0.1.3',
 
-                # # Strings of the form '2.2.1.{2,3}'
-                # '2.2.1.2',
-                # '2.2.1.3',
+                # Strings of the form '2.2.1.{2,3}'
+                '2.2.1.2',
+                '2.2.1.3',
 
-                # # Strings of the form '2.0.2.{2,3}'
-                # '2.0.2.2',
-                # '2.0.2.3',
+                # Strings of the form '2.0.2.{2,3}'
+                '2.0.2.2',
+                '2.0.2.3',
 
-                # # Strings of the form '2.2.2.{2,3}'
-                # '2.2.2.2',
-                # '2.2.2.3',
+                # Strings of the form '2.2.2.{2,3}'
+                '2.2.2.2',
+                '2.2.2.3',
             ]
         PASSABLE_NAME = 'default_data_profiles_sd'
     elif order == 'newton':
@@ -174,17 +174,19 @@ def main():
         success_dict = results.results_utils.generate_data_profiles(problem_name_list,
                                                                     configs_list, accuracy=ACCURACY,
                                                                     max_equiv_grad=PLOT_MAX_EQUIV_GRAD,
-                                                                    save_profiles=SAVE_PROFILE_DICT)
+                                                                    save_profiles=SAVE_PROFILE_DICTS,
+                                                                    large=(PROFILE=='LARGE'))
         print('Data profiles done')
     elif READ_PROFILE:
         success_dict = results.results_utils.load_data_profiles(config_list=configs_list,
-                                                                results_dir='results')
+                                                                results_dir='results',
+                                                                large=(PROFILE=='LARGE'))
 
 
     if PLOT_PROFILE:
         fig = plotting.plotting.plot_data_profiles(success_dict,
                                                    include_Pk_orth=False,
-                                                   include_sketch_size=False,
+                                                   include_sketch_size=True,
                                                    include_ensemble=False,
                                                    figsize=FIGSIZE,
                                                    label_ncol=LABEL_NCOL,

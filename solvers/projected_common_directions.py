@@ -19,11 +19,6 @@ class ProjectedCommonDirectionsConfig:
     subspace_constr_method: Determines method for updating subspace.
     subspace_dim: Dimension of subproblem subspace.
     reg_lambda: Minimum allowable (POSITIVE) eigenvalue of projected Hessian.
-    
-    reproject_grad: NOTE: relevant only to DETERMINISTIC variant. If False, each
-    gradient is projected only once, using the Q matrix from the previous iter.
-    If True, then each gradient is also reprojected, at the next iteration,
-    using its own iteration's Q matrix.
 
     append_rand_dirs: NOTE: Determines how many random directions to append
     to the (otherwise deterministic) subspace matrix at each iteration.
@@ -39,9 +34,9 @@ class ProjectedCommonDirectionsConfig:
     subspace_no_updates_given_as_frac: bool = None
     subspace_no_random_given_as_frac: bool  = None
 
-    subspace_frac_grads: float   = None
-    subspace_frac_updates: float = None
-    subspace_frac_random: float  = None
+    subspace_frac_grads:   float   = None
+    subspace_frac_updates: float   = None
+    subspace_frac_random:  float   = None
 
     # NOTE: the below only in use if direction_str == 'newton' and use_hess is False.
     no_secant_pairs: int = 0
@@ -52,6 +47,8 @@ class ProjectedCommonDirectionsConfig:
     random_proj_dim_frac: float = None
     reproject_grad: bool = False
     ensemble: str = '' # NOTE: in {'haar', 'scaled_gaussian'}
+
+    omit_curr_grad: bool = False # this is for the case where we withhold the current gradient from the subspace matrix P_k (a bit silly; just for experimental purposes)
 
     reg_lambda: float = 0
 
@@ -122,7 +119,7 @@ class ProjectedCommonDirectionsConfig:
         # no sense to assign numbers of directions here.
         if self.obj is not None:
             if self.subspace_frac_grads is not None:
-                self.subspace_no_grads = int(np.ceil(self.subspace_frac_grads * self.obj.input_dim))
+                self.subspace_no_grads = int(np.ceil(self.subspace_frac_grads * self.obj.input_dim))    
             if self.subspace_frac_updates is not None:
                 self.subspace_no_updates = int(np.ceil(self.subspace_frac_updates * self.obj.input_dim))
             if self.subspace_frac_random is not None:
@@ -392,8 +389,8 @@ class ProjectedCommonDirections:
     def update_subspace(self, **kwargs):
         # method: str. Options:
         # method == 'grads', retain m past gradient vectors
-        # method == 'iterates_grads', (34) from Lee et al., 2022
-        # method == 'iterates_grads_diagnewtons', (35) from Lee et al., 2022
+        # method == 'iterates_grads', eqn (34) from Lee et al., 2022
+        # method == 'iterates_grads_diagnewtons', eqn (35) from Lee et al., 2022
 
         # G_subspace should store some past PROJECTED gradient vectors.
         # X_subspace should store some past iterate update vectors.
@@ -415,6 +412,10 @@ class ProjectedCommonDirections:
             X_subspace = kwargs['updates_matrix']
             D_subspace = kwargs['hess_diag_dirs_matrix']
             
+            # in the case with self.omit_curr_grad == True, we do not include
+            # the current gradient in the subspace matrix P_k (for experimental purposes)
+            if self.omit_curr_grad:
+                G_subspace = G_subspace[:, :-1] # slice out last column of G_subspace, which is most recent grad vector stored
             arrays = [arr for arr in [G_subspace, X_subspace, D_subspace] if arr is not None]
             P = np.hstack(arrays)
             
@@ -452,13 +453,9 @@ class ProjectedCommonDirections:
         X_lsr1 = None
         return Y_lsr1, X_lsr1
 
-
     # Update stored vectors required for subspace constructions.
     def update_stored_vectors_subspace(self, new_X_vec, new_G_vec, full_grad_prev, Q_prev,
-                              G, X, D,
-                              no_grads_stored: int,
-                              no_updates_stored: int,
-                              reassigning_latest_proj_grad=False):
+                              G, X, D, reassigning_latest_proj_grad=False):
         """
         NOTE: reassigning_latest_proj_grad is a boolean meant to address
         situations where we are only reassigning the latest projected gradient
@@ -468,13 +465,21 @@ class ProjectedCommonDirections:
         these vectors
         """
 
+        # In the case where subspace will overlook current gradient, we
+        # need to store an "extra" gradient in G to MAKE UP for this removal
+        # when constructing P_k in the update_subspace method.
+        if self.omit_curr_grad:
+            no_grads_stored = self.subspace_no_grads + 1
+        else: # usual case
+            no_grads_stored = self.subspace_no_grads
 
-        if not reassigning_latest_proj_grad:        
+        no_updates_stored = self.subspace_no_updates
+        if not reassigning_latest_proj_grad:
             if G is not None:
                 if G.shape[1] == no_grads_stored:
                     G = np.delete(G, 0, 1) # delete first (oldest) column
 
-                G = np.hstack((G, new_G_vec.reshape(-1, 1))) # append newest
+                G = np.hstack((G, new_G_vec.reshape(-1, 1))) # append newest, becomes last column of G
             
             # NOTE: now the other case; in secant pair matrices, we have
             # the initial 'gradient differences' matrix equal to None, 
@@ -727,9 +732,7 @@ class ProjectedCommonDirections:
                                                     Q_prev=Q,
                                                     G=G_subspace,
                                                     X=X_subspace,
-                                                    D=D_subspace,
-                                                    no_grads_stored=self.subspace_no_grads,
-                                                    no_updates_stored=self.subspace_no_updates)
+                                                    D=D_subspace)
                 
                 if self.quasi_newton:
                     Y_lsr1, X_lsr1 = self.update_stored_vectors_lsr1(new_X_vec=x_update,
@@ -769,9 +772,7 @@ class ProjectedCommonDirections:
                                                         G=G_subspace,
                                                         X=None,
                                                         D=None,
-                                                        reassigning_latest_proj_grad=True,
-                                                        no_grads_stored=self.subspace_no_grads,
-                                                        no_updates_stored=self.subspace_no_updates)
+                                                        reassigning_latest_proj_grad=True)
                     
                     if self.quasi_newton:
                         Y_lsr1, X_lsr1 = self.update_stored_vectors_lsr1(new_X_vec=None,

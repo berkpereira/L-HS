@@ -48,12 +48,10 @@ class ProjectedCommonDirectionsConfig:
 
     direction_str: str = 'sd' # options are {'newton', 'sd'}
     use_hess: bool = True # if direction_str == 'newton' but this is False, the method uses a quasi-Newton approach
-    random_proj: bool = True
     random_proj_dim: int = None
     random_proj_dim_frac: float = None
     reproject_grad: bool = False
     ensemble: str = '' # NOTE: in {'haar', 'scaled_gaussian'}
-    inner_use_full_grad: bool = True
 
     reg_lambda: float = 0
 
@@ -87,11 +85,6 @@ class ProjectedCommonDirectionsConfig:
 
         if self.p_const < 1 or self.c_const < 1:
             raise ValueError('p and c constants must be POSITIVE integers!')
-
-        if not self.inner_use_full_grad:
-            raise Exception('This feature (self.inner_use_full_grad == False) is no longer in use!')
-        if not self.random_proj:
-            raise Exception('This feature (self.random_proj == False) is no longer in use!')
         
         if ((self.subspace_frac_grads is not None and self.subspace_no_grads is not None) or
             (self.subspace_frac_updates is not None and self.subspace_no_updates is not None) or
@@ -240,8 +233,7 @@ class ProjectedCommonDirectionsConfig:
         if full_space:
             passable_attrs.extend(['random_proj_dim_frac', 'subspace_frac_grads',
                                 'subspace_frac_updates', 'subspace_frac_random',
-                                'random_proj', 'ensemble', 'inner_use_full_grad',
-                                'orth_P_k', 'reproject_grad'])
+                                'ensemble', 'orth_P_k', 'reproject_grad'])
         else: # usual, not-full-space-method cases
             uses_projections = False
             try:
@@ -251,12 +243,9 @@ class ProjectedCommonDirectionsConfig:
                 if self.subspace_no_grads > 0:
                     uses_projections = True
             if uses_projections: # projections 'make sense'
-                if self.random_proj:
-                    passable_attrs.append('reproject_grad')
-                else:
-                    passable_attrs.append('ensemble')
+                passable_attrs.append('reproject_grad')
             else: # no "tilde projections" are ever computed
-                passable_attrs.extend(['ensemble', 'reproject_grad', 'random_proj', 'random_proj_dim_frac'])
+                passable_attrs.extend(['ensemble', 'reproject_grad', 'random_proj_dim_frac'])
         
         attributes = []
         for field in fields(self):
@@ -290,7 +279,7 @@ class ProjectedCommonDirections:
         if self.subspace_no_grads == 0 and self.subspace_constr_method != 'random':
             raise Exception('Not good to NOT have fully randomised P_k yet have no directions based on gradient information!')
 
-        if self.subspace_constr_method == 'random' and (not self.inner_use_full_grad):
+        if self.subspace_constr_method == 'random':
             raise Exception('If P_k fully randomised, must use full gradients in expression for search direction and backtracking!')
         
         # Number of P_k columns relying on problem/algorithm information
@@ -301,7 +290,7 @@ class ProjectedCommonDirections:
             raise Exception('It makes no sense to have no problem information in subspace construction when not using a purely randomised subspace approach!')
         
         # Checks on gradient reprojection and whether subspace dimension allows it
-        if self.reproject_grad and (not self.random_proj) and self.subspace_no_grads <= 1:
+        if self.reproject_grad and self.subspace_no_grads <= 1:
             raise Exception("Gradients can only be reprojected if we're storing more than one for each subspace!")
         
         # Set up relevant problem callables
@@ -322,39 +311,23 @@ class ProjectedCommonDirections:
                 self.deriv_per_succ_iter = self.subspace_dim + (self.subspace_dim + 1) * self.obj.input_dim
                 self.deriv_per_unsucc_iter = (self.obj.input_dim + 1) * self.subspace_dim
         else:
-            if self.random_proj: # using random tilde grad projections
-                if self.inner_use_full_grad:
-                    if self.direction_str == 'sd' or self.quasi_newton:
-                        if self.subspace_dim == self.obj.input_dim or self.random_proj_dim_frac == 1: # edge case, full space method
-                            self.deriv_per_succ_iter = self.obj.input_dim
-                            self.deriv_per_unsucc_iter = 0
-                        else: # usual cases
-                            self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
-                            self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
-                    elif self.direction_str == 'newton' and (not self.quasi_newton):
-                        if self.subspace_dim == self.obj.input_dim: # edge case, full space method
-                            self.deriv_per_succ_iter = (self.obj.input_dim + 1) * self.obj.input_dim
-                        elif self.random_proj_dim_frac == 1:
-                            self.deriv_per_succ_iter = self.obj.input_dim + (self.subspace_dim) * self.obj.input_dim
-                            self.deriv_per_unsucc_iter = 0 + (self.subspace_no_random) * self.obj.input_dim
-                        else: # usual cases
-                            self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim + (self.subspace_dim + 1) * self.obj.input_dim
-                            self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random + (self.subspace_no_random + 1) * self.obj.input_dim
-                else:
-                    raise Exception('No longer in use!')
-                    self.deriv_per_succ_iter = self.random_proj_dim
-            else: # deterministic tilde grad projection
-                raise Exception('"Deterministic" projections no longer in use!')
-                if self.reproject_grad:
-                    if self.inner_use_full_grad:
-                        self.deriv_per_succ_iter = 2 * self.subspace_dim + 1
-                    else:
-                        self.deriv_per_succ_iter = 2 * self.subspace_dim
-                else:
-                    if self.inner_use_full_grad:
-                        self.deriv_per_succ_iter = 2 * self.subspace_dim + 1
-                    else:
-                        self.deriv_per_succ_iter = self.subspace_dim
+            if self.direction_str == 'sd' or self.quasi_newton:
+                if self.subspace_dim == self.obj.input_dim or self.random_proj_dim_frac == 1: # edge case, full space method
+                    self.deriv_per_succ_iter = self.obj.input_dim
+                    self.deriv_per_unsucc_iter = 0
+                else: # usual cases
+                    self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
+                    self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
+            elif self.direction_str == 'newton' and (not self.quasi_newton):
+                if self.subspace_dim == self.obj.input_dim: # edge case, full space method
+                    self.deriv_per_succ_iter = (self.obj.input_dim + 1) * self.obj.input_dim
+                elif self.random_proj_dim_frac == 1:
+                    self.deriv_per_succ_iter = self.obj.input_dim + (self.subspace_dim) * self.obj.input_dim
+                    self.deriv_per_unsucc_iter = 0 + (self.subspace_no_random) * self.obj.input_dim
+                else: # usual cases
+                    self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim + (self.subspace_dim + 1) * self.obj.input_dim
+                    self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random + (self.subspace_no_random + 1) * self.obj.input_dim
+
         # NOTE: edge case of a full-space method
         if self.subspace_dim == self.obj.input_dim:
             self.deriv_per_succ_iter = self.obj.input_dim
@@ -389,44 +362,29 @@ class ProjectedCommonDirections:
     # condition is satisfied (self attributes used where appropriate).
     def backtrack_armijo(self, x, direction, f_x, full_grad, proj_grad):
         alpha = self.alpha_init
-
-        if self.inner_use_full_grad:
-            grad_vec = full_grad
-        else:
-            grad_vec = proj_grad
         
         direction = np.squeeze(direction) # turn into vector
-        while self.func(x + alpha * direction) > f_x + self.beta * alpha * np.dot(grad_vec, direction):
+        while self.func(x + alpha * direction) > f_x + self.beta * alpha * np.dot(full_grad, direction):
             alpha *= self.tau
         
         return alpha
     
     # This function simply checks for satisfaction of Armijo condition. Returns bool.
     def check_armijo_condition(self, x, alpha, direction, f_x, full_grad, proj_grad) -> bool:
-        if self.inner_use_full_grad:
-            grad_vec = full_grad
-        else:
-            grad_vec = proj_grad
         direction = np.squeeze(direction) # turn into vector
-        check_bool = (self.func(x + alpha * direction) <= f_x + self.beta * alpha * np.dot(grad_vec, direction))
+        check_bool = (self.func(x + alpha * direction) <= f_x + self.beta * alpha * np.dot(full_grad, direction))
         return check_bool
         
     # The below method is new compared to the common_directions.py module.
     # It plays the role of determining how "projected gradients" are defined.
     # This refers to what I usually denote by $\tilde{\nabla}f(x_k)$.
-    def project_gradient(self, full_grad, random_proj, **kwargs):
-        if random_proj:
-            # Test for edge case where we recover full gradient information:
-            if self.random_proj_dim == self.obj.input_dim:
-                W = np.eye(self.obj.input_dim)
-            else:
-                W = self.draw_sketch()
-        else: # 'Deterministic' projection of gradients for subspace construction.
-            # Test for edge case where we recover full gradient information:
-            if self.subspace_dim == self.obj.input_dim:
-                W = np.eye(self.obj.input_dim)
-            else:
-                W = kwargs['Q_prev']
+    def project_gradient(self, full_grad):
+        # Test for edge case where we recover full gradient information:
+        if self.random_proj_dim == self.obj.input_dim:
+            W = np.eye(self.obj.input_dim)
+        else:
+            W = self.draw_sketch()
+
         proj_grad = W @ np.transpose(W) @ full_grad
         return proj_grad
 
@@ -515,10 +473,7 @@ class ProjectedCommonDirections:
             if G is not None:
                 if G.shape[1] == no_grads_stored:
                     G = np.delete(G, 0, 1) # delete first (oldest) column
-                if (not self.random_proj) and self.reproject_grad:
-                    raise Exception('No longer using deterministic projections.')
-                    reproj_grad = Q_prev @ np.transpose(Q_prev) @ full_grad_prev
-                    G[:, -1] = reproj_grad # re-assign last projected gradient
+
                 G = np.hstack((G, new_G_vec.reshape(-1, 1))) # append newest
             
             # NOTE: now the other case; in secant pair matrices, we have
@@ -574,10 +529,6 @@ class ProjectedCommonDirections:
                     Y = np.delete(Y, 0, 1) # delete first (oldest) column
                 else:
                     Y = np.delete(Y, Y.shape[1] - 1, 1) # delete last (most RECENT) column
-            if (not self.random_proj) and self.reproject_grad:
-                raise Exception('No longer using deterministic projections.')
-                reproj_grad = Q_prev @ np.transpose(Q_prev) @ full_grad_prev
-                Y[:, -1] = reproj_grad # re-assign last projected gradient    
             Y = np.hstack((Y, new_Y_vec.reshape(-1, 1))) # append to right-hand end
         
         # NOTE: now the other case; in secant pair matrices, we have
@@ -608,16 +559,12 @@ class ProjectedCommonDirections:
         return Y, X
 
     def search_dir(self, Q, full_grad, proj_grad, proj_B):
-        if self.inner_use_full_grad:
-            grad_vec = full_grad
-        else:
-            grad_vec = proj_grad
         
         if self.direction_str == 'newton':
-            hat_direction = np.linalg.lstsq(proj_B, - np.transpose(Q) @ grad_vec)[0]
+            hat_direction = np.linalg.lstsq(proj_B, - np.transpose(Q) @ full_grad)[0]
             direction = np.dot(Q, hat_direction)
         elif self.direction_str == 'sd':
-            direction = - Q @ np.transpose(Q) @ grad_vec
+            direction = - Q @ np.transpose(Q) @ full_grad
             
         return direction
 
@@ -670,7 +617,7 @@ class ProjectedCommonDirections:
 
         # The first projected gradient takes a projection from an entirely random matrix, always
         if self.subspace_no_grads > 0:
-            proj_grad = self.project_gradient(full_grad, random_proj=True)
+            proj_grad = self.project_gradient(full_grad)
             old_proj_grad = proj_grad
         else:
             proj_grad = None
@@ -764,7 +711,7 @@ class ProjectedCommonDirections:
                 full_grad = self.grad_func(x)
                 if self.subspace_no_grads > 0:
                     old_proj_grad = proj_grad # The one which is left behind at a distinct iterate is the old projected gradient
-                    proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
+                    proj_grad = self.project_gradient(full_grad)
                     grad_diff = proj_grad - old_proj_grad
 
                 if self.direction_str == 'newton':
@@ -812,7 +759,7 @@ class ProjectedCommonDirections:
                     spent_derivatives = True
                     # Must reproject the current gradient
                     if self.subspace_no_grads > 0:
-                        proj_grad = self.project_gradient(full_grad, random_proj=self.random_proj, Q_prev=Q)
+                        proj_grad = self.project_gradient(full_grad)
                         grad_diff = proj_grad - old_proj_grad # NOTE that old_proj_grad is a projected gradient from the last distinct iterate!
                     # Update just the last projected gradient!
                     G_subspace, X_subspace, D_subspace = self.update_stored_vectors_subspace(new_X_vec=x_update,

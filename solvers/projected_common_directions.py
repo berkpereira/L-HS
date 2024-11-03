@@ -175,6 +175,12 @@ class ProjectedCommonDirectionsConfig:
         self.nu = self.tau ** (-self.c_const) # 'Forward-tracking' factor
 
     def __str__(self):
+        
+        # TODO: reconsider the passable attributes which should not influence
+        # plot colouring. In particular, I have so far added the attribute
+        # self.omit_curr_grad. I also plan on adding another attribute for
+        # a different proposed method of storage of past reduced-dimension gradients.
+
         # These attributes should play no role for our purposes (consistent line plot colouring)
         passable_attrs = ['obj', 'verbose', 'deriv_budget', 'equiv_grad_budget',
                           'iter_print_gap', 'random_proj_dim', 'max_iter',

@@ -7,7 +7,20 @@ from solvers.projected_common_directions import ProjectedCommonDirectionsConfig
 
 # Dictionary to hold configuration parameters for all solver variants
 solver_config_tree = {
-    "sd": { # 
+    "sd": { #
+        'try_stuff': {
+            'solver1': {
+                "subspace_no_grads": 1,
+                "subspace_no_updates": 1,
+                "subspace_no_random": 1,
+                "random_proj_dim_frac": 1,
+                "direction_str": 'sd',
+                "omit_curr_grad": True,
+                "ensemble": 'haar',
+                "orth_P_k": True,
+                "alpha_max": 100,
+            },
+        },
         'orth_Pk': { # orthogonalise Pk ?
             'solver1': {
                 "subspace_frac_grads": 0.1,

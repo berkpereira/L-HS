@@ -13,21 +13,12 @@ def main():
                           'powell',                            # 2, n multiple of 4
                           'well_conditioned_convex_quadratic', # 3, any n
                           'ill_conditioned_convex_quadratic',  # 4, any n
-                        #   'POWELLSG',                          # 5,  n in {4, 8, 16, 20, 36, 40, 60, 80, 100, 500}
-                        #   'POWER',                             # 6,  n in {10, 20, 30, 50, 75, 100, 500}
-                        #   'NONDIA',                            # 7,  n in {10, 20, 30, 50, 90, 100, 500}
-                        #   'NCB20B',                            # 8,  n in {21, 22, 50, 100, 180, 500}
-                        #   'OSCIGRAD',                          # 9,  n in {2, 5, 10, 15, 25, 100}
-                        #   'TRIDIA',                            # 10, n in {10, 20, 30, 50, 100, 500}
-                        #   'OSCIPATH',                          # 11, n in {2, 5, 10, 25, 100, 500}
-                        #   'YATP2LS',                           # 12, n in {2, 10, 50, 100, 200, 350}
-                        #   'PENALTY2'                           # 13, n in {4, 10, 50, 100, 200, 500}
                           ]                          
-    problem_name = test_problems_list[3]
-    input_dim = 10
+    problem_name = test_problems_list[0]
+    input_dim = 40
     extended_problem_name = problem_name + '_n' + str(input_dim)
     problem_tup = running.get_problem(problem_name, input_dim)
-    NO_RUNS = 1
+    NO_RUNS = 10
 
 ################################################################################
 ################################################################################
@@ -37,7 +28,10 @@ def main():
     if order == 'sd':
         if experiment_str == 'try_stuff':
             solver_names = [
-                'solver1',
+                # 'solver1',
+                # 'solver2',
+                'solver3',
+                'solver4',
             ]
         elif experiment_str == 'granular':
             solver_names = [ # NOTE: select solvers

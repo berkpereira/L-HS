@@ -10,24 +10,22 @@ solver_config_tree = {
     "sd": { #
         'try_stuff': {
             'solver1': {
-                "subspace_no_grads": 1,
-                "subspace_no_updates": 1,
-                "subspace_no_random": 0,
-                "random_proj_dim_frac": 0.2,
+                "subspace_no_grads":   3,
+                "subspace_no_updates": 0,
+                "subspace_no_random":  7,
                 "direction_str": 'sd',
-                "omit_curr_grad": False, # NOTE
+                "use_random_proj": False, # NOTE
                 "ensemble": 'haar',
                 "orth_P_k": True,
                 "alpha_max": 100,
             },
             'solver2': {
-                "subspace_no_grads": 1,
-                "subspace_no_updates": 1,
-                "subspace_frac_random": 0.2,
-                # "random_proj_dim_frac": 1,
+                "subspace_no_grads":   0,
+                "subspace_no_updates": 0,
+                "subspace_no_random":  10,
+                "random_proj_dim_frac": 0,
                 "direction_str": 'sd',
-                "omit_curr_grad": False, # NOTE
-                'use_random_proj': False, # NOTE
+                # "use_random_proj": False, # NOTE
                 "ensemble": 'haar',
                 "orth_P_k": True,
                 "alpha_max": 100,

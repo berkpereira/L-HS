@@ -28,7 +28,7 @@ passable_variants_dict = {
     "default_illustrations_sd": {
         "tol": 0,
         "max_iter": np.inf,
-        "equiv_grad_budget": 300,
+        "equiv_grad_budget": 400,
         "iter_print_gap": 500,
         "verbose": True,
     },

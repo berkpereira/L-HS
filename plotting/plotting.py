@@ -302,17 +302,16 @@ def plot_loss_vs_iteration(solver_outputs: list,
             plt.xlabel('Equivalent gradient evaluations')
         else:
             plt.xlabel('(Directional) derivative evaluations')
-            if normalise_loss_data:
-                plt.title(f'Normalised objective vs (directional) derivative evaluations. {solver_output.solver.obj.name}')
-            else:
-                plt.title(f'Objective vs (directional) derivative evaluations. {solver_output.solver.obj.name}')
     else:
         plt.xlabel('Iteration')
-        # plt.title(f'Objective vs iteration. {solver_output.solver.obj.name}')
     if normalise_loss_data:
+        title_str = f'Normalised objective. {solver_output.solver.obj.name}'
         plt.ylabel(r'Normalised objective')
     else:
+        title_str = f'Objective. {solver_output.solver.obj.name}'
         plt.ylabel('Objective')
+    
+    plt.title(title_str)
     plt.legend(ncol=label_ncol)
     plt.grid(True, which="both", ls="-")
     return fig

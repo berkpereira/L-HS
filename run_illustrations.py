@@ -18,7 +18,7 @@ def main():
     input_dim = 40
     extended_problem_name = problem_name + '_n' + str(input_dim)
     problem_tup = running.get_problem(problem_name, input_dim)
-    NO_RUNS = 10
+    NO_RUNS = 5
 
 ################################################################################
 ################################################################################
@@ -28,10 +28,10 @@ def main():
     if order == 'sd':
         if experiment_str == 'try_stuff':
             solver_names = [
-                # 'solver1',
-                # 'solver2',
-                'solver3',
-                'solver4',
+                'solver1',
+                'solver2',
+                # 'solver3',
+                # 'solver4',
             ]
         elif experiment_str == 'granular':
             solver_names = [ # NOTE: select solvers

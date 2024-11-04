@@ -134,7 +134,7 @@ def well_conditioned_convex_quadratic(input_dim: int):
 
 # Ill-conditioned convex quadratic where eigenvalues of the Hessian are
 # logarithmically uniformly distributed from 1 to 10^4.
-# Condition number of the Hessian is clearly kappa = 10^4.
+# Condition number of the Hessian is clearly 10^4.
 def ill_conditioned_convex_quadratic(input_dim: int):
     x0 = np.ones(input_dim, dtype='float32')
     def func(x):

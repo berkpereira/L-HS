@@ -325,20 +325,20 @@ class ProjectedCommonDirections:
                 self.deriv_per_unsucc_iter = (self.obj.input_dim + 1) * self.subspace_dim
         else:
             if self.direction_str == 'sd' or self.quasi_newton:
-                if self.subspace_dim == self.obj.input_dim or self.random_proj_dim_frac == 1: # edge case, full space method
-                    self.deriv_per_succ_iter = self.obj.input_dim
-                    self.deriv_per_unsucc_iter = 0
-                
-                # NOTE: first-order methods with P_k grad columns of the form 
-                # P_{k-1} P_{k-1}^T \nabla{f}_{k-1}, etc.
-                elif (not self.use_random_proj):
+                if self.use_random_proj:
+                    if self.subspace_dim == self.obj.input_dim or self.random_proj_dim_frac == 1: # edge case, full space method
+                        self.deriv_per_succ_iter = self.obj.input_dim
+                        self.deriv_per_unsucc_iter = 0
+                    # NOTE: usual cases as seen in the MSc thesis
+                    else:
+                        self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
+                        self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
+                else:
+                    # NOTE: first-order methods with P_k grad columns of the form 
+                    # P_{k-1} P_{k-1}^T \nabla{f}_{k-1}, etc.
                     self.deriv_per_succ_iter = self.subspace_dim
                     self.deriv_per_unsucc_iter = self.subspace_no_random
-
-                # NOTE: usual cases as seen in the MSc thesis
-                else:
-                    self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
-                    self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
+                    
             elif self.direction_str == 'newton' and (not self.quasi_newton):
                 if self.subspace_dim == self.obj.input_dim: # edge case, full space method
                     self.deriv_per_succ_iter = (self.obj.input_dim + 1) * self.obj.input_dim

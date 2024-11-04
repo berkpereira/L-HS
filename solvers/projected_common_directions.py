@@ -290,9 +290,6 @@ class ProjectedCommonDirections:
 
         if self.subspace_no_grads == 0 and self.subspace_constr_method != 'random':
             raise Exception('Not good to NOT have fully randomised P_k yet have no directions based on gradient information!')
-
-        if self.subspace_constr_method == 'random':
-            raise Exception('If P_k fully randomised, must use full gradients in expression for search direction and backtracking!')
         
         # Number of P_k columns relying on problem/algorithm information
         # of some kind. 

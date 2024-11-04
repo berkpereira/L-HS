@@ -1,8 +1,3 @@
-"""
-The common thread to all of these methods is that THE FULL GRADIENT IS NEVER USED IN ITSELF IN THE ALGORITHM,
-except when using edge case algorithm parameters (namely 'dimension' of S_k
-being equal to the ambient dimension).
-"""
 from dataclasses import dataclass, fields
 import time
 from typing import Any
@@ -26,19 +21,25 @@ class ProjectedCommonDirectionsConfig:
     """
     obj: Any                    
     
-    subspace_no_grads: int   = None
+    subspace_no_grads:   int = None
     subspace_no_updates: int = None
-    subspace_no_random: int  = None
+    subspace_no_random:  int = None
 
-    subspace_no_grads_given_as_frac: bool   = None
+    subspace_no_grads_given_as_frac:   bool = None
     subspace_no_updates_given_as_frac: bool = None
-    subspace_no_random_given_as_frac: bool  = None
+    subspace_no_random_given_as_frac:  bool = None
 
-    subspace_frac_grads:   float   = None
-    subspace_frac_updates: float   = None
-    subspace_frac_random:  float   = None
+    subspace_frac_grads:   float = None
+    subspace_frac_updates: float = None
+    subspace_frac_random:  float = None
+
+    # NOTE: default value True gives the methods I used in my MSc thesis.
+    # False gives new methods where the gradient columns in P_k are populated
+    # with vectors of the form (P_{k-1} P_{k-1}^T \nabla{f}_{k-1}).
+    use_random_proj: bool = True
 
     # NOTE: the below only in use if direction_str == 'newton' and use_hess is False.
+    # ie for quasi-Newton (proof of concept) methods.
     no_secant_pairs: int = 0
 
     direction_str: str = 'sd' # options are {'newton', 'sd'}
@@ -48,13 +49,15 @@ class ProjectedCommonDirectionsConfig:
     reproject_grad: bool = False
     ensemble: str = '' # NOTE: in {'haar', 'scaled_gaussian'}
 
-    omit_curr_grad: bool = False # this is for the case where we withhold the current gradient from the subspace matrix P_k (a bit silly; just for experimental purposes)
+    # The below is for the case where we withhold the current gradient from the
+    # subspace matrix P_k (a bit silly; just for experimental purposes)
+    omit_curr_grad: bool = False 
 
-    reg_lambda: float = 0
+    reg_lambda: float = 0 # parameter for regularisation of reduced Hessian
 
     # Determines whether to orthogonalise (QR) P_k, the subspace matrix.
     orth_P_k: bool = True
-    # Determines whether P_k columns are ordinarily normalised to unit Euclidian norm.
+    # Determines whether P_k columns are ordinarily normalised to unit l2 norm.
     normalise_P_k_cols: bool = False
     
     # Constants --- CFS framework and others
@@ -65,7 +68,7 @@ class ProjectedCommonDirectionsConfig:
     alpha_max: float = 100 # Ceiling on step size parameter
     p_const: int = 1       # POSITIVE integer, used in setting initial alpha
 
-    # 'Passable' attributes
+    # 'Passable' attributes---ie NOT determining different iterate update rules
     tol: float = 1e-6
     max_iter: int = 1000
     deriv_budget: int = None
@@ -82,6 +85,12 @@ class ProjectedCommonDirectionsConfig:
 
         if self.p_const < 1 or self.c_const < 1:
             raise ValueError('p and c constants must be POSITIVE integers!')
+        
+        if self.omit_curr_grad and (not self.use_random_proj):
+            raise ValueError('When not using random gradient projections, current gradient is not in P_k anyway!')
+        
+        if (not self.use_random_proj) and self.direction_str == 'newton':
+            raise ValueError('Lack of tilde (S_k) projections is intended only for first-order methods!')
         
         if ((self.subspace_frac_grads is not None and self.subspace_no_grads is not None) or
             (self.subspace_frac_updates is not None and self.subspace_no_updates is not None) or
@@ -139,7 +148,7 @@ class ProjectedCommonDirectionsConfig:
                 self.subspace_frac_updates = self.subspace_no_updates / self.obj.input_dim
             if self.subspace_frac_random is None:
                 self.subspace_frac_random = self.subspace_no_random / self.obj.input_dim
-            if self.random_proj_dim_frac is None:
+            if self.random_proj_dim_frac is None and self.use_random_proj:
                 self.random_proj_dim_frac = self.random_proj_dim / self.obj.input_dim
 
             # Overall dimension of subspace
@@ -203,7 +212,7 @@ class ProjectedCommonDirectionsConfig:
         else:
             passable_attrs.append('subspace_frac_random')
 
-        if self.subspace_no_grads == 0: # 'tilde projections' do not come up
+        if self.subspace_no_grads == 0 or (not self.use_random_proj): # random 'tilde' projections do not arise
             passable_attrs.extend(['random_proj_dim_frac', 'ensemble'])
         if self.direction_str != 'newton':
             passable_attrs.extend(['reg_lambda', 'use_hess', 'no_secant_pairs']) # only comes in for Newton-like searches
@@ -306,6 +315,10 @@ class ProjectedCommonDirections:
 
         # Increment number of derivatives computed in each iteration depending on
         # algorithm variant in use
+        
+        # TODO: update budgeting per (un)successful iteration in the new variants
+        # ie, those where self.use_random_proj == False
+        
         if self.subspace_constr_method == 'random':
             if self.direction_str == 'sd' or self.quasi_newton:
                 self.deriv_per_succ_iter = self.subspace_dim
@@ -318,7 +331,15 @@ class ProjectedCommonDirections:
                 if self.subspace_dim == self.obj.input_dim or self.random_proj_dim_frac == 1: # edge case, full space method
                     self.deriv_per_succ_iter = self.obj.input_dim
                     self.deriv_per_unsucc_iter = 0
-                else: # usual cases
+                
+                # NOTE: first-order methods with P_k grad columns of the form 
+                # P_{k-1} P_{k-1}^T \nabla{f}_{k-1}, etc.
+                elif (not self.use_random_proj):
+                    self.deriv_per_succ_iter = self.subspace_dim
+                    self.deriv_per_unsucc_iter = self.subspace_no_random
+
+                # NOTE: usual cases as seen in the MSc thesis
+                else:
                     self.deriv_per_succ_iter = self.subspace_dim + self.random_proj_dim - 1
                     self.deriv_per_unsucc_iter = self.random_proj_dim + self.subspace_no_random
             elif self.direction_str == 'newton' and (not self.quasi_newton):
@@ -423,12 +444,20 @@ class ProjectedCommonDirections:
             if self.omit_curr_grad:
                 G_subspace = G_subspace[:, :-1] # slice out last column of G_subspace, which is most recent grad vector stored
             arrays = [arr for arr in [G_subspace, X_subspace, D_subspace] if arr is not None]
-            P = np.hstack(arrays)
             
-            # Add orthogonal random directions as necessary
+            if arrays:
+                P = np.hstack(arrays)
+            # NOTE: where tilde/S_k projected grads not used, all the matrices
+            # above may be empty at the first iteration.
+            else:
+                P = np.empty((self.obj.input_dim, 0))
+            
+            # Add orthogonal random directions as necessary.
+            # NOTE how we fill in extra random directions if not enough
+            # problem history has been accumulated yet! (this is noted in the MSc thesis)
             Q = append_dirs(curr_mat=P,
                                 ambient_dim=self.obj.input_dim,
-                                no_dirs=self.subspace_dim - P.shape[1], # NOTE how we fill in extra random directions if not enough problem history has been accumulated yet!
+                                no_dirs=self.subspace_dim - P.shape[1],
                                 curr_is_orth=False,
                                 orthogonalise=self.orth_P_k,
                                 normalise_cols=self.normalise_P_k_cols)
@@ -442,7 +471,10 @@ class ProjectedCommonDirections:
         # Not implemented
         D_subspace = None
 
-        if self.subspace_no_grads > 0:
+        # NOTE: even if using gradient directions in P_k, if we do not use
+        # random gradient projections in its columns it makes no sense to store
+        # anything in the very first iteration.
+        if self.subspace_no_grads > 0 and self.use_random_proj:
             G_subspace = np.array(grad_vec, ndmin=2)
             G_subspace = G_subspace.reshape(-1, 1)
         else:
@@ -460,10 +492,12 @@ class ProjectedCommonDirections:
         return Y_lsr1, X_lsr1
 
     # Update stored vectors required for subspace constructions.
-    def update_stored_vectors_subspace(self, new_X_vec, new_G_vec, full_grad_prev, Q_prev,
-                              G, X, D, reassigning_latest_proj_grad=False):
+    def update_stored_vectors_subspace(self, new_X_vec, new_G_vec,
+                                       full_grad_prev, Q_prev, G, X, D,
+                                       reassigning_latest_proj_grad=False):
         """
-        NOTE: reassigning_latest_proj_grad is a boolean meant to address
+        NOTE: 
+        reassigning_latest_proj_grad is a boolean meant to address
         situations where we are only reassigning the latest projected gradient
         because we have not managed a successful iteration with that P_k within
         N_try iterations!
@@ -478,14 +512,14 @@ class ProjectedCommonDirections:
             no_grads_stored = self.subspace_no_grads + 1
         else: # usual case
             no_grads_stored = self.subspace_no_grads
-
         no_updates_stored = self.subspace_no_updates
+        
         if not reassigning_latest_proj_grad:
             if G is not None:
                 if G.shape[1] == no_grads_stored:
                     G = np.delete(G, 0, 1) # delete first (oldest) column
 
-                G = np.hstack((G, new_G_vec.reshape(-1, 1))) # append newest, becomes last column of G
+                G = np.hstack((G, new_G_vec.reshape(-1, 1))) # append newest, which becomes last column of G
             
             # NOTE: now the other case; in secant pair matrices, we have
             # the initial 'gradient differences' matrix equal to None, 
@@ -627,7 +661,7 @@ class ProjectedCommonDirections:
         norm_full_grad = np.linalg.norm(full_grad)
 
         # The first projected gradient takes a projection from an entirely random matrix, always
-        if self.subspace_no_grads > 0:
+        if self.subspace_no_grads > 0 and self.use_random_proj:
             proj_grad = self.project_gradient(full_grad)
             old_proj_grad = proj_grad
         else:
@@ -668,7 +702,7 @@ class ProjectedCommonDirections:
         direction_norms_list = []
         angles_to_full_grad_list = []
         full_grad_norms_list = [np.linalg.norm(full_grad)]
-        if self.subspace_no_grads > 0:
+        if self.subspace_no_grads > 0 and self.use_random_proj:
             proj_grad_norms_list = [np.linalg.norm(proj_grad)]
 
         # Initialise iteration count metrics
@@ -720,7 +754,7 @@ class ProjectedCommonDirections:
                 # Compute basic quantities at new iterate
                 f_x = self.func(x)
                 full_grad = self.grad_func(x)
-                if self.subspace_no_grads > 0:
+                if self.subspace_no_grads > 0 and self.use_random_proj:
                     old_proj_grad = proj_grad # The one which is left behind at a distinct iterate is the old projected gradient
                     proj_grad = self.project_gradient(full_grad)
                     grad_diff = proj_grad - old_proj_grad
@@ -732,8 +766,13 @@ class ProjectedCommonDirections:
                         full_B = lsr1(B0=self.B0, Y=Y_lsr1, X=X_lsr1)
 
                 # Update stored vectors required for subspace constructions.
+                if self.use_random_proj:
+                    new_G_vec = proj_grad
+                else:
+                    new_G_vec = direction
+
                 G_subspace, X_subspace, D_subspace = self.update_stored_vectors_subspace(new_X_vec=x_update,
-                                                    new_G_vec=proj_grad,
+                                                    new_G_vec=new_G_vec,
                                                     full_grad_prev=full_grad_prev,
                                                     Q_prev=Q,
                                                     G=G_subspace,
@@ -764,28 +803,37 @@ class ProjectedCommonDirections:
                 # x is unchanged
                 # Decrease step size parameter alpha (backtracking)
                 alpha = self.tau * alpha
+                
+                # NOTE: check whether limit for backtracking has been reached.
+                # If so, need to redraw projected gradient (if self.use_random_proj)
+                # or just redraw the random columns of P_k (if not self.use_random_proj).
                 if j_try == self.N_try:
                     spent_derivatives = True
-                    # Must reproject the current gradient
-                    if self.subspace_no_grads > 0:
+                    
+                    # Must reproject the current gradient if self.use_random_proj
+                    if self.subspace_no_grads > 0 and self.use_random_proj:
                         proj_grad = self.project_gradient(full_grad)
                         grad_diff = proj_grad - old_proj_grad # NOTE that old_proj_grad is a projected gradient from the last distinct iterate!
-                    # Update just the last projected gradient!
-                    G_subspace, X_subspace, D_subspace = self.update_stored_vectors_subspace(new_X_vec=x_update,
-                                                        new_G_vec=proj_grad,
-                                                        full_grad_prev=full_grad_prev,
-                                                        Q_prev=Q,
-                                                        G=G_subspace,
-                                                        X=None,
-                                                        D=None,
-                                                        reassigning_latest_proj_grad=True)
+                    
+                        # If self.use_random_proj, need to update just the last projected gradient!
+                        # Else, no such updates to stored vectors needed.
+                        G_subspace, X_subspace, D_subspace = self.update_stored_vectors_subspace(new_X_vec=x_update,
+                                                            new_G_vec=proj_grad,
+                                                            full_grad_prev=full_grad_prev,
+                                                            Q_prev=Q,
+                                                            G=G_subspace,
+                                                            X=None,
+                                                            D=None,
+                                                            reassigning_latest_proj_grad=True)
                     
                     if self.quasi_newton:
                         Y_lsr1, X_lsr1 = self.update_stored_vectors_lsr1(new_X_vec=None,
                                                                         new_Y_vec=grad_diff,
                                                                         current_B=full_B,
                                                                         following_success=True)
-                    # Update subspace basis matrix
+                    # Update subspace basis matrix.
+                    # NOTE: if not self.use_random_proj, this is just about
+                    # redrawing the randomised columns of P_k.
                     Q = self.update_subspace(grads_matrix=G_subspace,
                                              updates_matrix=X_subspace,
                                              hess_diag_dirs_matrix=D_subspace)

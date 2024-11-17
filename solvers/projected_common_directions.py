@@ -36,6 +36,10 @@ class ProjectedCommonDirectionsConfig:
     # NOTE: default value True gives the methods I used in my MSc thesis.
     # False gives new methods where the gradient columns in P_k are populated
     # with vectors of the form (P_{k-1} P_{k-1}^T \nabla{f}_{k-1}).
+    # NOTE: I have since realised that setting this to False in 1st-order
+    # variants is really nothing novel---it is clearly equivalent to simply
+    # including past update directions...
+    # TODO: perhaps deprecate this attribute since it is useless for 1st-order variants.
     use_random_proj: bool = True
 
     # NOTE: the below only in use if direction_str == 'newton' and use_hess is False.
@@ -287,9 +291,6 @@ class ProjectedCommonDirections:
             self.subspace_constr_method = 'random'
         else:
             self.subspace_constr_method = None
-
-        if self.subspace_no_grads == 0 and self.subspace_constr_method != 'random':
-            raise Exception('Not good to NOT have fully randomised P_k yet have no directions based on gradient information!')
         
         # Number of P_k columns relying on problem/algorithm information
         # of some kind. 
